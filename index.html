@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Soul Messenger</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+</head>
+<body>
+    <!-- Экран загрузки -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="loading-content">
+            <div class="logo">
+                <span class="logo-icon">💫</span>
+                Soul
+            </div>
+            <div class="loading-spinner"></div>
+            <p>Загрузка...</p>
+        </div>
+    </div>
+
+    <!-- Экран входа/регистрации -->
+    <div id="auth-screen" class="auth-screen hidden">
+        <div class="auth-container">
+            <div class="logo">
+                <span class="logo-icon">💫</span>
+                Soul
+            </div>
+            <p class="tagline">Новый уровень общения</p>
+            
+            <div class="auth-form">
+                <div id="login-form">
+                    <h2>Вход</h2>
+                    <div class="input-group">
+                        <input type="email" id="login-email" placeholder=" " required>
+                        <label for="login-email">Email</label>
+                    </div>
+                    <div class="input-group">
+                        <input type="password" id="login-password" placeholder=" " required>
+                        <label for="login-password">Пароль</label>
+                    </div>
+                    <button id="login-btn" class="btn-primary">
+                        <span class="btn-text">Войти</span>
+                        <div class="btn-loader hidden"></div>
+                    </button>
+                    <p class="auth-switch">Нет аккаунта? <span id="show-register">Зарегистрироваться</span></p>
+                </div>
+                
+                <div id="register-form" class="hidden">
+                    <h2>Регистрация</h2>
+                    <div class="input-group">
+                        <input type="text" id="register-name" placeholder=" " required>
+                        <label for="register-name">Имя</label>
+                    </div>
+                    <div class="input-group">
+                        <input type="email" id="register-email" placeholder=" " required>
+                        <label for="register-email">Email</label>
+                    </div>
+                    <div class="input-group">
+                        <input type="password" id="register-password" placeholder=" " required>
+                        <label for="register-password">Пароль</label>
+                    </div>
+                    <button id="register-btn" class="btn-primary">
+                        <span class="btn-text">Создать аккаунт</span>
+                        <div class="btn-loader hidden"></div>
+                    </button>
+                    <p class="auth-switch">Уже есть аккаунт? <span id="show-login">Войти</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Основной интерфейс мессенджера -->
+    <div id="app" class="app hidden">
+        <!-- Боковая панель с чатами -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <div class="user-info">
+                    <div id="user-avatar" class="user-avatar"></div>
+                    <div class="user-details">
+                        <span id="user-name" class="user-name"></span>
+                        <span id="user-status" class="user-status">online</span>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <button id="mobile-menu-btn" class="btn-icon mobile-only" title="Меню">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                    </button>
+                    <button id="find-users-btn" class="btn-icon mobile-only" title="Найти пользователей">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                    </button>
+                    <button id="settings-btn" class="btn-icon" title="Настройки">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                        </svg>
+                    </button>
+                    <button id="logout-btn" class="btn-icon" title="Выйти">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                            <polyline points="16 17 21 12 16 7"></polyline>
+                            <line x1="21" y1="12" x2="9" y2="12"></line>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="search-container">
+                <div class="search-wrapper">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <input type="text" id="search-input" placeholder="Поиск чатов...">
+                    <button id="clear-search" class="btn-clear hidden">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="chats-section">
+                <div class="section-header">
+                    <h3>Чаты</h3>
+                    <span class="badge" id="chats-count">0</span>
+                </div>
+                <div class="chats-list" id="chats-list">
+                    <!-- Список чатов будет заполняться динамически -->
+                </div>
+            </div>
+            
+            <button id="new-chat-btn" class="btn-new-chat">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                Новый чат
+            </button>
+        </div>
+        
+        <!-- Область чата -->
+        <div class="chat-area">
+            <div id="no-chat-selected" class="no-chat-selected">
+                <div class="no-chat-content">
+                    <div class="logo">
+                        <span class="logo-icon">💫</span>
+                        Soul
+                    </div>
+                    <h2>Добро пожаловать в Soul</h2>
+                    <p>Выберите чат для начала общения</p>
+                    <p class="hint">Или создайте новый, нажав кнопку "Новый чат"</p>
+                    <div class="mobile-actions mobile-only">
+                        <button id="mobile-new-chat" class="btn-primary">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                            Новый чат
+                        </button>
+                        <button id="mobile-find-users" class="btn-secondary">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                            </svg>
+                            Найти пользователей
+                        </button>
+                        <button id="mobile-settings" class="btn-secondary">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="3"></circle>
+                                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                            </svg>
+                            Настройки
+                        </button>
+                    </div>
+                    <div class="features">
+                        <div class="feature">
+                            <div class="feature-icon">🚀</div>
+                            <div class="feature-text">Мгновенные сообщения</div>
+                        </div>
+                        <div class="feature">
+                            <div class="feature-icon">🔒</div>
+                            <div class="feature-text">Безопасное соединение</div>
+                        </div>
+                        <div class="feature">
+                            <div class="feature-icon">🎨</div>
+                            <div class="feature-text">Темная тема</div>
+                        </div>
+                        <div class="feature">
+                            <div class="feature-icon">📱</div>
+                            <div class="feature-text">Полная синхронизация</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="chat-container" class="chat-container hidden">
+                <div class="chat-header">
+                    <button id="back-to-chats" class="btn-icon mobile-only" title="Назад к чатам">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="19" y1="12" x2="5" y2="12"></line>
+                            <polyline points="12 19 5 12 12 5"></polyline>
+                        </svg>
+                    </button>
+                    <div class="chat-info">
+                        <div id="chat-avatar" class="chat-avatar"></div>
+                        <div class="chat-details">
+                            <h3 id="chat-title"></h3>
+                            <span id="chat-status" class="chat-status"></span>
+                        </div>
+                    </div>
+                    <div class="chat-actions">
+                        <button id="voice-call-btn" class="btn-icon" title="Голосовой вызов">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                            </svg>
+                        </button>
+                        <button id="video-call-btn" class="btn-icon" title="Видеозвонок">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M23 7l-7 5 7 5V7z"></path>
+                                <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+                            </svg>
+                        </button>
+                        <button id="chat-info-btn" class="btn-icon" title="Информация о чате">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="16" x2="12" y2="12"></line>
+                                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="messages-container" id="messages-container">
+                    <div class="messages-scroll" id="messages-scroll">
+                        <!-- Сообщения будут добавляться динамически -->
+                    </div>
+                    <div class="scroll-indicator hidden" id="scroll-indicator">
+                        <button id="scroll-to-bottom">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                            <span class="new-messages-count">3</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="message-input-container">
+                    <div class="typing-indicator" id="typing-indicator">
+                        <!-- Индикатор набора текста -->
+                    </div>
+                    <div class="message-input-wrapper">
+                        <div class="input-actions-left">
+                            <button id="attach-btn" class="btn-attach" title="Прикрепить файл">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+                                </svg>
+                            </button>
+                            <button id="emoji-btn" class="btn-emoji" title="Эмодзи">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
+                                    <line x1="9" y1="9" x2="9.01" y2="9"></line>
+                                    <line x1="15" y1="9" x2="15.01" y2="9"></line>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="input-wrapper">
+                            <textarea id="message-input" placeholder="Введите сообщение..." rows="1"></textarea>
+                            <div class="message-actions">
+                                <button id="format-bold" class="btn-format" data-format="bold" title="Жирный">B</button>
+                                <button id="format-italic" class="btn-format" data-format="italic" title="Курсив">I</button>
+                                <button id="format-code" class="btn-format" data-format="code" title="Код">{ }</button>
+                            </div>
+                        </div>
+                        <button id="send-btn" class="btn-send" title="Отправить">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="22" y1="2" x2="11" y2="13"></line>
+                                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="message-stats">
+                        <span id="char-count">0/1000</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Модальное окно со списком пользователей -->
+        <div id="users-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Найти пользователей</h3>
+                    <button id="close-users-modal" class="btn-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="search-wrapper">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                        <input type="text" id="users-search" placeholder="Введите имя или username..." autocomplete="off">
+                        <button id="search-users-btn" class="btn-search" title="Найти">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                            </svg>
+                        </button>
+                    </div>
+                    
+                    <div class="search-filters">
+                        <button class="filter-btn active" data-filter="all">Все пользователи</button>
+                        <button class="filter-btn" data-filter="online">Только онлайн</button>
+                        <button class="filter-btn" data-filter="recent">Недавние</button>
+                    </div>
+                    
+                    <div class="users-list" id="users-list">
+                        <!-- Список пользователей будет заполняться динамически -->
+                    </div>
+                    
+                    <div class="search-results-info" id="search-results-info">
+                        Введите текст для поиска пользователей
+                    </div>
+                    
+                    <div class="modal-actions">
+                        <button id="cancel-users-btn" class="btn-secondary">Закрыть</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Модальное окно настроек -->
+        <div id="settings-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Настройки</h3>
+                    <button id="close-settings-modal" class="btn-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="settings-section">
+                        <h4>Внешний вид</h4>
+                        <div class="setting-item">
+                            <label>Тема</label>
+                            <select id="theme-select">
+                                <option value="dark">Темная</option>
+                                <option value="light">Светлая</option>
+                                <option value="auto">Системная</option>
+                            </select>
+                        </div>
+                        <div class="setting-item">
+                            <label>Размер текста</label>
+                            <select id="font-size-select">
+                                <option value="small">Маленький</option>
+                                <option value="medium" selected>Средний</option>
+                                <option value="large">Большой</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="settings-section">
+                        <h4>Уведомления</h4>
+                        <div class="setting-item">
+                            <label>
+                                <input type="checkbox" id="notifications-enabled" checked>
+                                Включить уведомления
+                            </label>
+                        </div>
+                        <div class="setting-item">
+                            <label>
+                                <input type="checkbox" id="sound-enabled" checked>
+                                Звуковые уведомления
+                            </label>
+                        </div>
+                    </div>
+                    <div class="modal-actions">
+                        <button id="save-settings" class="btn-primary">Сохранить</button>
+                        <button id="cancel-settings" class="btn-secondary">Отмена</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Модальное окно редактирования профиля -->
+        <div id="profile-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Редактировать профиль</h3>
+                    <button id="close-profile-modal" class="btn-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="profile-edit-form">
+                        <div class="avatar-selection">
+                            <h4>Аватарка</h4>
+                            <div class="avatar-options" id="avatar-options">
+                                <!-- Emoji аватары будут добавлены динамически -->
+                            </div>
+                            <div class="current-avatar">
+                                <div id="profile-avatar-preview" class="profile-avatar-preview"></div>
+                                <span>Текущая аватарка</span>
+                            </div>
+                        </div>
+                        
+                        <div class="input-group">
+                            <input type="text" id="profile-name" placeholder=" " required>
+                            <label for="profile-name">Имя</label>
+                        </div>
+                        
+                        <div class="input-group">
+                            <input type="text" id="profile-username" placeholder=" " required>
+                            <label for="profile-username">Username</label>
+                            <div class="input-hint">Только латинские буквы, цифры и _</div>
+                        </div>
+                        
+                        <div class="input-group">
+                            <textarea id="profile-bio" placeholder=" " rows="3"></textarea>
+                            <label for="profile-bio">О себе</label>
+                            <div class="input-hint">Максимум 150 символов</div>
+                        </div>
+                        
+                        <div class="profile-stats">
+                            <div class="stat-item">
+                                <span class="stat-number" id="profile-chats-count">0</span>
+                                <span class="stat-label">чатов</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number" id="profile-joined-date">-</span>
+                                <span class="stat-label">с нами</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-actions">
+                        <button id="save-profile" class="btn-primary">Сохранить</button>
+                        <button id="cancel-profile" class="btn-secondary">Отмена</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Модальное окно профиля пользователя -->
+        <div id="user-profile-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Профиль</h3>
+                    <button id="close-user-profile-modal" class="btn-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="user-profile-content" id="user-profile-content">
+                        <!-- Содержимое профиля будет заполнено динамически -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Уведомления -->
+        <div id="notifications" class="notifications"></div>
+
+        <!-- Аудио для уведомлений -->
+        <audio id="notification-sound" preload="auto">
+            <source src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==" type="audio/wav">
+        </audio>
+    </div>
+
+    <script src="firebase-config.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
