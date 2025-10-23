@@ -1,6 +1,5 @@
 // Конфигурация Firebase
 const firebaseConfig = {
-    // ЗАМЕНИТЕ ЭТИ ДАННЫЕ НА ВАШИ НАСТРОЙКИ FIREBASE
     apiKey: "AIzaSyCjUwwU8iJ5cPx2SphIK-sQESAHSFpUq-U",
     authDomain: "soul-27114.firebaseapp.com",
     databaseURL: "https://soul-27114-default-rtdb.asia-southeast1.firebasedatabase.app",
@@ -11,8 +10,37 @@ const firebaseConfig = {
 };
 
 // Инициализация Firebase
-firebase.initializeApp(firebaseConfig);
+try {
+    firebase.initializeApp(firebaseConfig);
+    console.log("Firebase initialized successfully");
+} catch (error) {
+    console.error("Firebase initialization error:", error);
+}
 
 // Ссылки на сервисы Firebase
 const auth = firebase.auth();
 const database = firebase.database();
+
+// Включим отладку аутентификации
+auth.useDeviceLanguage();
+
+// Обработка ошибок аутентификации
+auth.onAuthStateChanged((user) => {
+    console.log("Auth state changed:", user ? "User logged in" : "No user");
+});
+
+// Глобальные обработчики ошибок Firebase
+auth.onIdTokenChanged((user) => {
+    if (user) {
+        console.log("User token refreshed");
+    }
+});
+
+// Проверка подключения к базе данных
+database.ref('.info/connected').on('value', (snapshot) => {
+    if (snapshot.val() === true) {
+        console.log("Connected to Firebase Database");
+    } else {
+        console.log("Disconnected from Firebase Database");
+    }
+});
