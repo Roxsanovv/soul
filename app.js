@@ -12,13 +12,32 @@ class SoulMessenger {
             theme: 'dark',
             fontSize: 'medium',
             notifications: true,
-            sound: true
+            sound: true,
+            messageSound: true
         };
         this.isMobile = window.innerWidth <= 768;
         this.newMessagesCount = 0;
         this.currentSearchQuery = '';
         this.currentUsersFilter = 'all';
         this.emojiAvatars = ['😊', '😎', '🤩', '😍', '🤗', '😇', '🥳', '😋', '🤠', '🥰', '😜', '🤪', '😌', '🤓', '🥸', '😏'];
+        this.selectedFiles = [];
+        this.uploading = false;
+        this.lastMessageTime = 0; // Для предотвращения спама звуков
+        this.soundCooldown = 1000; // 1 секунда между звуками
+        
+        // Firebase references
+        this.messagesRef = null;
+        this.typingRef = null;
+        
+        // Emoji категории
+        this.emojiCategories = {
+            smileys: ['😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚', '😋', '😛', '😝', '😜', '🤪', '🤨', '🧐', '🤓', '😎', '🥸', '🤩', '🥳'],
+            animals: ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐻‍❄️', '🐨', '🐯', '🦁', '🐮', '🐷', '🐽', '🐸', '🐵', '🙈', '🙉', '🙊', '🐒', '🐔', '🐧', '🐦', '🐤', '🐣', '🐥', '🦆', '🦅', '🦉', '🦇'],
+            food: ['🍎', '🍐', '🍊', '🍋', '🍌', '🍉', '🍇', '🍓', '🫐', '🍈', '🍒', '🍑', '🥭', '🍍', '🥥', '🥝', '🍅', '🍆', '🥑', '🥦', '🥬', '🥒', '🌶', '🫑', '🌽', '🥕', '🫒', '🧄', '🧅', '🥔', '🍠'],
+            travel: ['🚗', '🚕', '🚙', '🚌', '🚎', '🏎', '🚓', '🚑', '🚒', '🚐', '🛻', '🚚', '🚛', '🚜', '🏍', '🛵', '🚲', '🛴', '🛹', '🛼', '🚁', '✈️', '🛩', '🛫', '🛬', '🪂', '💺', '🚀', '🛸', '🚉'],
+            objects: ['💡', '🔦', '🕯', '🪔', '📱', '📲', '💻', '⌨️', '🖥', '🖨', '🖱', '🖲', '📞', '📟', '📠', '📺', '📷', '📹', '📼', '🔍', '🔎', '🕰', '⏰', '⏲', '⏱', '🧭', '🎈', '🎉', '🎊'],
+            symbols: ['❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💔', '❣️', '💕', '💞', '💓', '💗', '💖', '💘', '💝', '💟', '☮️', '✝️', '☪️', '🕉', '☸️', '✡️', '🔯', '🕎', '☯️', '☦️']
+        };
         
         // Привязываем контекст для обработчиков событий
         this.handleVisibilityChange = this.handleVisibilityChange.bind(this);
@@ -58,6 +77,216 @@ class SoulMessenger {
         
         // Обработка изменения размера окна
         window.addEventListener('resize', this.handleResize);
+    }
+
+    // Очистка слушателей
+    cleanupListeners() {
+        if (this.messagesRef) {
+            this.messagesRef.off();
+            this.messagesRef = null;
+        }
+        
+        if (this.typingRef) {
+            this.typingRef.off();
+            this.typingRef = null;
+        }
+    }
+
+    // Звуковые уведомления
+    playMessageSound() {
+        if (!this.settings.messageSound) return;
+        
+        const now = Date.now();
+        if (now - this.lastMessageTime < this.soundCooldown) return;
+        
+        this.lastMessageTime = now;
+        
+        try {
+            const messageSound = document.getElementById('message-sound');
+            if (messageSound) {
+                messageSound.currentTime = 0;
+                messageSound.play().catch(e => {
+                    console.log('Не удалось воспроизвести звук сообщения:', e);
+                    // Пробуем fallback звук
+                    this.playFallbackSound();
+                });
+            } else {
+                this.playFallbackSound();
+            }
+        } catch (error) {
+            console.log('Ошибка воспроизведения звука:', error);
+            this.playFallbackSound();
+        }
+    }
+    
+    playNotificationSound() {
+        if (!this.settings.sound) return;
+        
+        try {
+            const notificationSound = document.getElementById('notification-sound');
+            if (notificationSound) {
+                notificationSound.currentTime = 0;
+                notificationSound.play().catch(e => {
+                    console.log('Не удалось воспроизвести звук уведомления:', e);
+                    this.playFallbackSound();
+                });
+            } else {
+                this.playFallbackSound();
+            }
+        } catch (error) {
+            console.log('Ошибка воспроизведения звука:', error);
+            this.playFallbackSound();
+        }
+    }
+    
+    playFallbackSound() {
+        try {
+            const fallbackSound = document.getElementById('fallback-notification-sound');
+            if (fallbackSound) {
+                fallbackSound.currentTime = 0;
+                fallbackSound.play().catch(e => {
+                    console.log('Не удалось воспроизвести fallback звук:', e);
+                });
+            }
+        } catch (error) {
+            console.log('Ошибка воспроизведения fallback звука:', error);
+        }
+    }
+    
+    // Аутентификация
+    async login() {
+        const email = document.getElementById('login-email').value.trim();
+        const password = document.getElementById('login-password').value.trim();
+        const loginBtn = document.getElementById('login-btn');
+
+        if (!email || !password) {
+            this.showNotification('Ошибка', 'Заполните все поля', 'error');
+            return;
+        }
+
+        this.setButtonLoading(loginBtn, true);
+
+        try {
+            const userCredential = await auth.signInWithEmailAndPassword(email, password);
+            console.log('Успешный вход:', userCredential.user);
+            this.showNotification('Успех', 'Добро пожаловать!', 'success');
+        } catch (error) {
+            console.error('Ошибка входа:', error);
+            let errorMessage = 'Ошибка входа';
+            
+            switch (error.code) {
+                case 'auth/invalid-email':
+                    errorMessage = 'Неверный формат email';
+                    break;
+                case 'auth/user-disabled':
+                    errorMessage = 'Аккаунт заблокирован';
+                    break;
+                case 'auth/user-not-found':
+                    errorMessage = 'Пользователь не найден';
+                    break;
+                case 'auth/wrong-password':
+                    errorMessage = 'Неверный пароль';
+                    break;
+                case 'auth/too-many-requests':
+                    errorMessage = 'Слишком много попыток. Попробуйте позже';
+                    break;
+                default:
+                    errorMessage = error.message;
+            }
+            
+            this.showNotification('Ошибка входа', errorMessage, 'error');
+        } finally {
+            this.setButtonLoading(loginBtn, false);
+        }
+    }
+
+    async register() {
+        const name = document.getElementById('register-name').value.trim();
+        const email = document.getElementById('register-email').value.trim();
+        const password = document.getElementById('register-password').value.trim();
+        const registerBtn = document.getElementById('register-btn');
+
+        if (!name || !email || !password) {
+            this.showNotification('Ошибка', 'Заполните все поля', 'error');
+            return;
+        }
+
+        if (password.length < 6) {
+            this.showNotification('Ошибка', 'Пароль должен содержать минимум 6 символов', 'error');
+            return;
+        }
+
+        this.setButtonLoading(registerBtn, true);
+
+        try {
+            const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+            const user = userCredential.user;
+            
+            // Сохраняем дополнительные данные пользователя
+            await database.ref('users/' + user.uid).set({
+                name: name,
+                email: email,
+                username: this.generateUsername(name),
+                avatar: '😊',
+                status: 'online',
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            });
+
+            console.log('Успешная регистрация:', user);
+            this.showNotification('Успех', 'Аккаунт создан!', 'success');
+        } catch (error) {
+            console.error('Ошибка регистрации:', error);
+            let errorMessage = 'Ошибка регистрации';
+            
+            switch (error.code) {
+                case 'auth/email-already-in-use':
+                    errorMessage = 'Email уже используется';
+                    break;
+                case 'auth/invalid-email':
+                    errorMessage = 'Неверный формат email';
+                    break;
+                case 'auth/operation-not-allowed':
+                    errorMessage = 'Регистрация временно отключена';
+                    break;
+                case 'auth/weak-password':
+                    errorMessage = 'Пароль слишком слабый';
+                    break;
+                default:
+                    errorMessage = error.message;
+            }
+            
+            this.showNotification('Ошибка регистрации', errorMessage, 'error');
+        } finally {
+            this.setButtonLoading(registerBtn, false);
+        }
+    }
+
+    // Генерация username на основе имени
+    generateUsername(name) {
+        const baseUsername = name.toLowerCase()
+            .replace(/[^a-z0-9]/g, '')
+            .substring(0, 15);
+        
+        const randomSuffix = Math.floor(Math.random() * 1000);
+        return `${baseUsername}${randomSuffix}`;
+    }
+
+    // Выход из системы
+    async logout() {
+        try {
+            // Очищаем слушатели
+            this.cleanupListeners();
+            
+            if (this.currentUser) {
+                await this.updateUserStatus('offline');
+            }
+            await auth.signOut();
+            this.showNotification('Выход', 'Вы вышли из системы', 'info');
+        } catch (error) {
+            console.error('Ошибка выхода:', error);
+            this.showNotification('Ошибка', 'Не удалось выйти из системы', 'error');
+        }
     }
     
     handleBeforeUnload() {
@@ -150,10 +379,6 @@ class SoulMessenger {
         
         document.getElementById('save-profile').addEventListener('click', () => {
             this.saveProfile();
-        });
-        
-        document.getElementById('close-user-profile-modal').addEventListener('click', () => {
-            this.hideUserProfileModal();
         });
         
         // Мобильная навигация
@@ -288,12 +513,85 @@ class SoulMessenger {
             this.handleMessagesScroll();
         });
         
+        // Эмодзи
+        document.getElementById('emoji-btn').addEventListener('click', () => {
+            this.showEmojiModal();
+        });
+        
+        document.getElementById('close-emoji-modal').addEventListener('click', () => {
+            this.hideEmojiModal();
+        });
+        
+        // Категории эмодзи
+        document.querySelectorAll('.emoji-category-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                this.switchEmojiCategory(e.target.dataset.category);
+            });
+        });
+        
+        // Медиафайлы
+        document.getElementById('media-btn').addEventListener('click', () => {
+            this.showMediaModal();
+        });
+        
+        document.getElementById('close-media-modal').addEventListener('click', () => {
+            this.hideMediaModal();
+        });
+        
+        document.getElementById('cancel-media').addEventListener('click', () => {
+            this.hideMediaModal();
+        });
+        
+        document.getElementById('upload-media').addEventListener('click', () => {
+            this.uploadMediaFiles();
+        });
+        
+        // Загрузка файлов
+        const mediaUploadArea = document.getElementById('media-upload-area');
+        const mediaFileInput = document.getElementById('media-file-input');
+        
+        mediaUploadArea.addEventListener('click', () => {
+            mediaFileInput.click();
+        });
+        
+        mediaFileInput.addEventListener('change', (e) => {
+            this.handleFileSelect(e.target.files);
+        });
+        
+        // Drag and drop для файлов
+        mediaUploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            mediaUploadArea.classList.add('dragover');
+        });
+        
+        mediaUploadArea.addEventListener('dragleave', () => {
+            mediaUploadArea.classList.remove('dragover');
+        });
+        
+        mediaUploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            mediaUploadArea.classList.remove('dragover');
+            this.handleFileSelect(e.dataTransfer.files);
+        });
+        
+        // Просмотр медиа
+        document.getElementById('media-viewer-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'media-viewer-modal') {
+                this.hideMediaViewer();
+            }
+        });
+        
+        document.querySelector('.media-viewer-close').addEventListener('click', () => {
+            this.hideMediaViewer();
+        });
+        
         // Закрытие модальных окон при клике вне их
         document.addEventListener('click', (e) => {
             if (e.target.id === 'users-modal') this.hideUsersModal();
             if (e.target.id === 'settings-modal') this.hideSettingsModal();
             if (e.target.id === 'profile-modal') this.hideProfileModal();
-            if (e.target.id === 'user-profile-modal') this.hideUserProfileModal();
+            if (e.target.id === 'emoji-modal') this.hideEmojiModal();
+            if (e.target.id === 'media-modal') this.hideMediaModal();
         });
         
         // Закрытие уведомлений при клике
@@ -305,6 +603,306 @@ class SoulMessenger {
         
         // Обработка сенсорных жестов
         this.initTouchEvents();
+    }
+    
+    // Эмодзи
+    showEmojiModal() {
+        document.getElementById('emoji-modal').classList.remove('hidden');
+        this.loadEmojiCategory('smileys');
+    }
+    
+    hideEmojiModal() {
+        document.getElementById('emoji-modal').classList.add('hidden');
+    }
+    
+    loadEmojiCategory(category) {
+        const emojiGrid = document.getElementById('emoji-grid');
+        emojiGrid.innerHTML = '';
+        
+        if (this.emojiCategories[category]) {
+            this.emojiCategories[category].forEach(emoji => {
+                const emojiElement = document.createElement('div');
+                emojiElement.className = 'emoji-item';
+                emojiElement.textContent = emoji;
+                emojiElement.addEventListener('click', () => {
+                    this.insertEmoji(emoji);
+                });
+                emojiGrid.appendChild(emojiElement);
+            });
+        }
+    }
+    
+    switchEmojiCategory(category) {
+        // Обновляем активную кнопку категории
+        document.querySelectorAll('.emoji-category-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.querySelector(`[data-category="${category}"]`).classList.add('active');
+        
+        this.loadEmojiCategory(category);
+    }
+    
+    insertEmoji(emoji) {
+        const messageInput = document.getElementById('message-input');
+        const start = messageInput.selectionStart;
+        const end = messageInput.selectionEnd;
+        
+        messageInput.setRangeText(emoji, start, end, 'end');
+        messageInput.focus();
+        this.updateCharCount();
+        this.hideEmojiModal();
+    }
+    
+    // Медиафайлы (без Firebase Storage)
+    showMediaModal() {
+        document.getElementById('media-modal').classList.remove('hidden');
+        this.clearMediaPreview();
+    }
+    
+    hideMediaModal() {
+        document.getElementById('media-modal').classList.add('hidden');
+        this.clearMediaPreview();
+        this.uploading = false;
+    }
+    
+    handleFileSelect(files) {
+        if (this.uploading) return;
+        
+        const validFiles = Array.from(files).filter(file => {
+            const isImage = file.type.startsWith('image/');
+            const isVideo = file.type.startsWith('video/');
+            const isValidSize = file.size <= 2 * 1024 * 1024; // 2MB limit для Base64
+            
+            if (!isImage && !isVideo) {
+                this.showNotification('Ошибка', 'Поддерживаются только фото и видео файлы', 'error');
+                return false;
+            }
+            
+            if (!isValidSize) {
+                this.showNotification('Ошибка', 'Файл слишком большой (макс. 2MB)', 'error');
+                return false;
+            }
+            
+            return true;
+        });
+        
+        this.selectedFiles = [...this.selectedFiles, ...validFiles];
+        this.renderMediaPreview();
+        this.updateUploadButton();
+    }
+    
+    renderMediaPreview() {
+        const previewContainer = document.getElementById('media-preview');
+        previewContainer.innerHTML = '';
+        
+        this.selectedFiles.forEach((file, index) => {
+            const previewItem = document.createElement('div');
+            previewItem.className = 'media-preview-item';
+            
+            const objectUrl = URL.createObjectURL(file);
+            
+            if (file.type.startsWith('image/')) {
+                previewItem.innerHTML = `
+                    <img src="${objectUrl}" alt="Preview">
+                    <button class="remove-media" data-index="${index}">×</button>
+                `;
+            } else if (file.type.startsWith('video/')) {
+                previewItem.innerHTML = `
+                    <video src="${objectUrl}" muted></video>
+                    <button class="remove-media" data-index="${index}">×</button>
+                `;
+            }
+            
+            previewContainer.appendChild(previewItem);
+            
+            // Обработчик удаления файла
+            previewItem.querySelector('.remove-media').addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.removeMediaFile(parseInt(e.target.dataset.index));
+            });
+        });
+    }
+    
+    removeMediaFile(index) {
+        this.selectedFiles.splice(index, 1);
+        this.renderMediaPreview();
+        this.updateUploadButton();
+    }
+    
+    clearMediaPreview() {
+        this.selectedFiles = [];
+        document.getElementById('media-preview').innerHTML = '';
+        document.getElementById('upload-progress').classList.add('hidden');
+        this.updateUploadButton();
+    }
+    
+    updateUploadButton() {
+        const uploadBtn = document.getElementById('upload-media');
+        uploadBtn.disabled = this.selectedFiles.length === 0 || this.uploading;
+    }
+    
+    async uploadMediaFiles() {
+        if (this.uploading || !this.currentChat || this.selectedFiles.length === 0) return;
+        
+        this.uploading = true;
+        this.updateUploadButton();
+        
+        const progressBar = document.getElementById('upload-progress');
+        const progressFill = document.getElementById('progress-fill');
+        const progressText = document.getElementById('progress-text');
+        
+        progressBar.classList.remove('hidden');
+        
+        try {
+            for (let i = 0; i < this.selectedFiles.length; i++) {
+                const file = this.selectedFiles[i];
+                await this.uploadSingleFile(file, (progress) => {
+                    const percent = Math.round(progress);
+                    progressFill.style.width = percent + '%';
+                    progressText.textContent = `${percent}%`;
+                });
+            }
+            
+            this.hideMediaModal();
+            this.showNotification('Успех', 'Файлы успешно отправлены', 'success');
+            
+        } catch (error) {
+            console.error('Ошибка загрузки файлов:', error);
+            this.showNotification('Ошибка', 'Не удалось загрузить файлы', 'error');
+        } finally {
+            this.uploading = false;
+            progressBar.classList.add('hidden');
+        }
+    }
+    
+    async uploadSingleFile(file, progressCallback) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            
+            reader.onloadstart = () => {
+                progressCallback(10);
+            };
+            
+            reader.onprogress = (e) => {
+                if (e.lengthComputable) {
+                    const percent = 10 + (e.loaded / e.total) * 80;
+                    progressCallback(percent);
+                }
+            };
+            
+            reader.onload = async (e) => {
+                try {
+                    progressCallback(95);
+                    
+                    let base64Data = e.target.result;
+                    
+                    // Компрессия для изображений
+                    if (file.type.startsWith('image/')) {
+                        base64Data = await this.compressImage(base64Data, file.type);
+                    }
+                    
+                    // Создаем сообщение с медиа
+                    const message = {
+                        type: file.type.startsWith('image/') ? 'image' : 'video',
+                        mediaData: base64Data,
+                        fileName: file.name,
+                        fileSize: file.size,
+                        mimeType: file.type,
+                        senderId: this.currentUser.uid,
+                        timestamp: new Date().toISOString()
+                    };
+                    
+                    // Сохраняем сообщение в базе данных
+                    const messagesRef = database.ref('messages/' + this.currentChat.id);
+                    await messagesRef.push(message);
+                    
+                    // Обновляем последнее сообщение в чате
+                    const chatRef = database.ref('chats/' + this.currentChat.id);
+                    const mediaType = message.type === 'image' ? '📷 Фото' : '🎥 Видео';
+                    await chatRef.update({
+                        lastMessage: mediaType,
+                        lastMessageTime: message.timestamp
+                    });
+                    
+                    progressCallback(100);
+                    resolve();
+                    
+                } catch (error) {
+                    reject(error);
+                }
+            };
+            
+            reader.onerror = () => {
+                reject(new Error('Ошибка чтения файла'));
+            };
+            
+            // Читаем файл как Data URL (Base64)
+            reader.readAsDataURL(file);
+        });
+    }
+    
+    // Компрессия изображений
+    async compressImage(base64Data, mimeType) {
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.src = base64Data;
+            
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                // Максимальные размеры
+                const MAX_WIDTH = 800;
+                const MAX_HEIGHT = 600;
+                
+                let { width, height } = img;
+                
+                // Масштабируем если нужно
+                if (width > height) {
+                    if (width > MAX_WIDTH) {
+                        height *= MAX_WIDTH / width;
+                        width = MAX_WIDTH;
+                    }
+                } else {
+                    if (height > MAX_HEIGHT) {
+                        width *= MAX_HEIGHT / height;
+                        height = MAX_HEIGHT;
+                    }
+                }
+                
+                canvas.width = width;
+                canvas.height = height;
+                
+                ctx.drawImage(img, 0, 0, width, height);
+                
+                // Качество сжатия
+                const quality = 0.7;
+                resolve(canvas.toDataURL(mimeType, quality));
+            };
+            
+            img.onerror = () => {
+                // Если не удалось сжать, возвращаем оригинал
+                resolve(base64Data);
+            };
+        });
+    }
+    
+    // Просмотр медиа
+    showMediaViewer(mediaData, mediaType) {
+        const viewer = document.getElementById('media-viewer');
+        viewer.innerHTML = '';
+        
+        if (mediaType === 'image') {
+            viewer.innerHTML = `<img src="${mediaData}" alt="Просмотр">`;
+        } else if (mediaType === 'video') {
+            viewer.innerHTML = `<video src="${mediaData}" controls autoplay></video>`;
+        }
+        
+        document.getElementById('media-viewer-modal').classList.remove('hidden');
+    }
+    
+    hideMediaViewer() {
+        document.getElementById('media-viewer-modal').classList.add('hidden');
     }
     
     // Инициализация выбора аватарок
@@ -425,55 +1023,6 @@ class SoulMessenger {
         }
     }
     
-    showUserProfile(userId) {
-        const userRef = database.ref('users/' + userId);
-        userRef.once('value').then(snapshot => {
-            const userData = snapshot.val();
-            if (userData) {
-                const content = document.getElementById('user-profile-content');
-                content.innerHTML = `
-                    <div class="user-profile-avatar">${userData.avatar || '😊'}</div>
-                    <div class="user-profile-name">${userData.name}</div>
-                    <div class="user-profile-username">@${userData.username || 'user'}</div>
-                    <div class="user-profile-status">
-                        <div class="status-indicator ${userData.status}"></div>
-                        <span>${this.getStatusText(userData.status)}</span>
-                    </div>
-                    ${userData.bio ? `<div class="user-profile-bio">${userData.bio}</div>` : ''}
-                    <div class="user-profile-stats">
-                        <div class="stat-item">
-                            <span class="stat-number">${this.getUserChatsCount(userId)}</span>
-                            <span class="stat-label">общих чатов</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-number">${this.formatJoinDate(userData.createdAt)}</span>
-                            <span class="stat-label">с нами</span>
-                        </div>
-                    </div>
-                `;
-                
-                document.getElementById('user-profile-modal').classList.remove('hidden');
-            }
-        });
-    }
-    
-    hideUserProfileModal() {
-        document.getElementById('user-profile-modal').classList.add('hidden');
-    }
-    
-    getUserChatsCount(userId) {
-        return this.chats.filter(chat => 
-            chat.participants && chat.participants[userId]
-        ).length;
-    }
-    
-    formatJoinDate(createdAt) {
-        if (!createdAt) return '-';
-        const joinDate = new Date(createdAt);
-        const days = Math.floor((Date.now() - joinDate.getTime()) / (1000 * 60 * 60 * 24));
-        return days + ' дн.';
-    }
-    
     // Определение мобильного устройства
     detectMobile() {
         this.isMobile = window.innerWidth <= 768;
@@ -544,23 +1093,83 @@ class SoulMessenger {
         this.renderChatsList();
     }
     
+    // Загрузка всех пользователей
+    async loadAllUsers() {
+        try {
+            const usersRef = database.ref('users');
+            usersRef.on('value', (snapshot) => {
+                this.allUsers = [];
+                const usersData = snapshot.val();
+                
+                console.log('Данные пользователей из базы:', usersData);
+                
+                if (usersData) {
+                    Object.keys(usersData).forEach(userId => {
+                        // Исключаем текущего пользователя из списка
+                        if (userId !== this.currentUser.uid) {
+                            const userData = usersData[userId];
+                            this.allUsers.push({
+                                id: userId,
+                                name: userData.name || 'Без имени',
+                                username: userData.username || 'user',
+                                email: userData.email || '',
+                                avatar: userData.avatar || '😊',
+                                status: userData.status || 'offline',
+                                bio: userData.bio || '',
+                                createdAt: userData.createdAt,
+                                lastSeen: userData.lastSeen
+                            });
+                        }
+                    });
+                    
+                    console.log(`Загружено пользователей: ${this.allUsers.length}`);
+                    this.applyUsersFilter();
+                } else {
+                    console.log('В базе данных нет пользователей');
+                    this.applyUsersFilter();
+                }
+            }, (error) => {
+                console.error('Ошибка загрузки пользователей:', error);
+                this.showNotification('Ошибка', 'Не удалось загрузить пользователей', 'error');
+            });
+        } catch (error) {
+            console.error('Критическая ошибка загрузки пользователей:', error);
+            this.showNotification('Ошибка', 'Критическая ошибка загрузки пользователей', 'error');
+        }
+    }
+    
     // Поиск пользователей
     applyUsersFilter() {
         const usersList = document.getElementById('users-list');
         const searchTerm = (this.currentSearchQuery || '').toLowerCase().trim();
         const filter = this.currentUsersFilter || 'all';
         
+        // Если нет пользователей, показываем сообщение
+        if (this.allUsers.length === 0) {
+            usersList.innerHTML = `
+                <div class="no-results">
+                    <div class="no-results-icon">👥</div>
+                    <p>Других пользователей пока нет</p>
+                    <p class="hint">Пригласите друзей, чтобы начать общение!</p>
+                </div>
+            `;
+            this.updateSearchResultsInfo(0);
+            return;
+        }
+        
         // Если есть поисковый запрос, фильтруем по нему
-        let filteredUsers = this.allUsers;
+        let filteredUsers = [...this.allUsers];
         
         if (searchTerm) {
             filteredUsers = this.allUsers.filter(user => {
                 const name = (user.name || '').toLowerCase();
                 const username = (user.username || '').toLowerCase();
+                const email = (user.email || '').toLowerCase();
                 
-                // Ищем по имени ИЛИ username
+                // Ищем по имени, username или email
                 return name.includes(searchTerm) || 
                        username.includes(searchTerm) ||
+                       email.includes(searchTerm) ||
                        `@${username}`.includes(searchTerm);
             });
         }
@@ -584,19 +1193,20 @@ class SoulMessenger {
         
         // Показываем сообщение, если ничего не найдено
         if (filteredUsers.length === 0) {
-            this.showNoResultsMessage(searchTerm);
+            usersList.innerHTML = `
+                <div class="no-results">
+                    <div class="no-results-icon">🔍</div>
+                    <p>По запросу "<strong>${searchTerm}</strong>" ничего не найдено</p>
+                    <p class="hint">Попробуйте изменить запрос или использовать другой фильтр</p>
+                </div>
+            `;
         }
     }
     
-    // Новая функция для отрисовки отфильтрованного списка
+    // Функция для отрисовки отфильтрованного списка
     renderFilteredUsersList(users) {
         const usersList = document.getElementById('users-list');
         usersList.innerHTML = '';
-        
-        if (users.length === 0) {
-            // Сообщение показывается в showNoResultsMessage
-            return;
-        }
         
         users.forEach(user => {
             const userElement = document.createElement('div');
@@ -616,49 +1226,8 @@ class SoulMessenger {
                 this.createChatWithUser(user);
             });
             
-            // Двойной клик для просмотра профиля
-            userElement.addEventListener('dblclick', () => {
-                this.showUserProfile(user.id);
-            });
-            
             usersList.appendChild(userElement);
         });
-    }
-    
-    // Обновленная функция показа сообщения о отсутствии результатов
-    showNoResultsMessage(searchTerm = '') {
-        const usersList = document.getElementById('users-list');
-        let message = '';
-        
-        if (searchTerm) {
-            message = `
-                <div class="no-results">
-                    <div class="no-results-icon">🔍</div>
-                    <p>По запросу "<strong>${this.escapeHtml(searchTerm)}</strong>" ничего не найдено</p>
-                    <p class="hint">Попробуйте изменить запрос или использовать другой фильтр</p>
-                </div>
-            `;
-        } else {
-            message = `
-                <div class="no-results">
-                    <div class="no-results-icon">👥</div>
-                    <p>Пользователи не найдены</p>
-                    <p class="hint">Возможно, вы единственный пользователь в системе</p>
-                </div>
-            `;
-        }
-        
-        usersList.innerHTML = message;
-    }
-    
-    // Вспомогательная функция для экранирования HTML
-    escapeHtml(unsafe) {
-        return unsafe
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;");
     }
     
     setUsersFilter(filter) {
@@ -749,40 +1318,6 @@ class SoulMessenger {
             this.showNotification('Ошибка', 'Не удалось создать чат', 'error');
             console.error('Ошибка создания чата:', error);
         }
-    }
-    
-    // Загрузка всех пользователей
-    async loadAllUsers() {
-        const usersRef = database.ref('users');
-        usersRef.on('value', (snapshot) => {
-            this.allUsers = [];
-            const usersData = snapshot.val();
-            
-            if (usersData) {
-                Object.keys(usersData).forEach(userId => {
-                    // Исключаем текущего пользователя из списка
-                    if (userId !== this.currentUser.uid) {
-                        this.allUsers.push({
-                            id: userId,
-                            ...usersData[userId]
-                        });
-                    }
-                });
-                
-                console.log(`Загружено пользователей: ${this.allUsers.length}`);
-                // Отладочная информация
-                if (this.allUsers.length > 0) {
-                    console.log('Доступные пользователи:', this.allUsers.map(u => ({ name: u.name, username: u.username })));
-                }
-                this.applyUsersFilter();
-            } else {
-                console.log('Пользователи не найдены в базе данных');
-                this.applyUsersFilter();
-            }
-        }, (error) => {
-            console.error('Ошибка загрузки пользователей:', error);
-            this.showNotification('Ошибка', 'Не удалось загрузить пользователей', 'error');
-        });
     }
     
     // Загрузка данных пользователя
@@ -950,6 +1485,9 @@ class SoulMessenger {
     
     // Выбор чата
     selectChat(chat) {
+        // Очищаем предыдущие слушатели
+        this.cleanupListeners();
+        
         this.currentChat = chat;
         this.renderChatsList();
         this.showChat();
@@ -999,22 +1537,47 @@ class SoulMessenger {
         // Очищаем предыдущие сообщения
         this.messages = [];
         const messagesScroll = document.getElementById('messages-scroll');
-        messagesScroll.innerHTML = '';
+        messagesScroll.innerHTML = '<div class="media-loading"><div class="media-loading-spinner"></div>Загрузка сообщений...</div>';
+
+        this.messagesRef = database.ref('messages/' + chatId);
         
-        const messagesRef = database.ref('messages/' + chatId);
-        messagesRef.orderByChild('timestamp').on('child_added', (snapshot) => {
-            const message = { id: snapshot.key, ...snapshot.val() };
-            this.messages.push(message);
-            this.renderMessage(message);
+        // Используем once для однократного получения и on для новых сообщений
+        this.messagesRef.orderByChild('timestamp').once('value').then((snapshot) => {
+            messagesScroll.innerHTML = '';
+            const messagesData = snapshot.val();
             
-            // Прокрутка к последнему сообщению только если пользователь уже внизу
-            if (this.isNearBottom()) {
+            if (messagesData) {
+                Object.keys(messagesData).forEach(messageId => {
+                    const message = { id: messageId, ...messagesData[messageId] };
+                    this.messages.push(message);
+                    this.renderMessage(message);
+                });
+                
                 setTimeout(() => this.scrollToBottom(), 100);
+            } else {
+                messagesScroll.innerHTML = '<div class="no-results"><p>Нет сообщений</p><p class="hint">Начните общение первым!</p></div>';
             }
+        });
+
+        // Слушаем только новые сообщения
+        this.messagesRef.orderByChild('timestamp').on('child_added', (snapshot) => {
+            // Проверяем, нет ли уже такого сообщения
+            const newMessage = { id: snapshot.key, ...snapshot.val() };
+            const messageExists = this.messages.some(msg => msg.id === newMessage.id);
             
-            // Уведомление о новом сообщении
-            if (message.senderId !== this.currentUser.uid && !this.isChatActive(chatId)) {
-                this.handleNewMessage(message, chatId);
+            if (!messageExists) {
+                this.messages.push(newMessage);
+                this.renderMessage(newMessage);
+                
+                // Прокрутка к последнему сообщению только если пользователь уже внизу
+                if (this.isNearBottom()) {
+                    setTimeout(() => this.scrollToBottom(), 100);
+                }
+                
+                // Уведомление о новом сообщении
+                if (newMessage.senderId !== this.currentUser.uid) {
+                    this.handleNewMessage(newMessage, chatId);
+                }
             }
         });
     }
@@ -1056,13 +1619,69 @@ class SoulMessenger {
             });
         }
         
-        messageElement.innerHTML = `
+        // Обработка разных типов сообщений
+        let messageContent = '';
+        
+        if (message.type === 'image' || message.type === 'video') {
+            // Медиа-сообщение
+            messageContent = this.renderMediaMessage(message);
+        } else {
+            // Текстовое сообщение
+            messageContent = `
+                ${!isSentByMe ? `<div class="message-sender"></div>` : ''}
+                <div class="message-text">${this.formatMessageText(message.text)}</div>
+                <div class="message-time">${timeString}</div>
+            `;
+        }
+        
+        messageElement.innerHTML = messageContent;
+        messagesScroll.appendChild(messageElement);
+    }
+    
+    // Отрисовка медиа-сообщения
+    renderMediaMessage(message) {
+        const isSentByMe = message.senderId === this.currentUser.uid;
+        const timeString = new Date(message.timestamp).toLocaleTimeString('ru-RU', { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+        });
+        
+        const fileSize = this.formatFileSize(message.fileSize);
+        const mediaType = message.type === 'image' ? '📷 Фото' : '🎥 Видео';
+        
+        return `
             ${!isSentByMe ? `<div class="message-sender"></div>` : ''}
-            <div class="message-text">${this.formatMessageText(message.text)}</div>
+            <div class="message-media">
+                ${message.type === 'image' ? 
+                    `<img src="${message.mediaData}" alt="${message.fileName}" onclick="soulApp.showMediaViewer('${message.mediaData}', 'image')">` :
+                    `<video src="${message.mediaData}" controls onclick="soulApp.showMediaViewer('${message.mediaData}', 'video')"></video>`
+                }
+                <div class="media-info">
+                    <span>${mediaType} • ${fileSize}</span>
+                    <button class="media-download" onclick="soulApp.downloadMedia('${message.mediaData}', '${message.fileName}')">Скачать</button>
+                </div>
+            </div>
             <div class="message-time">${timeString}</div>
         `;
-        
-        messagesScroll.appendChild(messageElement);
+    }
+    
+    // Скачивание медиа
+    downloadMedia(mediaData, fileName) {
+        const link = document.createElement('a');
+        link.href = mediaData;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+    
+    // Форматирование размера файла
+    formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
     
     // Форматирование текста сообщения
@@ -1077,8 +1696,8 @@ class SoulMessenger {
     
     // Настройка слушателя набора текста
     setupTypingListener(chatId) {
-        const typingRef = database.ref('typing/' + chatId);
-        typingRef.on('value', (snapshot) => {
+        this.typingRef = database.ref('typing/' + chatId);
+        this.typingRef.on('value', (snapshot) => {
             const typingData = snapshot.val();
             this.updateTypingIndicator(typingData);
         });
@@ -1147,6 +1766,13 @@ class SoulMessenger {
             return;
         }
         
+        // Защита от множественной отправки
+        const sendBtn = document.getElementById('send-btn');
+        if (sendBtn.disabled) return;
+        
+        sendBtn.disabled = true;
+        sendBtn.classList.add('loading');
+        
         const message = {
             text: messageText,
             senderId: this.currentUser.uid,
@@ -1177,6 +1803,9 @@ class SoulMessenger {
         } catch (error) {
             this.showNotification('Ошибка', 'Не удалось отправить сообщение', 'error');
             console.error('Ошибка отправки сообщения:', error);
+        } finally {
+            sendBtn.disabled = false;
+            sendBtn.classList.remove('loading');
         }
     }
     
@@ -1220,6 +1849,7 @@ class SoulMessenger {
         this.settings.fontSize = document.getElementById('font-size-select').value;
         this.settings.notifications = document.getElementById('notifications-enabled').checked;
         this.settings.sound = document.getElementById('sound-enabled').checked;
+        this.settings.messageSound = document.getElementById('message-sound-enabled').checked;
         
         localStorage.setItem('soul-settings', JSON.stringify(this.settings));
         this.applySettings();
@@ -1241,6 +1871,7 @@ class SoulMessenger {
         document.getElementById('font-size-select').value = this.settings.fontSize;
         document.getElementById('notifications-enabled').checked = this.settings.notifications;
         document.getElementById('sound-enabled').checked = this.settings.sound;
+        document.getElementById('message-sound-enabled').checked = this.settings.messageSound;
     }
     
     showSettingsModal() {
@@ -1295,8 +1926,12 @@ class SoulMessenger {
     }
     
     setButtonLoading(button, isLoading) {
+        if (!button) return;
+        
         const btnText = button.querySelector('.btn-text');
         const btnLoader = button.querySelector('.btn-loader');
+        
+        if (!btnText || !btnLoader) return;
         
         if (isLoading) {
             btnText.classList.add('hidden');
@@ -1406,12 +2041,35 @@ class SoulMessenger {
     }
     
     handleNewMessage(message, chatId) {
-        if (!this.settings.notifications) return;
+        // Проверяем, не является ли сообщение старым
+        const messageTime = new Date(message.timestamp).getTime();
+        const currentTime = Date.now();
+        const isOldMessage = (currentTime - messageTime) > 5000; // 5 секунд
         
-        // Увеличиваем счетчик непрочитанных
-        const currentCount = this.unreadMessages.get(chatId) || 0;
-        this.unreadMessages.set(chatId, currentCount + 1);
-        this.renderChatsList();
+        if (isOldMessage) {
+            return; // Игнорируем старые сообщения
+        }
+        
+        // Проверяем, не отправили ли мы это сообщение
+        if (message.senderId === this.currentUser.uid) {
+            return;
+        }
+
+        // Воспроизводим звук нового сообщения
+        if (this.isChatActive(chatId)) {
+            // Мы в активном чате - играем звук сообщения
+            this.playMessageSound();
+        } else {
+            // Мы не в активном чате - играем звук уведомления
+            this.playNotificationSound();
+        }
+        
+        // Увеличиваем счетчик непрочитанных только если чат не активен
+        if (!this.isChatActive(chatId)) {
+            const currentCount = this.unreadMessages.get(chatId) || 0;
+            this.unreadMessages.set(chatId, currentCount + 1);
+            this.renderChatsList();
+        }
         
         // Увеличиваем счетчик новых сообщений для индикатора
         if (this.isChatActive(chatId) && !this.isNearBottom()) {
@@ -1419,14 +2077,21 @@ class SoulMessenger {
             this.updateScrollIndicator();
         }
         
-        // Показываем уведомление
-        const sender = this.allUsers.find(user => user.id === message.senderId);
-        if (sender) {
-            this.showNotification(sender.name, message.text, 'info');
-            
-            // Воспроизводим звук
-            if (this.settings.sound) {
-                this.playNotificationSound();
+        // Показываем уведомление (только если не в активном чате)
+        if (!this.isChatActive(chatId) && this.settings.notifications) {
+            const sender = this.allUsers.find(user => user.id === message.senderId);
+            if (sender) {
+                let notificationText = '';
+                
+                if (message.type === 'image') {
+                    notificationText = '📷 Фото';
+                } else if (message.type === 'video') {
+                    notificationText = '🎥 Видео';
+                } else {
+                    notificationText = message.text;
+                }
+                
+                this.showNotification(sender.name, notificationText, 'info');
             }
         }
     }
@@ -1434,12 +2099,6 @@ class SoulMessenger {
     markChatAsRead(chatId) {
         this.unreadMessages.set(chatId, 0);
         this.renderChatsList();
-    }
-    
-    playNotificationSound() {
-        const sound = document.getElementById('notification-sound');
-        sound.currentTime = 0;
-        sound.play().catch(e => console.log('Не удалось воспроизвести звук:', e));
     }
     
     // Управление отображением экранов
@@ -1516,18 +2175,6 @@ class SoulMessenger {
                 }, 300);
             }
         }, 5000);
-    }
-    
-    // Отладочная функция для проверки пользователей
-    debugUsers() {
-        console.log('Текущий пользователь:', this.currentUser ? this.currentUser.uid : 'Не авторизован');
-        console.log('Все пользователи:', this.allUsers);
-        console.log('Количество пользователей:', this.allUsers.length);
-        
-        if (this.allUsers.length > 0) {
-            console.log('Имена пользователей:', this.allUsers.map(u => u.name));
-            console.log('Usernames:', this.allUsers.map(u => u.username));
-        }
     }
 }
 
