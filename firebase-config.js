@@ -1,4 +1,4 @@
-// Конфигурация Firebase
+// Конфигурация Firebase - ЗАМЕНИТЕ НА СВОЮ!
 const firebaseConfig = {
     apiKey: "AIzaSyCjUwwU8iJ5cPx2SphIK-sQESAHSFpUq-U",
     authDomain: "soul-27114.firebaseapp.com",
@@ -21,26 +21,17 @@ try {
 const auth = firebase.auth();
 const database = firebase.database();
 
-// Включим отладку аутентификации
-auth.useDeviceLanguage();
+// Проверка подключения к Firebase
+function checkFirebaseConnection() {
+    const connectedRef = database.ref(".info/connected");
+    connectedRef.on("value", function(snap) {
+        if (snap.val() === true) {
+            console.log("Connected to Firebase");
+        } else {
+            console.log("Disconnected from Firebase");
+        }
+    });
+}
 
-// Обработка ошибок аутентификации
-auth.onAuthStateChanged((user) => {
-    console.log("Auth state changed:", user ? "User logged in" : "No user");
-});
-
-// Глобальные обработчики ошибок Firebase
-auth.onIdTokenChanged((user) => {
-    if (user) {
-        console.log("User token refreshed");
-    }
-});
-
-// Проверка подключения к базе данных
-database.ref('.info/connected').on('value', (snapshot) => {
-    if (snapshot.val() === true) {
-        console.log("Connected to Firebase Database");
-    } else {
-        console.log("Disconnected from Firebase Database");
-    }
-});
+// Вызываем проверку подключения
+checkFirebaseConnection();
