@@ -2797,7 +2797,7 @@
         let messageLimit = 50;
         let lastMessageKey = null;
         let typingTimeout = null;
-
+    
         // DOM элементы
         const authContainer = document.getElementById('authContainer');
         const mainContainer = document.getElementById('mainContainer');
@@ -2867,14 +2867,15 @@
         const editProfileName = document.getElementById('editProfileName');
         const statusOptions = document.querySelectorAll('.status-option');
         const logoutBtn = document.getElementById('logoutBtn');
-
+    
         // Инициализация приложения
         document.addEventListener('DOMContentLoaded', function() {
             initializeApp();
         });
-
+    
         async function initializeApp() {
             setupEventListeners();
+            setupUserDataListener();
             
             // Проверяем авторизацию
             authUnsubscribe = auth.onAuthStateChanged(async (user) => {
@@ -2891,7 +2892,7 @@
                 }
             });
         }
-
+    
         async function loadUserData(userId) {
             try {
                 setLoading(true);
@@ -2928,8 +2929,8 @@
                     lastSeen: null
                 });
                 
-                // Загружаем всех пользователей
-                await loadAllUsers();
+                // Загружаем всех пользователей (важно сделать это до загрузки контактов)
+                await loadAllUsersWithContacts();
                 
                 // Загружаем чаты пользователя
                 await loadUserChats();
@@ -2949,20 +2950,22 @@
                 setLoading(false);
             }
         }
-
-        async function loadAllUsers() {
+    
+        async function loadAllUsersWithContacts() {
             try {
                 const usersRef = database.ref('users');
-                usersRef.on('value', (snapshot) => {
-                    const usersData = snapshot.val();
-                    allUsers = usersData || {};
-                });
+                const snapshot = await usersRef.once('value');
+                const usersData = snapshot.val();
+                
+                if (usersData) {
+                    allUsers = usersData;
+                    console.log("Загружены все пользователи:", Object.keys(allUsers).length);
+                }
             } catch (error) {
                 console.error("Ошибка загрузки пользователей:", error);
-                allUsers = {};
             }
         }
-
+    
         async function loadUserChats() {
             try {
                 // Очищаем старые слушатели
@@ -3003,7 +3006,7 @@
                 showNoChatsMessage();
             }
         }
-
+    
         function setupChatListener(chatId) {
             // Очищаем старый слушатель если есть
             if (messageListeners[chatId]) {
@@ -3049,7 +3052,7 @@
                 }
             });
         }
-
+    
         function createChatElement(chat) {
             const chatElement = document.createElement('div');
             chatElement.className = 'chat-item';
@@ -3110,7 +3113,7 @@
             
             return chatElement;
         }
-
+    
         function showNoChatsMessage() {
             chatsContainer.innerHTML = `
                 <div style="text-align: center; padding: 60px 20px;">
@@ -3129,7 +3132,7 @@
                 createChatModal.classList.add('active');
             });
         }
-
+    
         async function loadContacts() {
             try {
                 const contactsRef = database.ref(`users/${currentUser.uid}/contacts`);
@@ -3142,7 +3145,7 @@
                 updateContactsContainer({ val: () => null });
             }
         }
-
+    
         function updateContactsContainer(snapshot) {
             contactsContainer.innerHTML = '';
             
@@ -3152,7 +3155,17 @@
             if (contactsData) {
                 Object.keys(contactsData).forEach(userId => {
                     const contact = contactsData[userId];
-                    contact.userId = userId;
+                    contact.userId = userId; // Убедимся, что userId установлен
+                    
+                    // Получаем актуальные данные пользователя из allUsers
+                    const user = allUsers[userId];
+                    if (user) {
+                        // Обновляем данные контакта из актуального профиля пользователя
+                        contact.displayName = user.displayName || contact.displayName;
+                        contact.status = user.status || contact.status;
+                        contact.customId = user.customId || contact.customId;
+                    }
+                    
                     contacts.push(contact);
                     
                     const contactElement = createContactElement(contact);
@@ -3181,7 +3194,7 @@
             
             updateProfileContactsCount();
         }
-
+    
         function createContactElement(contact) {
             const contactElement = document.createElement('div');
             contactElement.className = 'contact-item';
@@ -3190,6 +3203,7 @@
             const user = allUsers[contact.userId];
             const displayName = user ? user.displayName : contact.displayName;
             const status = user ? user.status : contact.status;
+            const customId = user ? user.customId : contact.customId;
             
             contactElement.innerHTML = `
                 <div class="contact-avatar">
@@ -3200,7 +3214,7 @@
                     <div class="contact-status ${status || 'offline'}">${status || 'offline'}</div>
                 </div>
                 <div class="chat-meta">
-                    <div class="chat-time">${contact.customId || contact.userId || "ID"}</div>
+                    <div class="chat-time">${customId || contact.userId || "ID"}</div>
                 </div>
             `;
             
@@ -3210,7 +3224,7 @@
             
             return contactElement;
         }
-
+    
         // Открытие чата
         async function openChat(chatId) {
             const chat = chats.find(c => c.id === chatId);
@@ -3265,7 +3279,7 @@
             loadMessages(chatId);
             listenToTypingStatus(chatId);
         }
-
+    
         // Улучшенная функция действий чата
         function enhanceChatActions(chat) {
             chatActions.innerHTML = '';
@@ -3315,11 +3329,11 @@
             });
             chatActions.appendChild(menuBtn);
         }
-
+    
         function addSearchToChatHeader() {
             // Уже добавлена в enhanceChatActions
         }
-
+    
         // Загрузка сообщений с пагинацией
         function loadMessages(chatId, loadMore = false) {
             if (!loadMore) {
@@ -3381,7 +3395,7 @@
                 if (!loadMore) showWelcomeMessage(chatId);
             }
         }
-
+    
         function listenToNewMessages(chatId) {
             const newMessagesRef = database.ref(`messages/${chatId}`)
                 .orderByChild('timestamp')
@@ -3408,7 +3422,7 @@
                 }
             });
         }
-
+    
         function addLoadMoreButton(chatId) {
             // Удаляем старую кнопку если есть
             const oldButton = document.getElementById('loadMoreMessagesBtn');
@@ -3435,7 +3449,7 @@
                     }
                 });
         }
-
+    
         function createMessageElement(message) {
             const messageElement = document.createElement('div');
             
@@ -3481,7 +3495,7 @@
             
             return messageElement;
         }
-
+    
         // Отправка сообщения с поддержкой команд
         async function sendMessage() {
             const text = messageInput.value.trim();
@@ -3524,7 +3538,7 @@
                 showNotification("Не удалось отправить сообщение. Попробуйте еще раз.");
             }
         }
-
+    
         // Обработчик команд
         async function handleCommand(command) {
             const parts = command.split(' ');
@@ -3563,7 +3577,7 @@
                     showNotification(`Неизвестная команда: ${cmd}. Используйте /help для списка команд.`);
             }
         }
-
+    
         // Создание нового чата
         async function createNewChat() {
             const name = chatNameInput.value.trim();
@@ -3655,7 +3669,7 @@
                 showNotification("Не удалось создать чат. Попробуйте еще раз.");
             }
         }
-
+    
         async function findExistingPrivateChat(targetUserId) {
             try {
                 const chatsRef = database.ref('chats');
@@ -3676,7 +3690,7 @@
                 return null;
             }
         }
-
+    
         async function openOrCreatePrivateChat(targetUserId) {
             try {
                 // Сначала проверяем существующий чат
@@ -3717,7 +3731,7 @@
                 showNotification("Не удалось создать личный чат. Попробуйте еще раз.");
             }
         }
-
+    
         function setupEventListeners() {
             // Переключение между формами входа и регистрации
             authTabs.forEach(tab => {
@@ -3835,7 +3849,61 @@
             copyWelcomeIdBtn.addEventListener('click', () => copyUserIdToClipboard(welcomeUserId));
             logoutBtn.addEventListener('click', logoutUser);
             
-            // Контакты
+            // Контакты - КНОПКА ДОБАВЛЕНИЯ КОНТАКТА ИЗ ПОЛЯ ПОИСКА
+            confirmAddContactBtn.addEventListener('click', async () => {
+                const searchValue = contactSearch.value.trim();
+                
+                if (!searchValue) {
+                    showNotification("Введите ID, имя или email пользователя");
+                    return;
+                }
+                
+                // Пытаемся найти пользователя разными способами
+                let foundUserId = null;
+                
+                // 1. Поиск по customId в локальном кэше
+                for (const userId in allUsers) {
+                    const user = allUsers[userId];
+                    if (user.customId === searchValue && userId !== currentUser.uid) {
+                        foundUserId = userId;
+                        break;
+                    }
+                }
+                
+                // 2. Поиск по email
+                if (!foundUserId) {
+                    for (const userId in allUsers) {
+                        const user = allUsers[userId];
+                        if (user.email === searchValue && userId !== currentUser.uid) {
+                            foundUserId = userId;
+                            break;
+                        }
+                    }
+                }
+                
+                // 3. Поиск по displayName
+                if (!foundUserId) {
+                    for (const userId in allUsers) {
+                        const user = allUsers[userId];
+                        if (user.displayName === searchValue && userId !== currentUser.uid) {
+                            foundUserId = userId;
+                            break;
+                        }
+                    }
+                }
+                
+                // 4. Если searchValue - это сам userId
+                if (!foundUserId && allUsers[searchValue] && searchValue !== currentUser.uid) {
+                    foundUserId = searchValue;
+                }
+                
+                if (foundUserId) {
+                    await addContact(foundUserId);
+                } else {
+                    showNotification("Пользователь не найден. Убедитесь, что вы ввели правильный ID, имя или email");
+                }
+            });
+        
             addContactBtn.addEventListener('click', () => {
                 addContactModal.classList.add('active');
             });
@@ -3888,7 +3956,7 @@
                 });
             });
         }
-
+    
         async function loginUser() {
             const email = loginEmail.value.trim();
             const password = loginPassword.value.trim();
@@ -3911,7 +3979,7 @@
                 setLoading(false);
             }
         }
-
+    
         async function quickLogin() {
             try {
                 setLoading(true);
@@ -3927,7 +3995,7 @@
                 setLoading(false);
             }
         }
-
+    
         async function registerUser() {
             const name = registerName.value.trim();
             const email = registerEmail.value.trim();
@@ -3970,7 +4038,7 @@
                 setLoading(false);
             }
         }
-
+    
         async function logoutUser() {
             try {
                 // Обновляем статус перед выходом
@@ -4002,7 +4070,7 @@
                 console.error("Ошибка выхода:", error);
             }
         }
-
+    
         function resetCreateForm() {
             chatNameInput.value = '';
             chatDescriptionInput.value = '';
@@ -4021,13 +4089,13 @@
             chatNameInput.disabled = false;
             chatNameInput.placeholder = "Введите название";
         }
-
+    
         function resetAddContactForm() {
             contactSearch.value = '';
             contactSearchResults.innerHTML = '';
             confirmAddContactBtn.disabled = true;
         }
-
+    
         function handleSearch() {
             const query = searchInput.value.toLowerCase().trim();
             
@@ -4050,7 +4118,7 @@
                 }
             });
         }
-
+    
         function handleContactSearch() {
             const query = contactSearch.value.toLowerCase().trim();
             contactSearchResults.innerHTML = '';
@@ -4063,22 +4131,27 @@
             
             const results = [];
             
+            // Ищем по всем пользователям
             for (const userId in allUsers) {
                 const user = allUsers[userId];
                 
                 if (userId === currentUser.uid) continue;
                 
-                const isAlreadyContact = contacts.some(contact => contact.userId === userId);
-                
+                // Проверяем совпадение по имени, email или ID
                 const matchesQuery = 
-                    user.displayName.toLowerCase().includes(query) || 
-                    (user.customId && user.customId.toLowerCase().includes(query));
+                    (user.displayName && user.displayName.toLowerCase().includes(query)) || 
+                    (user.customId && user.customId.toLowerCase().includes(query)) ||
+                    (user.email && user.email.toLowerCase().includes(query));
                 
                 if (matchesQuery) {
+                    // Проверяем, добавлен ли уже в контакты
+                    const isAlreadyContact = contacts.some(contact => contact.userId === userId);
+                    
                     results.push({
                         userId: userId,
-                        displayName: user.displayName,
-                        customId: user.customId || 'ID_NOT_SET',
+                        displayName: user.displayName || "Без имени",
+                        customId: user.customId || `user_${userId.substr(0, 8)}`,
+                        email: user.email || "Нет email",
                         isAlreadyContact: isAlreadyContact
                     });
                 }
@@ -4099,24 +4172,30 @@
                         <div class="search-result-info">
                             <div class="search-result-name">${result.displayName}</div>
                             <div class="search-result-id">${result.customId}</div>
+                            ${result.email ? `<div class="search-result-email" style="font-size: 12px; color: #64748b;">${result.email}</div>` : ''}
                         </div>
                         <button class="add-user-btn ${result.isAlreadyContact ? 'added' : ''}" 
-                                ${result.isAlreadyContact ? 'disabled' : ''}>
+                                ${result.isAlreadyContact ? 'disabled' : ''}
+                                data-user-id="${result.userId}">
                             ${result.isAlreadyContact ? 'Добавлен' : 'Добавить'}
                         </button>
                     `;
                     
+                    // Добавляем обработчик клика на кнопку "Добавить"
                     if (!result.isAlreadyContact) {
                         const addBtn = resultItem.querySelector('.add-user-btn');
-                        addBtn.addEventListener('click', (e) => {
+                        addBtn.addEventListener('click', async (e) => {
                             e.stopPropagation();
-                            addContact(result.userId);
+                            const userId = e.target.dataset.userId;
+                            await addContact(userId);
                         });
                     }
                     
+                    // При клике на результат подставляем ID в поле поиска
                     resultItem.addEventListener('click', () => {
                         contactSearch.value = result.customId;
                         confirmAddContactBtn.disabled = false;
+                        confirmAddContactBtn.dataset.userId = result.userId;
                     });
                     
                     contactSearchResults.appendChild(resultItem);
@@ -4124,14 +4203,16 @@
             } else {
                 contactSearchResults.innerHTML = `
                     <div class="no-results">
-                        Пользователи не найдены
+                        <i class="fas fa-user-slash" style="font-size: 32px; margin-bottom: 10px; opacity: 0.5;"></i>
+                        <p>Пользователи не найдены</p>
+                        <p style="font-size: 12px; margin-top: 5px;">Попробуйте ввести имя, email или ID пользователя</p>
                     </div>
                 `;
                 contactSearchResults.style.display = 'block';
                 confirmAddContactBtn.disabled = true;
             }
         }
-
+    
         function handlePrivateUserSearch() {
             const query = privateUserId.value.toLowerCase().trim();
             privateUserSearchResults.innerHTML = '';
@@ -4156,7 +4237,7 @@
                     results.push({
                         userId: userId,
                         displayName: user.displayName,
-                        customId: user.customId || 'ID_NOT_SET'
+                        customId: user.customId || `user_${userId.substr(0, 8)}`
                     });
                 }
             }
@@ -4191,16 +4272,41 @@
                 privateUserSearchResults.style.display = 'block';
             }
         }
-
+    
+        // ФУНКЦИЯ ДОБАВЛЕНИЯ КОНТАКТОВ - ИСПРАВЛЕННАЯ
         async function addContact(targetUserId) {
             try {
-                const targetUser = allUsers[targetUserId];
+                console.log("Попытка добавления контакта:", targetUserId);
+                
+                // Находим пользователя в локальном кэше
+                let targetUser = allUsers[targetUserId];
                 
                 if (!targetUser) {
-                    showNotification("Пользователь не найден");
+                    // Попробуем найти пользователя в базе данных
+                    const userRef = database.ref(`users/${targetUserId}`);
+                    const snapshot = await userRef.once('value');
+                    
+                    if (snapshot.exists()) {
+                        const userData = snapshot.val();
+                        // Добавляем пользователя в локальный кэш
+                        allUsers[targetUserId] = {
+                            uid: targetUserId,
+                            ...userData
+                        };
+                        targetUser = allUsers[targetUserId];
+                    } else {
+                        showNotification("Пользователь не найден");
+                        return;
+                    }
+                }
+                
+                // Проверяем, не пытаемся ли добавить себя
+                if (targetUserId === currentUser.uid) {
+                    showNotification("Вы не можете добавить себя в контакты");
                     return;
                 }
                 
+                // Проверяем, есть ли уже этот пользователь в контактах
                 const isAlreadyContact = contacts.some(contact => contact.userId === targetUserId);
                 
                 if (isAlreadyContact) {
@@ -4208,30 +4314,48 @@
                     return;
                 }
                 
+                // Создаем объект контакта
                 const contactData = {
-                    displayName: targetUser.displayName,
-                    customId: targetUser.customId || 'ID_NOT_SET',
+                    displayName: targetUser.displayName || "Пользователь",
+                    customId: targetUser.customId || `user_${targetUserId.substr(0, 8)}`,
                     status: targetUser.status || 'offline',
-                    addedAt: Date.now()
+                    addedAt: Date.now(),
+                    userId: targetUserId // Добавляем явно userId
                 };
                 
+                console.log("Данные контакта:", contactData);
+                
+                // Добавляем контакт в базу данных
                 await database.ref(`users/${currentUser.uid}/contacts/${targetUserId}`).set(contactData);
+                
+                // Добавляем контакт в локальный массив
+                contacts.push({
+                    userId: targetUserId,
+                    ...contactData
+                });
                 
                 showNotification(`Пользователь ${targetUser.displayName} добавлен в контакты!`);
                 
+                // Закрываем модальное окно и сбрасываем форму
                 addContactModal.classList.remove('active');
                 resetAddContactForm();
+                
+                // Обновляем отображение контактов
+                updateContactsContainer({ val: () => contacts.reduce((acc, contact) => {
+                    acc[contact.userId] = contact;
+                    return acc;
+                }, {}) });
                 
             } catch (error) {
                 console.error("Ошибка при добавлении контакта:", error);
                 showNotification("Не удалось добавить контакт. Попробуйте еще раз.");
             }
         }
-
+    
         function openProfileModal() {
             profileModal.classList.add('active');
         }
-
+    
         function updateUserProfileDisplay() {
             if (!currentUser) return;
             
@@ -4249,7 +4373,7 @@
             updateProfileContactsCount();
             updateProfileChatsCount();
         }
-
+    
         function copyUserIdToClipboard(element) {
             const userId = element.textContent;
             
@@ -4269,15 +4393,15 @@
                     showNotification('Не удалось скопировать ID. Попробуйте еще раз.');
                 });
         }
-
+    
         function updateProfileContactsCount() {
             profileContactsCount.textContent = contacts.length;
         }
-
+    
         function updateProfileChatsCount() {
             profileChatsCount.textContent = chats.length;
         }
-
+    
         async function saveProfileChanges() {
             try {
                 const newName = editProfileName.value.trim();
@@ -4313,9 +4437,54 @@
                 showNotification("Не удалось обновить профиль. Попробуйте еще раз.");
             }
         }
-
+    
+        // Функция для обновления контактов при изменении данных пользователя
+        function setupUserDataListener() {
+            // Слушаем изменения данных пользователей
+            const usersRef = database.ref('users');
+            usersRef.on('child_changed', (snapshot) => {
+                const userId = snapshot.key;
+                const userData = snapshot.val();
+                
+                // Обновляем локальный кэш
+                allUsers[userId] = {
+                    uid: userId,
+                    ...userData
+                };
+                
+                // Если это контакт текущего пользователя, обновляем отображение
+                if (contacts.some(contact => contact.userId === userId)) {
+                    // Находим элемент контакта и обновляем его
+                    const contactElement = document.querySelector(`.contact-item[data-user-id="${userId}"]`);
+                    if (contactElement) {
+                        const statusElement = contactElement.querySelector('.contact-status');
+                        const nameElement = contactElement.querySelector('.contact-name');
+                        const idElement = contactElement.querySelector('.chat-time');
+                        
+                        if (statusElement) {
+                            statusElement.textContent = userData.status || 'offline';
+                            statusElement.className = `contact-status ${userData.status || 'offline'}`;
+                        }
+                        
+                        if (nameElement && userData.displayName) {
+                            nameElement.textContent = userData.displayName;
+                            // Обновляем также первую букву в аватаре
+                            const avatarElement = contactElement.querySelector('.contact-avatar');
+                            if (avatarElement) {
+                                avatarElement.textContent = userData.displayName.charAt(0);
+                            }
+                        }
+                        
+                        if (idElement && userData.customId) {
+                            idElement.textContent = userData.customId;
+                        }
+                    }
+                }
+            });
+        }
+    
         // Расширенные функции чатов
-
+    
         // 1. Информация о чате
         async function getChatInfo(chatId) {
             try {
@@ -4327,7 +4496,7 @@
                 return null;
             }
         }
-
+    
         // 2. Приглашение пользователя в чат
         async function inviteToChat(chatId, userId) {
             try {
@@ -4336,25 +4505,25 @@
                     showNotification("Пользователь не найден");
                     return;
                 }
-
+            
                 const chat = await getChatInfo(chatId);
                 if (!chat) {
                     showNotification("Чат не найден");
                     return;
                 }
-
+            
                 // Проверяем, является ли чат личным
                 if (chat.type === 'private') {
                     showNotification("В личные чаты нельзя добавлять участников");
                     return;
                 }
-
+            
                 // Проверяем, добавлен ли уже пользователь
                 if (chat.members && chat.members[userId]) {
                     showNotification("Пользователь уже в чате");
                     return;
                 }
-
+            
                 // Добавляем пользователя в чат
                 await database.ref(`chats/${chatId}/members/${userId}`).set(true);
                 
@@ -4370,19 +4539,19 @@
                 await database.ref(`messages/${chatId}`).push(systemMessage);
                 
                 showNotification(`Пользователь ${user.displayName} добавлен в чат!`);
-
+            
             } catch (error) {
                 console.error("Ошибка приглашения в чат:", error);
                 showNotification("Не удалось добавить пользователя в чат");
             }
         }
-
+    
         // 3. Покидание чата
         async function leaveChat(chatId) {
             try {
                 const chat = await getChatInfo(chatId);
                 if (!chat) return;
-
+            
                 // Удаляем себя из участников
                 await database.ref(`chats/${chatId}/members/${currentUser.uid}`).remove();
                 
@@ -4416,13 +4585,13 @@
                     chatInputContainer.style.display = 'none';
                     welcomeScreen.style.display = 'flex';
                 }
-
+            
             } catch (error) {
                 console.error("Ошибка при выходе из чата:", error);
                 showNotification("Не удалось покинуть чат");
             }
         }
-
+    
         // 4. Изменение названия чата
         async function updateChatName(chatId, newName) {
             try {
@@ -4431,7 +4600,7 @@
                     showNotification("Невозможно изменить название этого чата");
                     return;
                 }
-
+            
                 await database.ref(`chats/${chatId}`).update({
                     name: newName
                 });
@@ -4453,13 +4622,13 @@
                 if (currentChatId === chatId) {
                     chatHeaderName.textContent = newName;
                 }
-
+            
             } catch (error) {
                 console.error("Ошибка обновления названия чата:", error);
                 showNotification("Не удалось обновить название чата");
             }
         }
-
+    
         // 5. Получение списка участников чата
         async function getChatMembers(chatId) {
             try {
@@ -4482,7 +4651,7 @@
                 return [];
             }
         }
-
+    
         // 6. Модальное окно с информацией о чате
         function showChatInfoModal(chatId) {
             const modalHTML = `
@@ -4521,7 +4690,7 @@
             
             modal.classList.add('active');
         }
-
+    
         async function loadChatInfo(chatId) {
             try {
                 const chat = await getChatInfo(chatId);
@@ -4577,7 +4746,7 @@
                             <h4 style="color: #e2e8f0; margin-bottom: 16px; font-size: 16px;">Участники:</h4>
                             <div id="chatMembersList" style="max-height: 200px; overflow-y: auto;">
                     `;
-                    
+                            
                     members.forEach(member => {
                         html += `
                             <div class="search-result-item" style="margin-bottom: 8px;">
@@ -4618,7 +4787,7 @@
                 `;
             }
         }
-
+    
         // 7. Контекстное меню для чата
         function showChatContextMenu(event, chatId, chatType) {
             event.stopPropagation();
@@ -4723,7 +4892,7 @@
                 document.addEventListener('click', closeMenu);
             }, 10);
         }
-
+    
         // 8. Поиск в чате
         function searchInChat(chatId, query) {
             const messagesRef = database.ref(`messages/${chatId}`);
@@ -4753,7 +4922,7 @@
                 }
             });
         }
-
+    
         function showSearchResultsModal(results, query) {
             const modalHTML = `
                 <div class="modal-overlay" id="searchResultsModal">
@@ -4833,7 +5002,7 @@
             
             modal.classList.add('active');
         }
-
+    
         // 9. Статус набора текста
         async function sendTypingStatus(isTyping) {
             try {
@@ -4848,7 +5017,7 @@
                 console.error("Ошибка отправки статуса печати:", error);
             }
         }
-
+    
         function listenToTypingStatus(chatId) {
             // Очищаем старый слушатель если есть
             if (typingListeners[chatId]) {
@@ -4881,7 +5050,7 @@
                 }
             });
         }
-
+    
         function getChatDescription(chatId) {
             const chat = chats.find(c => c.id === chatId);
             if (!chat) return '';
@@ -4892,7 +5061,7 @@
                 return chat.description || `Чат типа ${chat.type === 'channel' ? 'канал' : 'группа'}`;
             }
         }
-
+    
         // 10. Контекстное меню для сообщений
         function showMessageContextMenu(event, message, isOutgoing) {
             event.preventDefault();
@@ -4959,7 +5128,7 @@
                 document.addEventListener('click', closeMenu);
             }, 10);
         }
-
+    
         async function deleteMessage(messageId) {
             try {
                 await database.ref(`messages/${currentChatId}/${messageId}`).remove();
@@ -4969,7 +5138,7 @@
                 showNotification("Не удалось удалить сообщение");
             }
         }
-
+    
         // 11. Модальное окно добавления участников
         function showAddMemberModal(chatId) {
             const modalHTML = `
@@ -5072,7 +5241,7 @@
             
             modal.classList.add('active');
         }
-
+    
         function showWelcomeMessage(chatId) {
             messagesContainer.innerHTML = `
                 <div style="text-align: center; padding: 60px 20px;">
@@ -5084,7 +5253,7 @@
                 </div>
             `;
         }
-
+    
         function showNotification(message) {
             const notification = document.createElement('div');
             notification.style.position = 'fixed';
@@ -5115,7 +5284,7 @@
                 }, 300);
             }, 3000);
         }
-
+    
         // Функции для работы с авторизацией
         function setLoading(isLoading) {
             if (isLoading) {
@@ -5130,20 +5299,20 @@
                 quickLoginBtn.disabled = false;
             }
         }
-
+    
         function showError(message) {
             authError.textContent = message;
             authError.classList.add('active');
         }
-
+    
         function hideError() {
             authError.classList.remove('active');
         }
-
+    
         function showSuccess() {
             authSuccess.classList.add('active');
         }
-
+    
         function getAuthErrorMessage(error) {
             switch (error.code) {
                 case 'auth/email-already-in-use':
@@ -5164,7 +5333,7 @@
                     return 'Ошибка авторизации: ' + error.message;
             }
         }
-
+    
         // Очистка при закрытии страницы
         window.addEventListener('beforeunload', async () => {
             if (currentUser) {
