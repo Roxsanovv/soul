@@ -3029,8 +3029,18 @@
                 const usersData = snapshot.val();
 
                 if (usersData) {
-                    allUsers = usersData;
-                    console.log("Загружены все пользователи:", Object.keys(allUsers).length);
+                    // Очищаем email при загрузке пользователей
+                    for (const userId in usersData) {
+                        allUsers[userId] = {
+                            uid: userId,
+                            displayName: usersData[userId].displayName || "Пользователь",
+                            customId: usersData[userId].customId || `user_${userId.substr(0, 8)}`,
+                            status: usersData[userId].status || 'offline',
+                            // Не передаем email другим пользователям
+                            // email: usersData[userId].email - УБРАНО
+                        };
+                    }
+                    console.log("Загружены все пользователи (email скрыт):", Object.keys(allUsers).length);
                 }
             } catch (error) {
                 console.error("Ошибка загрузки пользователей:", error);
@@ -3929,11 +3939,11 @@
                 const searchValue = contactSearch.value.trim();
 
                 if (!searchValue) {
-                    showNotification("Введите ID, имя или email пользователя");
+                    showNotification("Введите ID или имя пользователя");
                     return;
                 }
 
-                // Пытаемся найти пользователя разными способами
+                // Пытаемся найти пользователя (без email)
                 let foundUserId = null;
 
                 // 1. Поиск по customId в локальном кэше
@@ -3945,18 +3955,7 @@
                     }
                 }
 
-                // 2. Поиск по email
-                if (!foundUserId) {
-                    for (const userId in allUsers) {
-                        const user = allUsers[userId];
-                        if (user.email === searchValue && userId !== currentUser.uid) {
-                            foundUserId = userId;
-                            break;
-                        }
-                    }
-                }
-
-                // 3. Поиск по displayName
+                // 2. Поиск по displayName (без email)
                 if (!foundUserId) {
                     for (const userId in allUsers) {
                         const user = allUsers[userId];
@@ -3967,7 +3966,7 @@
                     }
                 }
 
-                // 4. Если searchValue - это сам userId
+                // 3. Если searchValue - это сам userId
                 if (!foundUserId && allUsers[searchValue] && searchValue !== currentUser.uid) {
                     foundUserId = searchValue;
                 }
@@ -3975,7 +3974,8 @@
                 if (foundUserId) {
                     await addContact(foundUserId);
                 } else {
-                    showNotification("Пользователь не найден. Убедитесь, что вы ввели правильный ID, имя или email");
+                    showNotification("Пользователь не найден. Убедитесь, что вы ввели правильный ID или имя");
+                    // Убрали упоминание об email
                 }
             });
         
@@ -4212,11 +4212,11 @@
 
                 if (userId === currentUser.uid) continue;
 
-                // Проверяем совпадение по имени, email или ID
+                // Проверяем совпадение по имени или ID (без email)
                 const matchesQuery = 
                     (user.displayName && user.displayName.toLowerCase().includes(query)) || 
-                    (user.customId && user.customId.toLowerCase().includes(query)) ||
-                    (user.email && user.email.toLowerCase().includes(query));
+                    (user.customId && user.customId.toLowerCase().includes(query));
+                    // Убрали поиск по email
 
                 if (matchesQuery) {
                     // Проверяем, добавлен ли уже в контакты
@@ -4226,7 +4226,7 @@
                         userId: userId,
                         displayName: user.displayName || "Без имени",
                         customId: user.customId || `user_${userId.substr(0, 8)}`,
-                        email: user.email || "Нет email",
+                        // Не передаем email в результаты
                         isAlreadyContact: isAlreadyContact
                     });
                 }
@@ -4247,7 +4247,7 @@
                         <div class="search-result-info">
                             <div class="search-result-name">${result.displayName}</div>
                             <div class="search-result-id">${result.customId}</div>
-                            ${result.email ? `<div class="search-result-email" style="font-size: 12px; color: #64748b;">${result.email}</div>` : ''}
+                            <!-- Убрали отображение email -->
                         </div>
                         <button class="add-user-btn ${result.isAlreadyContact ? 'added' : ''}" 
                                 ${result.isAlreadyContact ? 'disabled' : ''}
@@ -4280,7 +4280,7 @@
                     <div class="no-results">
                         <i class="fas fa-user-slash" style="font-size: 32px; margin-bottom: 10px; opacity: 0.5;"></i>
                         <p>Пользователи не найдены</p>
-                        <p style="font-size: 12px; margin-top: 5px;">Попробуйте ввести имя, email или ID пользователя</p>
+                        <p style="font-size: 12px; margin-top: 5px;">Попробуйте ввести имя или ID пользователя</p>
                     </div>
                 `;
                 contactSearchResults.style.display = 'block';
@@ -4363,10 +4363,13 @@
 
                     if (snapshot.exists()) {
                         const userData = snapshot.val();
-                        // Добавляем пользователя в локальный кэш
+                        // Добавляем пользователя в локальный кэш (без email)
                         allUsers[targetUserId] = {
                             uid: targetUserId,
-                            ...userData
+                            displayName: userData.displayName || "Пользователь",
+                            customId: userData.customId || `user_${targetUserId.substr(0, 8)}`,
+                            status: userData.status || 'offline'
+                            // Не передаем email другим пользователям
                         };
                         targetUser = allUsers[targetUserId];
                     } else {
@@ -4389,7 +4392,7 @@
                     return;
                 }
 
-                // Создаем объект контакта
+                // Создаем объект контакта (без email)
                 const contactData = {
                     displayName: targetUser.displayName || "Пользователь",
                     customId: targetUser.customId || `user_${targetUserId.substr(0, 8)}`,
@@ -4521,10 +4524,13 @@
                 const userId = snapshot.key;
                 const userData = snapshot.val();
 
-                // Обновляем локальный кэш
+                // Обновляем локальный кэш (без email)
                 allUsers[userId] = {
                     uid: userId,
-                    ...userData
+                    displayName: userData.displayName || "Пользователь",
+                    customId: userData.customId || `user_${userId.substr(0, 8)}`,
+                    status: userData.status || 'offline'
+                    // Не передаем email другим пользователям
                 };
 
                 // Если это контакт текущего пользователя, обновляем отображение
@@ -4700,7 +4706,7 @@
 
             } catch (error) {
                 console.error("Ошибка обновления названия чата:", error);
-                showNotification("Не удалось обновить название чата");
+                showNotification("Не удалось обновлить название чата");
             }
         }
 
@@ -5214,8 +5220,14 @@
             }
         }
 
-        // 11. Модальное окно добавления участников
+        // 11. Модальное окно добавления участников - ИСПРАВЛЕННАЯ ФУНКЦИЯ
         function showAddMemberModal(chatId) {
+            // Проверяем, не открыто ли уже такое модальное окно
+            const existingModal = document.getElementById('addMemberModal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+
             const modalHTML = `
                 <div class="modal-overlay" id="addMemberModal">
                     <div class="modal">
@@ -5227,6 +5239,12 @@
                                 <label for="memberSearch">Найти пользователя</label>
                                 <input type="text" id="memberSearch" placeholder="Введите имя или ID пользователя...">
                                 <div class="search-results" id="memberSearchResults"></div>
+                            </div>
+                            <div id="memberSearchHelp" style="margin-top: 20px; padding: 16px; background: rgba(59, 130, 246, 0.1); border-radius: 12px; border-left: 4px solid #3b82f6;">
+                                <h4 style="margin-bottom: 8px; color: #93c5fd;">Как это работает?</h4>
+                                <p style="color: #cbd5e1; font-size: 14px; line-height: 1.5;">
+                                    Введите имя пользователя или его ID для поиска. Вы можете добавить как своих контактов, так и любых других пользователей Soul.
+                                </p>
                             </div>
                         </div>
                         <div class="modal-footer">
@@ -5242,66 +5260,108 @@
             const memberSearch = document.getElementById('memberSearch');
             const memberSearchResults = document.getElementById('memberSearchResults');
             
-            memberSearch.addEventListener('input', () => {
-                const query = memberSearch.value.toLowerCase().trim();
-                memberSearchResults.innerHTML = '';
+            // Получаем информацию о чате, чтобы проверить существующих участников
+            getChatInfo(chatId).then(chat => {
+                const existingMemberIds = chat.members ? Object.keys(chat.members) : [];
+                
+                memberSearch.addEventListener('input', () => {
+                    const query = memberSearch.value.toLowerCase().trim();
+                    memberSearchResults.innerHTML = '';
 
-                if (!query) {
-                    memberSearchResults.style.display = 'none';
-                    return;
-                }
-
-                const results = [];
-
-                for (const userId in allUsers) {
-                    const user = allUsers[userId];
-
-                    if (userId === currentUser.uid) continue;
-
-                    const matchesQuery = 
-                        user.displayName.toLowerCase().includes(query) || 
-                        (user.customId && user.customId.toLowerCase().includes(query));
-
-                    if (matchesQuery) {
-                        results.push({
-                            userId: userId,
-                            displayName: user.displayName,
-                            customId: user.customId || 'ID_NOT_SET'
-                        });
+                    if (!query) {
+                        memberSearchResults.style.display = 'none';
+                        return;
                     }
-                }
 
-                if (results.length > 0) {
-                    memberSearchResults.style.display = 'block';
+                    const results = [];
 
-                    results.forEach(result => {
-                        const resultItem = document.createElement('div');
-                        resultItem.className = 'search-result-item';
-                        resultItem.innerHTML = `
-                            <div class="search-result-avatar">
-                                ${result.displayName.charAt(0)}
-                            </div>
-                            <div class="search-result-info">
-                                <div class="search-result-name">${result.displayName}</div>
-                                <div class="search-result-id">${result.customId}</div>
-                            </div>
-                            <button class="add-user-btn">
-                                Добавить
-                            </button>
-                        `;
-                        
-                        const addBtn = resultItem.querySelector('.add-user-btn');
-                        addBtn.addEventListener('click', async () => {
-                            await inviteToChat(chatId, result.userId);
-                            modal.remove();
+                    // Ищем по всем пользователям
+                    for (const userId in allUsers) {
+                        const user = allUsers[userId];
+
+                        // Пропускаем текущего пользователя и уже добавленных участников
+                        if (userId === currentUser.uid || existingMemberIds.includes(userId)) {
+                            continue;
+                        }
+
+                        // Проверяем совпадение по имени или ID (без email)
+                        const matchesQuery = 
+                            (user.displayName && user.displayName.toLowerCase().includes(query)) || 
+                            (user.customId && user.customId.toLowerCase().includes(query));
+                            // Убрали поиск по email
+
+                        if (matchesQuery) {
+                            // Проверяем, является ли пользователь контактом
+                            const isContact = contacts.some(contact => contact.userId === userId);
+
+                            results.push({
+                                userId: userId,
+                                displayName: user.displayName || "Без имени",
+                                customId: user.customId || `user_${userId.substr(0, 8)}`,
+                                // Не передаем email
+                                isContact: isContact,
+                                status: user.status || 'offline'
+                            });
+                        }
+                    }
+
+                    if (results.length > 0) {
+                        memberSearchResults.style.display = 'block';
+
+                        results.forEach(result => {
+                            const resultItem = document.createElement('div');
+                            resultItem.className = 'search-result-item';
+                            resultItem.innerHTML = `
+                                <div class="search-result-avatar">
+                                    ${result.displayName.charAt(0)}
+                                </div>
+                                <div class="search-result-info">
+                                    <div class="search-result-name">
+                                        ${result.displayName}
+                                        ${result.isContact ? '<span style="color: #10b981; font-size: 12px; margin-left: 8px;">(контакт)</span>' : ''}
+                                    </div>
+                                    <div class="search-result-id">${result.customId}</div>
+                                    <!-- Убрали отображение email -->
+                                    <div class="search-result-status" style="font-size: 12px; color: ${result.status === 'online' ? '#10b981' : result.status === 'away' ? '#f59e0b' : result.status === 'dnd' ? '#ef4444' : '#94a3b8'}">
+                                        ${result.status}
+                                    </div>
+                                </div>
+                                <button class="add-user-btn" data-user-id="${result.userId}">
+                                    Добавить
+                                </button>
+                            `;
+                            
+                            const addBtn = resultItem.querySelector('.add-user-btn');
+                            addBtn.addEventListener('click', async (e) => {
+                                e.stopPropagation();
+                                const userId = e.target.dataset.userId;
+                                
+                                // Показываем уведомление о добавлении
+                                const user = allUsers[userId];
+                                if (user) {
+                                    await inviteToChat(chatId, userId);
+                                    modal.remove();
+                                }
+                            });
+
+                            memberSearchResults.appendChild(resultItem);
                         });
+                    } else {
+                        memberSearchResults.innerHTML = `
+                            <div class="no-results">
+                                <i class="fas fa-user-slash" style="font-size: 32px; margin-bottom: 10px; opacity: 0.5;"></i>
+                                <p>Пользователи не найдены</p>
+                                <p style="font-size: 12px; margin-top: 5px;">Попробуйте ввести другое имя или ID</p>
+                            </div>
+                        `;
+                        memberSearchResults.style.display = 'block';
+                    }
+                });
 
-                        memberSearchResults.appendChild(resultItem);
-                    });
-                } else {
-                    memberSearchResults.innerHTML = '<div class="no-results">Пользователи не найдены</div>';
-                    memberSearchResults.style.display = 'block';
-                }
+                // Фокус на поле поиска при открытии
+                setTimeout(() => {
+                    memberSearch.focus();
+                }, 100);
             });
 
             document.getElementById('closeAddMemberBtn').addEventListener('click', () => {
