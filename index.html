@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Soul - Мессенджер нового поколения</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -87,108 +87,176 @@
 
     <!-- Основной интерфейс -->
     <div class="container" id="mainContainer" style="display: none;">
-        <!-- Боковая панель -->
-        <div class="sidebar">
-            <div class="sidebar-header">
-                <div class="logo" id="logoBtn">
+        <!-- Мобильный заголовок -->
+        <div class="mobile-header" id="mobileHeader">
+            <button class="mobile-menu-btn" id="mobileMenuBtn">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="mobile-title" id="mobileTitle">Soul</div>
+            <button class="mobile-profile-btn" id="mobileProfileBtn">
+                <i class="fas fa-user"></i>
+            </button>
+        </div>
+
+        <!-- Боковая панель для мобильных -->
+        <div class="mobile-sidebar-overlay" id="mobileSidebarOverlay"></div>
+        <div class="mobile-sidebar" id="mobileSidebar">
+            <div class="mobile-sidebar-header">
+                <div class="logo">
                     <div class="logo-icon"><i class="fas fa-fire"></i></div>
                     <div class="logo-text">Soul</div>
                 </div>
-                <div class="user-actions">
-                    <div class="user-avatar" id="userProfileBtn">И</div>
-                </div>
+                <button class="mobile-sidebar-close" id="mobileSidebarClose">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
             
-            <div class="sidebar-tabs">
-                <div class="sidebar-tab active" data-tab="chats">
+            <div class="user-id-container mobile">
+                <span class="user-id-label">Ваш ID:</span>
+                <div class="user-id-value" id="mobileUserId">user_123456</div>
+                <button class="copy-id-btn" id="copyMobileIdBtn" title="Скопировать ID">
+                    <i class="fas fa-copy"></i>
+                </button>
+            </div>
+            
+            <div class="mobile-sidebar-tabs">
+                <div class="mobile-sidebar-tab active" data-tab="chats">
                     <i class="fas fa-comments"></i> Чаты
                 </div>
-                <div class="sidebar-tab" data-tab="contacts">
+                <div class="mobile-sidebar-tab" data-tab="contacts">
                     <i class="fas fa-user-friends"></i> Контакты
+                </div>
+                <div class="mobile-sidebar-tab" data-tab="profile">
+                    <i class="fas fa-user"></i> Профиль
+                </div>
+                <div class="mobile-sidebar-tab" id="mobileLogoutBtn">
+                    <i class="fas fa-sign-out-alt"></i> Выйти
                 </div>
             </div>
             
-            <div class="search-container">
+            <div class="search-container mobile">
                 <i class="fas fa-search search-icon"></i>
-                <input type="text" class="search-box" id="searchInput" placeholder="Поиск чатов, контактов или ID...">
+                <input type="text" class="search-box" id="mobileSearchInput" placeholder="Поиск чатов, контактов или ID...">
             </div>
             
-            <div class="chats-container active" id="chatsContainer">
+            <div class="chats-container active" id="mobileChatsContainer">
                 <!-- Чаты будут добавляться через JS -->
             </div>
             
-            <div class="contacts-container" id="contactsContainer">
+            <div class="contacts-container" id="mobileContactsContainer">
                 <!-- Контакты будут добавляться через JS -->
             </div>
             
-            <div class="sidebar-footer">
-                <button class="action-btn" id="createChatBtn">
+            <div class="mobile-sidebar-footer">
+                <button class="action-btn" id="mobileCreateChatBtn">
                     <i class="fas fa-plus-circle"></i>
                     Создать чат
                 </button>
-                <button class="action-btn secondary" id="addContactBtn">
+                <button class="action-btn secondary" id="mobileAddContactBtn">
                     <i class="fas fa-user-plus"></i>
-                    Добавить
+                    Добавить контакт
                 </button>
             </div>
         </div>
-        
+
         <!-- Основная область -->
-        <div class="main-content">
-            <div class="welcome-screen" id="welcomeScreen">
-                <div class="welcome-icon">
-                    <i class="fas fa-fire"></i>
-                </div>
-                <div class="welcome-text">
-                    <h2>Soul Messenger</h2>
-                    <p>Премиум мессенджер нового поколения с современным дизайном и уникальными возможностями для общения</p>
-                    <div class="user-id-container" style="max-width: 400px; margin: 20px auto;">
+        <div class="main-content" id="mainContent">
+            <!-- Главный экран с ID -->
+            <div class="home-screen" id="homeScreen">
+                <div class="home-content">
+                    <div class="welcome-icon">
+                        <i class="fas fa-fire"></i>
+                    </div>
+                    <div class="welcome-text">
+                        <h2>Soul Messenger</h2>
+                        <p>Премиум мессенджер нового поколения с современным дизайном и уникальными возможностями для общения</p>
+                    </div>
+                    
+                    <div class="user-id-container home">
                         <span class="user-id-label">Ваш ID:</span>
-                        <div class="user-id-value" id="welcomeUserId">user_123456</div>
-                        <button class="copy-id-btn" id="copyWelcomeIdBtn" title="Скопировать ID">
+                        <div class="user-id-value" id="homeUserId">user_123456</div>
+                        <button class="copy-id-btn" id="copyHomeIdBtn" title="Скопировать ID">
                             <i class="fas fa-copy"></i>
                         </button>
+                    </div>
+                    
+                    <div class="home-actions">
+                        <button class="action-btn" id="homeCreateChatBtn">
+                            <i class="fas fa-plus-circle"></i>
+                            Создать чат
+                        </button>
+                        <button class="action-btn secondary" id="homeAddContactBtn">
+                            <i class="fas fa-user-plus"></i>
+                            Добавить контакт
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="home-tabs">
+                    <div class="home-tab active" data-tab="chats">
+                        <i class="fas fa-comments"></i>
+                        <span>Чаты</span>
+                    </div>
+                    <div class="home-tab" data-tab="contacts">
+                        <i class="fas fa-user-friends"></i>
+                        <span>Контакты</span>
+                    </div>
+                </div>
+                
+                <div class="home-tab-content">
+                    <div class="home-tab-pane active" id="homeChatsPane">
+                        <!-- Список чатов на главном экране -->
+                        <div class="chats-list" id="homeChatsList"></div>
+                    </div>
+                    <div class="home-tab-pane" id="homeContactsPane">
+                        <!-- Список контактов на главном экране -->
+                        <div class="contacts-list" id="homeContactsList"></div>
                     </div>
                 </div>
             </div>
             
-            <div class="chat-header" id="chatHeader" style="display: none;">
-                <div class="chat-header-avatar" id="chatHeaderAvatar">
-                    <i class="fas fa-hashtag"></i>
-                </div>
-                <div class="chat-header-info">
-                    <h2 id="chatHeaderName">Название чата</h2>
-                    <p id="chatHeaderDescription">Описание чата</p>
-                </div>
-                <div class="chat-type-badge" id="chatHeaderBadge">
-                    Канал
-                </div>
-                <div class="chat-actions" id="chatActions">
-                    <!-- Действия для чата будут добавляться через JS -->
-                </div>
-            </div>
-            
-            <div class="messages-container" id="messagesContainer" style="display: none;">
-                <!-- Сообщения будут добавляться через JS -->
-            </div>
-            
-            <div class="chat-input-container" id="chatInputContainer" style="display: none;">
-                <div class="input-area">
-                    <div id="replyPreviewContainer" style="display: none;"></div>
-                    <textarea class="message-input" id="messageInput" placeholder="Напишите сообщение..."></textarea>
-                    <button class="send-btn" id="sendMessageBtn">
-                        <i class="fas fa-paper-plane"></i>
+            <!-- Экран чата -->
+            <div class="chat-screen" id="chatScreen" style="display: none;">
+                <div class="chat-header">
+                    <button class="back-to-home-btn" id="backToHomeBtn">
+                        <i class="fas fa-arrow-left"></i>
                     </button>
+                    <div class="chat-header-info">
+                        <h2 id="chatHeaderName">Название чата</h2>
+                        <p id="chatHeaderDescription">Описание чата</p>
+                    </div>
+                    <div class="chat-actions">
+                        <button class="chat-action-btn" id="chatInfoBtn">
+                            <i class="fas fa-info-circle"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="messages-container" id="messagesContainer">
+                    <!-- Сообщения будут добавляться через JS -->
+                </div>
+                
+                <div class="chat-input-container">
+                    <div class="input-area">
+                        <div id="replyPreviewContainer" style="display: none;"></div>
+                        <textarea class="message-input" id="messageInput" placeholder="Напишите сообщение..."></textarea>
+                        <button class="send-btn" id="sendMessageBtn">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-    
+
     <!-- Модальные окна -->
     <div class="modal-overlay" id="createChatModal">
         <div class="modal">
             <div class="modal-header">
                 <h3>Создать новый чат</h3>
+                <button class="modal-close" id="closeCreateChatModal">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
             <div class="modal-body">
                 <div class="chat-type-selector">
@@ -229,10 +297,45 @@
         </div>
     </div>
     
+    <div class="modal-overlay" id="addContactModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Добавить контакт</h3>
+                <button class="modal-close" id="closeAddContactModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="contactSearch">Введите ID пользователя</label>
+                    <input type="text" id="contactSearch" placeholder="Начните вводить ID пользователя...">
+                    <div class="search-results" id="contactSearchResults">
+                        <!-- Результаты поиска будут добавляться через JS -->
+                    </div>
+                </div>
+                
+                <div id="contactSearchHelp" style="margin-top: 20px; padding: 16px; background: rgba(59, 130, 246, 0.1); border-radius: 12px; border-left: 4px solid #3b82f6;">
+                    <h4 style="margin-bottom: 8px; color: #93c5fd;">Как найти пользователя?</h4>
+                    <p style="color: #cbd5e1; font-size: 14px; line-height: 1.5;">
+                        Каждый пользователь Soul имеет уникальный ID. Вы можете попросить друга отправить вам его ID из его профиля, 
+                        а затем ввести его здесь для поиска и добавления в контакты.
+                    </p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancelAddContactBtn">Отмена</button>
+                <button class="btn btn-primary" id="confirmAddContactBtn" disabled>Добавить</button>
+            </div>
+        </div>
+    </div>
+
     <div class="modal-overlay" id="profileModal">
         <div class="modal">
             <div class="modal-header">
                 <h3>Мой профиль</h3>
+                <button class="modal-close" id="closeProfileModal">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
             <div class="modal-body">
                 <div class="profile-avatar-large" id="profileAvatarLarge">
@@ -277,39 +380,13 @@
         </div>
     </div>
     
-    <div class="modal-overlay" id="addContactModal">
-        <div class="modal">
-            <div class="modal-header">
-                <h3>Добавить контакт</h3>
-            </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label for="contactSearch">Введите ID пользователя</label>
-                    <input type="text" id="contactSearch" placeholder="Начните вводить ID пользователя...">
-                    <div class="search-results" id="contactSearchResults">
-                        <!-- Результаты поиска будут добавляться через JS -->
-                    </div>
-                </div>
-                
-                <div id="contactSearchHelp" style="margin-top: 20px; padding: 16px; background: rgba(59, 130, 246, 0.1); border-radius: 12px; border-left: 4px solid #3b82f6;">
-                    <h4 style="margin-bottom: 8px; color: #93c5fd;">Как найти пользователя?</h4>
-                    <p style="color: #cbd5e1; font-size: 14px; line-height: 1.5;">
-                        Каждый пользователь Soul имеет уникальный ID. Вы можете попросить друга отправить вам его ID из его профиля, 
-                        а затем ввести его здесь для поиска и добавления в контакты.
-                    </p>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" id="cancelAddContactBtn">Отмена</button>
-                <button class="btn btn-primary" id="confirmAddContactBtn" disabled>Добавить</button>
-            </div>
-        </div>
-    </div>
-
     <div class="modal-overlay" id="editProfileModal">
         <div class="modal">
             <div class="modal-header">
                 <h3>Редактировать профиль</h3>
+                <button class="modal-close" id="closeEditProfileModal">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
             <div class="modal-body">
                 <div class="form-group">
