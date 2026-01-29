@@ -10,6 +10,386 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <link rel="stylesheet" href="styles.css">
+    <style id="desktop-styles">
+        /* Скрываем мобильные элементы на ПК */
+        @media (min-width: 769px) {
+            .mobile-header,
+            .mobile-sidebar-overlay,
+            .mobile-sidebar,
+            .mobile-sidebar-tabs,
+            .mobile-sidebar-footer {
+                display: none !important;
+            }
+            
+            .main-content {
+                padding-top: 0 !important;
+            }
+            
+            .container {
+                display: flex;
+                height: 100vh;
+                overflow: hidden;
+            }
+            
+            /* Боковая панель для ПК */
+            .desktop-sidebar {
+                width: 300px;
+                background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+                border-right: 1px solid var(--border-color);
+                display: flex;
+                flex-direction: column;
+                overflow: hidden;
+            }
+            
+            .desktop-sidebar-header {
+                padding: 20px;
+                border-bottom: 1px solid var(--border-color);
+            }
+            
+            .desktop-sidebar-content {
+                flex: 1;
+                overflow-y: auto;
+                padding: 15px;
+            }
+            
+            .desktop-sidebar-tabs {
+                display: flex;
+                margin-bottom: 20px;
+                background: rgba(255, 255, 255, 0.05);
+                border-radius: var(--radius-lg);
+                padding: 8px;
+            }
+            
+            .desktop-sidebar-tab {
+                flex: 1;
+                text-align: center;
+                padding: 12px 8px;
+                border-radius: var(--radius-md);
+                color: #94a3b8;
+                font-weight: 600;
+                cursor: pointer;
+                font-size: 14px;
+                transition: var(--transition);
+            }
+            
+            .desktop-sidebar-tab:hover {
+                background: rgba(255, 255, 255, 0.1);
+                color: white;
+            }
+            
+            .desktop-sidebar-tab.active {
+                background: rgba(139, 92, 246, 0.2);
+                color: white;
+            }
+            
+            /* Основная область на ПК */
+            .main-content.desktop {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            }
+            
+            /* Экран чата на ПК */
+            .chat-screen.desktop {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                height: 100vh;
+            }
+            
+            .chat-header.desktop {
+                padding: 15px 20px;
+                background: rgba(15, 23, 42, 0.95);
+                border-bottom: 1px solid var(--border-color);
+            }
+            
+            .messages-container.desktop {
+                flex: 1;
+                padding: 20px;
+                background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            }
+            
+            .chat-input-container.desktop {
+                padding: 15px 20px;
+                background: rgba(15, 23, 42, 0.95);
+                border-top: 1px solid var(--border-color);
+            }
+            
+            /* Список чатов на ПК */
+            .desktop-chats-list {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .desktop-chat-item {
+                display: flex;
+                align-items: center;
+                padding: 12px;
+                border-radius: var(--radius-md);
+                background: rgba(255, 255, 255, 0.05);
+                cursor: pointer;
+                transition: var(--transition);
+            }
+            
+            .desktop-chat-item:hover {
+                background: rgba(255, 255, 255, 0.1);
+            }
+            
+            .desktop-chat-item.active {
+                background: rgba(139, 92, 246, 0.2);
+                border: 1px solid rgba(139, 92, 246, 0.3);
+            }
+            
+            .desktop-chat-avatar {
+                width: 40px;
+                height: 40px;
+                border-radius: 10px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-weight: 600;
+                margin-right: 12px;
+                font-size: 16px;
+            }
+            
+            .desktop-chat-info {
+                flex: 1;
+                min-width: 0;
+            }
+            
+            .desktop-chat-name {
+                font-weight: 600;
+                font-size: 14px;
+                color: white;
+                margin-bottom: 4px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            
+            .desktop-chat-last-message {
+                font-size: 12px;
+                color: #94a3b8;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            
+            /* Кнопки действий на ПК */
+            .desktop-sidebar-actions {
+                padding: 15px;
+                display: flex;
+                gap: 10px;
+                border-top: 1px solid var(--border-color);
+            }
+            
+            .desktop-action-btn {
+                flex: 1;
+                padding: 12px;
+                background: rgba(139, 92, 246, 0.2);
+                border: 1px solid rgba(139, 92, 246, 0.3);
+                border-radius: var(--radius-md);
+                color: #a78bfa;
+                font-weight: 600;
+                font-size: 14px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                transition: var(--transition);
+            }
+            
+            .desktop-action-btn:hover {
+                background: rgba(139, 92, 246, 0.3);
+                color: #c4b5fd;
+            }
+            
+            .desktop-action-btn.secondary {
+                background: rgba(59, 130, 246, 0.2);
+                border-color: rgba(59, 130, 246, 0.3);
+                color: #60a5fa;
+            }
+            
+            .desktop-action-btn.secondary:hover {
+                background: rgba(59, 130, 246, 0.3);
+                color: #93c5fd;
+            }
+            
+            /* Информация о пользователе на ПК */
+            .desktop-user-info {
+                padding: 15px;
+                border-bottom: 1px solid var(--border-color);
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
+            
+            .desktop-user-avatar {
+                width: 40px;
+                height: 40px;
+                border-radius: 10px;
+                background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-weight: 700;
+                color: white;
+                font-size: 16px;
+            }
+            
+            .desktop-user-details {
+                flex: 1;
+                min-width: 0;
+            }
+            
+            .desktop-user-name {
+                font-weight: 600;
+                font-size: 14px;
+                color: white;
+                margin-bottom: 4px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            
+            .desktop-user-status {
+                font-size: 12px;
+                color: #10b981;
+                display: flex;
+                align-items: center;
+                gap: 4px;
+            }
+            
+            .desktop-user-status i {
+                font-size: 8px;
+            }
+            
+            /* Поиск на ПК */
+            .desktop-search-container {
+                padding: 15px;
+                border-bottom: 1px solid var(--border-color);
+            }
+            
+            .desktop-search-box {
+                width: 100%;
+                padding: 10px 12px;
+                background: rgba(255, 255, 255, 0.08);
+                border: 1px solid rgba(255, 255, 255, 0.15);
+                border-radius: var(--radius-md);
+                color: white;
+                font-size: 14px;
+            }
+            
+            .desktop-search-box:focus {
+                outline: none;
+                border-color: #8b5cf6;
+            }
+            
+            /* Пустой экран на ПК */
+            .desktop-empty-screen {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                height: 100%;
+                color: #64748b;
+                text-align: center;
+                padding: 40px;
+            }
+            
+            .desktop-empty-content {
+                max-width: 400px;
+            }
+            
+            .desktop-empty-icon {
+                font-size: 64px;
+                margin-bottom: 20px;
+                opacity: 0.5;
+            }
+            
+            .desktop-empty-title {
+                font-size: 20px;
+                font-weight: 600;
+                margin-bottom: 10px;
+                color: #94a3b8;
+            }
+            
+            .desktop-empty-text {
+                font-size: 14px;
+                line-height: 1.5;
+                margin-bottom: 20px;
+            }
+            
+            /* Адаптация сообщений для ПК */
+            .message.desktop {
+                max-width: 70%;
+            }
+            
+            /* Заголовок на ПК */
+            .desktop-chat-header {
+                display: flex;
+                align-items: center;
+                gap: 15px;
+            }
+            
+            .desktop-chat-avatar {
+                width: 44px;
+                height: 44px;
+                border-radius: 12px;
+                background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-weight: 700;
+                color: white;
+                font-size: 18px;
+            }
+            
+            .desktop-chat-header-info {
+                flex: 1;
+                min-width: 0;
+            }
+            
+            .desktop-chat-header-name {
+                font-size: 16px;
+                font-weight: 700;
+                color: white;
+                margin-bottom: 4px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            
+            .desktop-chat-header-description {
+                font-size: 13px;
+                color: #94a3b8;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            
+            /* Улучшения для ввода сообщений на ПК */
+            .chat-input-container.desktop .input-area {
+                max-width: 800px;
+                margin: 0 auto;
+            }
+            
+            .chat-input-container.desktop .message-input {
+                background: rgba(255, 255, 255, 0.1);
+            }
+            
+            /* Стили для активного чата на ПК */
+            .desktop-chat-item.active .desktop-chat-name {
+                color: #c4b5fd;
+            }
+            
+            .desktop-chat-item.active .desktop-chat-last-message {
+                color: #a78bfa;
+            }
+        }
+    </style>
 </head>
 <body>
     <!-- Авторизация -->
@@ -17,7 +397,7 @@
         <div class="auth-modal">
             <div class="auth-header">
                 <div class="logo" style="justify-content: center; margin-bottom: 30px;">
-                    <div class="logo-icon"><i class="fas fa-fire"></i></div>
+                    <div class="logo-icon"><img src="img/s.png" width="50px"></div>
                     <div class="logo-text">Soul</div>
                 </div>
                 <h2>Добро пожаловать</h2>
@@ -103,8 +483,7 @@
         <div class="mobile-sidebar" id="mobileSidebar">
             <div class="mobile-sidebar-header">
                 <div class="logo">
-                    <div class="logo-icon"><i class="fas fa-fire"></i></div>
-                    <div class="logo-text">Soul</div>
+                    <div class="logo-icon"><img src="img/s.png" width="50px"></div>
                 </div>
                 <button class="mobile-sidebar-close" id="mobileSidebarClose">
                     <i class="fas fa-times"></i>
@@ -159,13 +538,66 @@
             </div>
         </div>
 
+        <!-- Боковая панель для ПК (скрыта на мобильных) -->
+        <div class="desktop-sidebar" id="desktopSidebar" style="display: none;">
+            <div class="desktop-sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon"><img src="img/s.png" width="35px"></div>
+                </div>
+            </div>
+            
+            <div class="desktop-user-info" id="desktopUserInfo">
+                <div class="desktop-user-avatar" id="desktopUserAvatar">И</div>
+                <div class="desktop-user-details">
+                    <div class="desktop-user-name" id="desktopUserName">Иван</div>
+                    <div class="desktop-user-status" id="desktopUserStatus">
+                        <i class="fas fa-circle"></i>
+                        <span>online</span>
+                    </div>
+                </div>
+                <button class="desktop-user-info-btn" id="desktopUserInfoBtn" title="Информация о профиле">
+                    <i class="fas fa-info-circle"></i>
+                </button>
+            </div>
+            
+            <div class="desktop-search-container">
+                <input type="text" class="desktop-search-box" id="desktopSearchInput" placeholder="Поиск чатов или сообщений...">
+            </div>
+            
+            <div class="desktop-sidebar-tabs" id="desktopSidebarTabs">
+                <div class="desktop-sidebar-tab active" data-tab="chats">Чаты</div>
+                <div class="desktop-sidebar-tab" data-tab="contacts">Контакты</div>
+            </div>
+            
+            <div class="desktop-sidebar-content">
+                <div class="desktop-chats-list" id="desktopChatsList">
+                    <!-- Чаты для ПК будут добавляться через JS -->
+                </div>
+                
+                <div class="desktop-contacts-list" id="desktopContactsList" style="display: none;">
+                    <!-- Контакты для ПК будут добавляться через JS -->
+                </div>
+            </div>
+            
+            <div class="desktop-sidebar-actions">
+                <button class="desktop-action-btn" id="desktopCreateChatBtn">
+                    <i class="fas fa-plus-circle"></i>
+                    Создать чат
+                </button>
+                <button class="desktop-action-btn secondary" id="desktopAddContactBtn">
+                    <i class="fas fa-user-plus"></i>
+                    Добавить
+                </button>
+            </div>
+        </div>
+
         <!-- Основная область -->
         <div class="main-content" id="mainContent">
-            <!-- Главный экран с ID -->
+            <!-- Главный экран с ID (только для мобильных) -->
             <div class="home-screen" id="homeScreen">
                 <div class="home-content">
                     <div class="welcome-icon">
-                        <i class="fas fa-fire"></i>
+                        <img src="img/s.png" width="100px"> 
                     </div>
                     <div class="welcome-text">
                         <h2>Soul Messenger</h2>
@@ -209,15 +641,44 @@
                         <div class="chats-list" id="homeChatsList"></div>
                     </div>
                     <div class="home-tab-pane" id="homeContactsPane">
+                        <!-- Поиск контактов на главном экране -->
+                        <div class="search-container home-contacts-search" style="margin: 0 15px 15px 15px;">
+                            <i class="fas fa-search search-icon"></i>
+                            <input type="text" class="search-box" id="homeContactsSearch" placeholder="Поиск контактов по имени или ID...">
+                        </div>
+                        <!-- Результаты поиска -->
+                        <div class="search-results-container" id="homeContactsSearchResults"></div>
                         <!-- Список контактов на главном экране -->
                         <div class="contacts-list" id="homeContactsList"></div>
                     </div>
                 </div>
             </div>
             
+            <!-- Пустой экран для ПК (когда чат не выбран) -->
+            <div class="desktop-empty-screen" id="desktopEmptyScreen" style="display: none;">
+                <div class="desktop-empty-content">
+                    <div class="desktop-empty-icon">
+                        <img src="img/s.png" width="100px">
+                    </div>
+                    <h3 class="desktop-empty-title">Soul Messenger</h3>
+                    <p class="desktop-empty-text">Выберите чат из списка слева или создайте новый, чтобы начать общение</p>
+                    <div class="desktop-empty-actions">
+                        <button class="desktop-action-btn" id="desktopEmptyCreateChatBtn">
+                            <i class="fas fa-plus-circle"></i>
+                            Создать чат
+                        </button>
+                        <button class="desktop-action-btn secondary" id="desktopEmptyAddContactBtn">
+                            <i class="fas fa-user-plus"></i>
+                            Добавить контакт
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
             <!-- Экран чата -->
             <div class="chat-screen" id="chatScreen" style="display: none;">
-                <div class="chat-header">
+                <!-- Мобильный заголовок чата -->
+                <div class="chat-header mobile" id="chatHeaderMobile">
                     <button class="back-to-home-btn" id="backToHomeBtn">
                         <i class="fas fa-arrow-left"></i>
                     </button>
@@ -229,6 +690,19 @@
                         <button class="chat-action-btn" id="chatInfoBtn">
                             <i class="fas fa-info-circle"></i>
                         </button>
+                    </div>
+                </div>
+                
+                <!-- Заголовок чата для ПК -->
+                <div class="chat-header desktop" id="chatHeaderDesktop" style="display: none;">
+                    <div class="desktop-chat-header">
+                        <div class="desktop-chat-avatar" id="desktopChatAvatar">
+                            #
+                        </div>
+                        <div class="desktop-chat-header-info">
+                            <h2 class="desktop-chat-header-name" id="desktopChatHeaderName">Название чата</h2>
+                            <p class="desktop-chat-header-description" id="desktopChatHeaderDescription">Описание чата</p>
+                        </div>
                     </div>
                 </div>
                 
@@ -307,9 +781,13 @@
             </div>
             <div class="modal-body">
                 <div class="form-group">
-                    <label for="contactSearch">Введите ID пользователя</label>
-                    <input type="text" id="contactSearch" placeholder="Начните вводить ID пользователя...">
-                    <div class="search-results" id="contactSearchResults">
+                    <label for="contactSearch">Поиск пользователей</label>
+                    <div class="search-container">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" id="contactSearch" placeholder="Введите имя или ID пользователя...">
+                    </div>
+                    <!-- Результаты поиска -->
+                    <div class="search-results-container" id="contactSearchResults">
                         <!-- Результаты поиска будут добавляться через JS -->
                     </div>
                 </div>
@@ -317,8 +795,9 @@
                 <div id="contactSearchHelp" style="margin-top: 20px; padding: 16px; background: rgba(59, 130, 246, 0.1); border-radius: 12px; border-left: 4px solid #3b82f6;">
                     <h4 style="margin-bottom: 8px; color: #93c5fd;">Как найти пользователя?</h4>
                     <p style="color: #cbd5e1; font-size: 14px; line-height: 1.5;">
-                        Каждый пользователь Soul имеет уникальный ID. Вы можете попросить друга отправить вам его ID из его профиля, 
-                        а затем ввести его здесь для поиска и добавления в контакты.
+                        Вы можете искать пользователей по их имени или уникальному ID. 
+                        Начните вводить имя или ID, и вы увидите подходящие результаты.
+                        Нажмите на пользователя, чтобы добавить его в контакты.
                     </p>
                 </div>
             </div>
