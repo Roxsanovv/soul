@@ -27,6 +27,9 @@ let messageListeners = {};
 let typingListeners = {};
 let isMobile = false;
 let replyToMessage = null;
+let currentDesktopTab = "chats";
+let connectionCheckInterval = null;
+let searchTimeouts = {};
 
 // DOM элементы
 const authContainer = document.getElementById('authContainer');
@@ -64,6 +67,27 @@ const mobileContactsContainer = document.getElementById('mobileContactsContainer
 const mobileCreateChatBtn = document.getElementById('mobileCreateChatBtn');
 const mobileAddContactBtn = document.getElementById('mobileAddContactBtn');
 
+// ПК элементы
+const desktopSidebar = document.getElementById('desktopSidebar');
+const desktopUserInfo = document.getElementById('desktopUserInfo');
+const desktopUserAvatar = document.getElementById('desktopUserAvatar');
+const desktopUserName = document.getElementById('desktopUserName');
+const desktopUserStatus = document.getElementById('desktopUserStatus');
+const desktopUserInfoBtn = document.getElementById('desktopUserInfoBtn');
+const desktopSearchInput = document.getElementById('desktopSearchInput');
+const desktopSidebarTabs = document.querySelectorAll('.desktop-sidebar-tab');
+const desktopChatsList = document.getElementById('desktopChatsList');
+const desktopContactsList = document.getElementById('desktopContactsList');
+const desktopCreateChatBtn = document.getElementById('desktopCreateChatBtn');
+const desktopAddContactBtn = document.getElementById('desktopAddContactBtn');
+const desktopEmptyScreen = document.getElementById('desktopEmptyScreen');
+const desktopEmptyCreateChatBtn = document.getElementById('desktopEmptyCreateChatBtn');
+const desktopEmptyAddContactBtn = document.getElementById('desktopEmptyAddContactBtn');
+const chatHeaderDesktop = document.getElementById('chatHeaderDesktop');
+const desktopChatAvatar = document.getElementById('desktopChatAvatar');
+const desktopChatHeaderName = document.getElementById('desktopChatHeaderName');
+const desktopChatHeaderDescription = document.getElementById('desktopChatHeaderDescription');
+
 // Главный экран элементы
 const homeScreen = document.getElementById('homeScreen');
 const homeUserId = document.getElementById('homeUserId');
@@ -73,9 +97,12 @@ const homeAddContactBtn = document.getElementById('homeAddContactBtn');
 const homeTabs = document.querySelectorAll('.home-tab');
 const homeChatsList = document.getElementById('homeChatsList');
 const homeContactsList = document.getElementById('homeContactsList');
+const homeContactsSearch = document.getElementById('homeContactsSearch');
+const homeContactsSearchResults = document.getElementById('homeContactsSearchResults');
 
 // Экран чата элементы
 const chatScreen = document.getElementById('chatScreen');
+const chatHeaderMobile = document.getElementById('chatHeaderMobile');
 const backToHomeBtn = document.getElementById('backToHomeBtn');
 const chatHeaderName = document.getElementById('chatHeaderName');
 const chatHeaderDescription = document.getElementById('chatHeaderDescription');
@@ -111,7 +138,7 @@ const saveProfileBtn = document.getElementById('saveProfileBtn');
 const editProfileName = document.getElementById('editProfileName');
 const statusOptions = document.querySelectorAll('.status-option');
 
-// Контекстное меню сообщений
+// Контекстное меню для сообщений
 const messageContextMenu = document.getElementById('messageContextMenu');
 const contextReply = document.getElementById('contextReply');
 const contextCopy = document.getElementById('contextCopy');
@@ -138,80 +165,219 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 async function initializeApp() {
+    console.log("Инициализация приложения");
     setupEventListeners();
     detectMobile();
-    initMobileFeatures();
-
+    
     // Проверяем авторизацию
     authUnsubscribe = auth.onAuthStateChanged(async (user) => {
+        console.log("Состояние авторизации изменено:", user ? "Авторизован" : "Не авторизован");
         if (user) {
             // Пользователь авторизован
             await loadUserData(user.uid);
-            authContainer.style.display = 'none';
-            mainContainer.style.display = 'block';
+            if (authContainer) authContainer.style.display = 'none';
+            if (mainContainer) mainContainer.style.display = 'flex';
             showNotification("Добро пожаловать в Soul!");
+            
+            // Запускаем мониторинг соединения
+            startConnectionMonitoring();
             
             // Обновляем ID в разных местах
             updateUserIDs();
             
+            // Инициализируем интерфейс в зависимости от устройства
+            if (isMobile) {
+                console.log("Запуск мобильного интерфейса");
+                initMobileInterface();
+            } else {
+                console.log("Запуск ПК интерфейса");
+                initDesktopInterface();
+            }
+            
         } else {
             // Пользователь не авторизован
-            authContainer.style.display = 'flex';
-            mainContainer.style.display = 'none';
+            if (authContainer) authContainer.style.display = 'flex';
+            if (mainContainer) mainContainer.style.display = 'none';
+            
+            // Останавливаем мониторинг
+            if (connectionCheckInterval) {
+                clearInterval(connectionCheckInterval);
+                connectionCheckInterval = null;
+            }
         }
     });
+}
+
+// Мониторинг соединения
+function startConnectionMonitoring() {
+    if (connectionCheckInterval) {
+        clearInterval(connectionCheckInterval);
+    }
+    
+    connectionCheckInterval = setInterval(async () => {
+        if (currentUser && navigator.onLine) {
+            try {
+                // Просто обновляем timestamp для отслеживания активности
+                await database.ref(`users/${currentUser.uid}`).update({
+                    lastActive: Date.now()
+                });
+            } catch (error) {
+                console.error("Ошибка обновления активности:", error);
+            }
+        }
+    }, 30000); // Каждые 30 секунд
 }
 
 // Мобильные функции
 function detectMobile() {
     isMobile = window.innerWidth <= 768;
-    
-    if (isMobile) {
-        document.body.classList.add('mobile');
-        document.body.classList.remove('desktop');
-    } else {
-        document.body.classList.add('desktop');
-        document.body.classList.remove('mobile');
-    }
+    console.log("Определение устройства:", isMobile ? "Мобильное" : "ПК", "ширина:", window.innerWidth);
     
     window.addEventListener('resize', () => {
+        const wasMobile = isMobile;
         isMobile = window.innerWidth <= 768;
-        if (isMobile) {
-            document.body.classList.add('mobile');
-            document.body.classList.remove('desktop');
-        } else {
-            document.body.classList.add('desktop');
-            document.body.classList.remove('mobile');
+        
+        if (wasMobile !== isMobile) {
+            console.log("Устройство изменилось, перезагрузка...");
+            location.reload();
         }
     });
 }
 
-function initMobileFeatures() {
+function initMobileInterface() {
     if (!isMobile) return;
     
-    // Фикс для iOS клавиатуры
-    messageInput.addEventListener('focus', () => {
-        setTimeout(() => {
-            window.scrollTo(0, 0);
-        }, 100);
-    });
+    console.log("Инициализация мобильного интерфейса");
     
-    // Фикс для iOS безопасной зоны
-    fixSafeArea();
+    // Показываем мобильные элементы, скрываем ПК элементы
+    if (mobileHeader) mobileHeader.style.display = 'flex';
+    if (desktopSidebar) desktopSidebar.style.display = 'none';
+    if (desktopEmptyScreen) desktopEmptyScreen.style.display = 'none';
+    
+    // Настраиваем мобильный интерфейс
+    if (currentChatId) {
+        console.log("Есть активный чат на мобильном:", currentChatId);
+        if (homeScreen) homeScreen.style.display = 'none';
+        if (chatScreen) {
+            chatScreen.style.display = 'flex';
+            chatScreen.classList.add('mobile');
+            chatScreen.classList.remove('desktop');
+        }
+        if (chatHeaderDesktop) chatHeaderDesktop.style.display = 'none';
+        if (chatHeaderMobile) chatHeaderMobile.style.display = 'flex';
+    } else {
+        console.log("Нет активного чата, показываем главный экран");
+        if (homeScreen) homeScreen.style.display = 'block';
+        if (chatScreen) chatScreen.style.display = 'none';
+    }
+    
+    // Добавляем классы для мобильных стилей
+    document.body.classList.add('mobile');
+    document.body.classList.remove('desktop');
+    if (mainContent) {
+        mainContent.classList.add('mobile');
+        mainContent.classList.remove('desktop');
+    }
 }
 
-function fixSafeArea() {
-    // Добавляем padding для безопасной зоны iOS
-    const style = document.createElement('style');
-    style.textContent = `
-        .safe-area-bottom {
-            padding-bottom: env(safe-area-inset-bottom, 20px);
+function initDesktopInterface() {
+    if (isMobile) return;
+    
+    console.log("Инициализация ПК интерфейса");
+    
+    // Настраиваем ПК интерфейс
+    if (desktopSidebar) desktopSidebar.style.display = 'flex';
+    if (mobileHeader) mobileHeader.style.display = 'none';
+    if (homeScreen) homeScreen.style.display = 'none';
+    
+    // Показываем либо пустой экран, либо чат
+    if (currentChatId) {
+        console.log("Есть активный чат:", currentChatId);
+        if (desktopEmptyScreen) {
+            console.log("Скрываем пустой экран при инициализации");
+            desktopEmptyScreen.style.display = 'none';
         }
-        .safe-area-top {
-            padding-top: env(safe-area-inset-top, 0px);
+        if (chatScreen) {
+            console.log("Показываем экран чата при инициализации");
+            chatScreen.style.display = 'flex';
+            chatScreen.classList.add('desktop', 'active');
+            chatScreen.classList.remove('mobile');
         }
-    `;
-    document.head.appendChild(style);
+        if (chatHeaderDesktop) chatHeaderDesktop.style.display = 'flex';
+        if (chatHeaderMobile) chatHeaderMobile.style.display = 'none';
+    } else {
+        console.log("Нет активного чата, показываем пустой экран при инициализации");
+        if (desktopEmptyScreen) desktopEmptyScreen.style.display = 'flex';
+        if (chatScreen) chatScreen.style.display = 'none';
+    }
+    
+    // Добавляем классы для ПК стилей
+    document.body.classList.add('desktop');
+    document.body.classList.remove('mobile');
+    if (mainContent) {
+        mainContent.classList.add('desktop');
+        mainContent.classList.remove('mobile');
+    }
+    
+    // Обновляем информацию о пользователе в боковой панели
+    updateDesktopUserInfo();
+    
+    // Загружаем чаты для ПК интерфейса
+    updateDesktopChats();
+    updateDesktopContacts();
+}
+
+function updateDesktopUserInfo() {
+    if (!currentUser) return;
+    
+    // Обновляем аватар и имя
+    if (desktopUserAvatar) {
+        desktopUserAvatar.textContent = currentUser.displayName.charAt(0);
+        
+        // Устанавливаем класс статуса для аватара
+        desktopUserAvatar.className = 'desktop-user-avatar';
+        desktopUserAvatar.classList.add(`status-${currentUser.status || 'online'}`);
+    }
+    
+    if (desktopUserName) desktopUserName.textContent = currentUser.displayName;
+    
+    // Обновляем статус с иконкой
+    if (desktopUserStatus) {
+        let statusIcon = 'fa-circle';
+        let statusColor = '#10b981';
+        
+        switch(currentUser.status || 'online') {
+            case 'online':
+                statusIcon = 'fa-circle';
+                statusColor = '#10b981';
+                break;
+            case 'away':
+                statusIcon = 'fa-clock';
+                statusColor = '#f59e0b';
+                break;
+            case 'dnd':
+                statusIcon = 'fa-minus-circle';
+                statusColor = '#ef4444';
+                break;
+            case 'offline':
+                statusIcon = 'fa-circle';
+                statusColor = '#64748b';
+                break;
+            case 'invisible':
+                statusIcon = 'fa-eye-slash';
+                statusColor = '#64748b';
+                break;
+            default:
+                statusIcon = 'fa-circle';
+                statusColor = '#10b981';
+        }
+        
+        desktopUserStatus.innerHTML = `
+            <i class="fas ${statusIcon}"></i>
+            <span>${currentUser.status || 'online'}</span>
+        `;
+        desktopUserStatus.style.color = statusColor;
+    }
 }
 
 // ФУНКЦИИ АВТОРИЗАЦИИ
@@ -295,15 +461,18 @@ async function registerUser() {
 }
 
 function showError(message) {
+    if (!authError) return;
     authError.textContent = message;
     authError.classList.add('active');
 }
 
 function hideError() {
+    if (!authError) return;
     authError.classList.remove('active');
 }
 
 function showSuccess() {
+    if (!authSuccess) return;
     authSuccess.classList.add('active');
 }
 
@@ -329,16 +498,18 @@ function getAuthErrorMessage(error) {
 }
 
 function setLoading(isLoading) {
+    if (!authLoading) return;
+    
     if (isLoading) {
         authLoading.classList.add('active');
-        loginBtn.disabled = true;
-        registerBtn.disabled = true;
-        quickLoginBtn.disabled = true;
+        if (loginBtn) loginBtn.disabled = true;
+        if (registerBtn) registerBtn.disabled = true;
+        if (quickLoginBtn) quickLoginBtn.disabled = true;
     } else {
         authLoading.classList.remove('active');
-        loginBtn.disabled = false;
-        registerBtn.disabled = false;
-        quickLoginBtn.disabled = false;
+        if (loginBtn) loginBtn.disabled = false;
+        if (registerBtn) registerBtn.disabled = false;
+        if (quickLoginBtn) quickLoginBtn.disabled = false;
     }
 }
 
@@ -355,26 +526,56 @@ async function loadUserData(userId) {
                 uid: userId,
                 ...snapshot.val()
             };
+            
+            // ВАЖНО: Обновляем статус сразу при загрузке данных
+            await userRef.update({
+                status: "online",
+                lastSeen: null,
+                lastActive: Date.now()
+            });
+            
+            currentUser.status = "online";
+            
+            // Слушаем изменения статуса в реальном времени
+            userRef.on('value', (snap) => {
+                if (snap.exists()) {
+                    const userData = snap.val();
+                    if (userData.status && userData.status !== currentUser.status) {
+                        currentUser.status = userData.status;
+                        updateUserProfileDisplay();
+                        updateDesktopUserInfo();
+                    }
+                }
+            });
+            
         } else {
             const user = auth.currentUser;
             currentUser = {
                 uid: userId,
                 displayName: user.displayName || "Пользователь",
                 email: user.email,
-                status: "online",
+                status: "online", // Устанавливаем online при создании
                 customId: "user_" + Math.random().toString(36).substr(2, 9).toUpperCase(),
                 joinDate: new Date().toLocaleDateString('ru-RU'),
                 contacts: {},
-                chats: {}
+                chats: {},
+                lastActive: Date.now()
             };
         
             await userRef.set(currentUser);
+            
+            // Слушаем изменения статуса в реальном времени
+            userRef.on('value', (snap) => {
+                if (snap.exists()) {
+                    const userData = snap.val();
+                    if (userData.status && userData.status !== currentUser.status) {
+                        currentUser.status = userData.status;
+                        updateUserProfileDisplay();
+                        updateDesktopUserInfo();
+                    }
+                }
+            });
         }
-    
-        await database.ref(`users/${userId}`).update({
-            status: "online",
-            lastSeen: null
-        });
     
         await loadAllUsers();
         await loadUserChats();
@@ -413,6 +614,12 @@ async function logoutUser() {
         Object.values(typingListeners).forEach(unsubscribe => unsubscribe());
         messageListeners = {};
         typingListeners = {};
+        
+        // Останавливаем мониторинг
+        if (connectionCheckInterval) {
+            clearInterval(connectionCheckInterval);
+            connectionCheckInterval = null;
+        }
     
         showNotification("Вы вышли из системы");
     
@@ -431,16 +638,18 @@ async function loadAllUsers() {
         if (usersData) {
             allUsers = {};
             
+            // Загружаем ВСЕХ пользователей, включая текущего
             for (const userId in usersData) {
-                if (currentUser && userId === currentUser.uid) continue;
-                
                 allUsers[userId] = {
                     uid: userId,
                     displayName: usersData[userId].displayName || "Пользователь",
                     customId: usersData[userId].customId || `user_${userId.substr(0, 8)}`,
-                    status: usersData[userId].status || 'offline'
+                    status: usersData[userId].status || 'offline',
+                    lastActive: usersData[userId].lastActive || 0
                 };
             }
+            
+            console.log("Загружены все пользователи:", Object.keys(allUsers).length, "пользователей");
         }
     } catch (error) {
         console.error("Ошибка загрузки пользователей:", error);
@@ -471,6 +680,7 @@ async function loadUserChats() {
         }
     
         updateHomeChats();
+        updateDesktopChats();
         updateProfileChatsCount();
     
     } catch (error) {
@@ -479,6 +689,8 @@ async function loadUserChats() {
 }
 
 function updateHomeChats() {
+    if (!homeChatsList) return;
+    
     homeChatsList.innerHTML = '';
     
     if (chats.length === 0) {
@@ -494,7 +706,7 @@ function updateHomeChats() {
         `;
         
         document.getElementById('createFirstChatBtn')?.addEventListener('click', () => {
-            createChatModal.classList.add('active');
+            if (createChatModal) createChatModal.classList.add('active');
         });
         return;
     }
@@ -502,6 +714,28 @@ function updateHomeChats() {
     chats.forEach(chat => {
         const chatElement = createChatElement(chat);
         homeChatsList.appendChild(chatElement);
+    });
+}
+
+function updateDesktopChats() {
+    if (!desktopChatsList) return;
+    
+    desktopChatsList.innerHTML = '';
+    
+    if (chats.length === 0) {
+        desktopChatsList.innerHTML = `
+            <div class="empty-state" style="text-align: center; padding: 30px 15px; color: #64748b;">
+                <i class="fas fa-comments" style="font-size: 32px; margin-bottom: 15px; opacity: 0.5;"></i>
+                <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 8px; color: #94a3b8;">Чатов пока нет</h3>
+                <p style="font-size: 14px; margin-bottom: 15px;">Создайте первый чат, чтобы начать общение</p>
+            </div>
+        `;
+        return;
+    }
+    
+    chats.forEach(chat => {
+        const chatElement = createDesktopChatElement(chat);
+        desktopChatsList.appendChild(chatElement);
     });
 }
 
@@ -555,61 +789,154 @@ function createChatElement(chat) {
     return chatElement;
 }
 
+function createDesktopChatElement(chat) {
+    const chatElement = document.createElement('div');
+    chatElement.className = 'desktop-chat-item';
+    chatElement.dataset.chatId = chat.id;
+    
+    if (currentChatId === chat.id) {
+        chatElement.classList.add('active');
+    }
+
+    let avatarClass, avatarContent, chatName;
+
+    if (chat.type === 'channel') {
+        avatarClass = 'desktop-chat-avatar';
+        avatarContent = '#';
+        chatName = chat.name;
+    } else if (chat.type === 'group') {
+        avatarClass = 'desktop-chat-avatar';
+        avatarContent = '<i class="fas fa-users" style="font-size: 16px;"></i>';
+        chatName = chat.name;
+    } else if (chat.type === 'private') {
+        avatarClass = 'desktop-chat-avatar';
+    
+        const otherUserId = Object.keys(chat.members).find(id => id !== currentUser.uid);
+        const otherUser = allUsers[otherUserId];
+    
+        if (otherUser) {
+            avatarContent = otherUser.displayName.charAt(0);
+            chatName = otherUser.displayName;
+        } else {
+            avatarContent = '?';
+            chatName = "Неизвестный пользователь";
+        }
+    }
+
+    chatElement.innerHTML = `
+        <div class="${avatarClass}" style="background: ${chat.type === 'channel' ? 'linear-gradient(135deg, #f59e0b, #d97706)' : chat.type === 'group' ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #3b82f6, #1d4ed8)'}">
+            ${avatarContent}
+        </div>
+        <div class="desktop-chat-info">
+            <div class="desktop-chat-name">${chatName}</div>
+            <div class="desktop-chat-last-message">Нажмите чтобы открыть...</div>
+        </div>
+    `;
+    
+    chatElement.addEventListener('click', () => {
+        openChat(chat.id);
+    });
+
+    return chatElement;
+}
+
+// ИСПРАВЛЕННАЯ ФУНКЦИЯ ЗАГРУЗКИ КОНТАКТОВ
 async function loadContacts() {
     try {
+        console.log("Загрузка контактов для пользователя:", currentUser.uid);
+        
         const contactsRef = database.ref(`users/${currentUser.uid}/contacts`);
-    
+        
+        // Используем once для первоначальной загрузки
+        const snapshot = await contactsRef.once('value');
+        console.log("Контакты загружены из базы:", snapshot.val());
+        updateContactsList(snapshot);
+        
+        // Затем слушаем изменения в реальном времени
         contactsRef.on('value', (snapshot) => {
+            console.log("Контакты обновлены в реальном времени:", snapshot.val());
             updateContactsList(snapshot);
         });
+        
     } catch (error) {
         console.error("Ошибка загрузки контактов:", error);
     }
 }
 
+// ИСПРАВЛЕННАЯ ФУНКЦИЯ ОБНОВЛЕНИЯ СПИСКА КОНТАКТОВ
 function updateContactsList(snapshot) {
-    homeContactsList.innerHTML = '';
-    
-    const contactsData = snapshot.val ? snapshot.val() : null;
+    // Очищаем текущий список контактов
     contacts = [];
+    
+    const contactsData = snapshot.val();
+    
+    console.log("Обработка данных контактов:", contactsData);
 
-    if (contactsData) {
+    if (contactsData && typeof contactsData === 'object') {
         Object.keys(contactsData).forEach(userId => {
-            const contact = contactsData[userId];
-            contact.userId = userId;
-        
+            const contactData = contactsData[userId];
+            
+            // Получаем актуальные данные пользователя из allUsers
             const user = allUsers[userId];
-            if (user) {
-                contact.displayName = user.displayName || contact.displayName;
-                contact.status = user.status || contact.status;
-                contact.customId = user.customId || contact.customId;
-            }
-        
+            
+            // Создаем объект контакта
+            const contact = {
+                userId: userId,
+                displayName: user ? user.displayName : (contactData.displayName || "Неизвестный пользователь"),
+                customId: user ? user.customId : (contactData.customId || `user_${userId.substr(0, 8)}`),
+                status: user ? user.status : (contactData.status || 'offline'),
+                lastActive: user ? user.lastActive : (contactData.lastActive || 0),
+                addedAt: contactData.addedAt || Date.now()
+            };
+            
             contacts.push(contact);
-        
-            const contactElement = createContactElement(contact);
-            homeContactsList.appendChild(contactElement);
         });
+        
+        console.log("Контактов загружено:", contacts.length);
+    } else {
+        console.log("Контакты отсутствуют или данные некорректны");
     }
 
+    // Обновляем отображение контактов
+    updateHomeContacts();
+    updateDesktopContacts();
+    updateProfileContactsCount();
+}
+
+// НОВАЯ ФУНКЦИЯ: Обновление контактов на главном экране
+function updateHomeContacts() {
+    if (!homeContactsList) return;
+    
+    homeContactsList.innerHTML = '';
+    
     if (contacts.length === 0) {
         homeContactsList.innerHTML = `
             <div class="empty-state">
                 <i class="fas fa-user-friends"></i>
                 <h3>Контакты отсутствуют</h3>
-                <p>Добавьте контакты, чтобы начать общение</p>
-                <button class="action-btn secondary" id="addFirstContactBtn">
-                    <i class="fas fa-user-plus"></i> Добавить контакт
-                </button>
+                <p>Начните поиск, чтобы добавить контакты</p>
+                <div class="search-tip" style="margin-top: 15px; padding: 10px; background: rgba(139, 92, 246, 0.1); border-radius: 8px;">
+                    <p style="color: #cbd5e1; font-size: 13px;">💡 Введите имя или ID пользователя в поле поиска выше</p>
+                </div>
             </div>
         `;
-        
-        document.getElementById('addFirstContactBtn')?.addEventListener('click', () => {
-            addContactModal.classList.add('active');
-        });
+        return;
     }
-
-    updateProfileContactsCount();
+    
+    // Сортируем контакты по статусу и имени
+    const sortedContacts = [...contacts].sort((a, b) => {
+        // Сначала онлайн пользователи
+        if (a.status === 'online' && b.status !== 'online') return -1;
+        if (a.status !== 'online' && b.status === 'online') return 1;
+        
+        // Затем сортируем по имени
+        return a.displayName.localeCompare(b.displayName);
+    });
+    
+    sortedContacts.forEach(contact => {
+        const contactElement = createContactElement(contact);
+        homeContactsList.appendChild(contactElement);
+    });
 }
 
 function createContactElement(contact) {
@@ -617,21 +944,16 @@ function createContactElement(contact) {
     contactElement.className = 'contact-item';
     contactElement.dataset.userId = contact.userId;
 
-    const user = allUsers[contact.userId];
-    const displayName = user ? user.displayName : contact.displayName;
-    const status = user ? user.status : contact.status;
-    const customId = user ? user.customId : contact.customId;
-
     contactElement.innerHTML = `
         <div class="contact-avatar">
-            ${displayName.charAt(0)}
+            ${contact.displayName.charAt(0)}
         </div>
         <div class="contact-info">
-            <div class="contact-name">${displayName || "Неизвестный пользователь"}</div>
-            <div class="contact-status ${status || 'offline'}">${status || 'offline'}</div>
+            <div class="contact-name">${contact.displayName}</div>
+            <div class="contact-status ${contact.status || 'offline'}">${contact.status || 'offline'}</div>
         </div>
         <div class="chat-meta">
-            <div class="chat-time">${customId || contact.userId || "ID"}</div>
+            <div class="chat-time">${contact.customId}</div>
         </div>
     `;
     
@@ -642,7 +964,269 @@ function createContactElement(contact) {
     return contactElement;
 }
 
-// ОТКРЫТИЕ ЧАТА
+function updateDesktopContacts() {
+    if (!desktopContactsList) return;
+    
+    desktopContactsList.innerHTML = '';
+    
+    if (contacts.length === 0) {
+        desktopContactsList.innerHTML = `
+            <div class="empty-state" style="text-align: center; padding: 30px 15px; color: #64748b;">
+                <i class="fas fa-user-friends" style="font-size: 32px; margin-bottom: 15px; opacity: 0.5;"></i>
+                <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 8px; color: #94a3b8;">Контакты отсутствуют</h3>
+                <p style="font-size: 14px; margin-bottom: 15px;">Добавьте контакты, чтобы начать общение</p>
+            </div>
+        `;
+        return;
+    }
+    
+    // Сортируем контакты для десктопного интерфейса
+    const sortedContacts = [...contacts].sort((a, b) => {
+        if (a.status === 'online' && b.status !== 'online') return -1;
+        if (a.status !== 'online' && b.status === 'online') return 1;
+        return a.displayName.localeCompare(b.displayName);
+    });
+    
+    sortedContacts.forEach(contact => {
+        const contactElement = createDesktopContactElement(contact);
+        desktopContactsList.appendChild(contactElement);
+    });
+}
+
+function createDesktopContactElement(contact) {
+    const contactElement = document.createElement('div');
+    contactElement.className = 'desktop-chat-item';
+    contactElement.dataset.userId = contact.userId;
+
+    const statusColor = contact.status === 'online' ? '#10b981' : 
+                       contact.status === 'away' ? '#f59e0b' : 
+                       contact.status === 'dnd' ? '#ef4444' : '#94a3b8';
+
+    contactElement.innerHTML = `
+        <div class="desktop-chat-avatar" style="background: linear-gradient(135deg, #f093fb, #f5576c)">
+            ${contact.displayName.charAt(0)}
+        </div>
+        <div class="desktop-chat-info">
+            <div class="desktop-chat-name">${contact.displayName}</div>
+            <div class="desktop-chat-last-message" style="color: ${statusColor}">${contact.status || 'offline'} • ${contact.customId}</div>
+        </div>
+    `;
+    
+    contactElement.addEventListener('click', () => {
+        openOrCreatePrivateChat(contact.userId);
+    });
+
+    return contactElement;
+}
+
+// ================================================
+// УЛУЧШЕННЫЙ ПОИСК КОНТАКТОВ
+// ================================================
+
+// Функция для поиска пользователей
+function searchUsers(query, currentContacts = []) {
+    query = query.toLowerCase().trim();
+    
+    if (!query || query.length < 1) {
+        return []; // Возвращаем пустой массив при пустом запросе
+    }
+    
+    const results = [];
+    
+    // Ищем среди всех пользователей, кроме текущего
+    for (const userId in allUsers) {
+        if (userId === currentUser.uid) continue;
+        
+        const user = allUsers[userId];
+        
+        // Проверяем совпадения по имени и customId
+        const matchesName = user.displayName && user.displayName.toLowerCase().includes(query);
+        const matchesCustomId = user.customId && user.customId.toLowerCase().includes(query);
+        const matchesUserId = userId.toLowerCase().includes(query);
+        
+        if (matchesName || matchesCustomId || matchesUserId) {
+            // Проверяем, не является ли пользователь уже контактом
+            const isAlreadyContact = currentContacts.some(contact => contact.userId === userId);
+            
+            results.push({
+                userId: userId,
+                displayName: user.displayName,
+                customId: user.customId || `user_${userId.substr(0, 8)}`,
+                status: user.status || 'offline',
+                lastActive: user.lastActive || 0,
+                isContact: isAlreadyContact
+            });
+        }
+    }
+    
+    // Сортируем результаты:
+    // 1. Сначала онлайн пользователи
+    // 2. Потом те, кто еще не в контактах
+    // 3. По алфавиту
+    results.sort((a, b) => {
+        // Сначала онлайн
+        if (a.status === 'online' && b.status !== 'online') return -1;
+        if (a.status !== 'online' && b.status === 'online') return 1;
+        
+        // Потом те, кто еще не в контактах
+        if (!a.isContact && b.isContact) return -1;
+        if (a.isContact && !b.isContact) return 1;
+        
+        // Затем по алфавиту
+        return a.displayName.localeCompare(b.displayName);
+    });
+    
+    return results;
+}
+
+// Функция для отображения результатов поиска
+function displaySearchResults(results, containerId, currentContacts = []) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    // Очищаем контейнер
+    container.innerHTML = '';
+    
+    if (results.length === 0) {
+        container.innerHTML = `
+            <div class="no-search-results">
+                <i class="fas fa-user-friends"></i>
+                <p>Пользователи не найдены</p>
+                <p class="search-info">Попробуйте ввести другое имя или ID</p>
+            </div>
+        `;
+        container.classList.add('active');
+        return;
+    }
+    
+    results.forEach(result => {
+        const resultItem = document.createElement('div');
+        resultItem.className = 'search-result-item';
+        resultItem.dataset.userId = result.userId;
+        resultItem.dataset.customId = result.customId;
+        
+        const statusClass = result.status === 'online' ? 'online' : 
+                           result.status === 'away' ? 'away' : 
+                           result.status === 'dnd' ? 'dnd' : 'offline';
+        
+        const statusText = result.status === 'online' ? 'online' : 
+                          result.status === 'away' ? 'неактивен' : 
+                          result.status === 'dnd' ? 'не беспокоить' : 'offline';
+        
+        const buttonText = result.isContact ? 'В контактах ✓' : 'Добавить';
+        const buttonDisabled = result.isContact ? 'disabled' : '';
+        
+        resultItem.innerHTML = `
+            <div class="search-result-avatar">
+                ${result.displayName.charAt(0)}
+            </div>
+            <div class="search-result-info">
+                <div class="search-result-name">${result.displayName}</div>
+                <div class="search-result-id">${result.customId}</div>
+                <div class="search-result-status ${statusClass}">
+                    ${statusText}
+                </div>
+            </div>
+            <button class="add-user-btn" ${buttonDisabled}>
+                ${buttonText}
+            </button>
+        `;
+        
+        // Обработчик добавления контакта
+        const addBtn = resultItem.querySelector('.add-user-btn');
+        if (!result.isContact) {
+            addBtn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                await addContact(result.customId);
+                
+                // Обновляем отображение этого пользователя
+                result.isContact = true;
+                displaySearchResults(results, containerId, currentContacts);
+            });
+        }
+        
+        // Обработчик открытия чата
+        resultItem.addEventListener('click', () => {
+            if (result.isContact) {
+                openOrCreatePrivateChat(result.userId);
+            }
+        });
+        
+        container.appendChild(resultItem);
+    });
+    
+    container.classList.add('active');
+}
+
+// Функция для скрытия результатов поиска
+function hideSearchResults(containerId) {
+    const container = document.getElementById(containerId);
+    if (container) {
+        container.classList.remove('active');
+    }
+}
+
+// Поиск контактов на главном экране
+if (homeContactsSearch) {
+    homeContactsSearch.addEventListener('input', function() {
+        const query = this.value.trim();
+        
+        // Очищаем предыдущий таймаут
+        if (searchTimeouts.homeSearch) {
+            clearTimeout(searchTimeouts.homeSearch);
+        }
+        
+        if (query.length < 1) {
+            hideSearchResults('homeContactsSearchResults');
+            return;
+        }
+        
+        // Запускаем поиск с задержкой (дебаунс)
+        searchTimeouts.homeSearch = setTimeout(() => {
+            const searchResults = searchUsers(query, contacts);
+            displaySearchResults(searchResults, 'homeContactsSearchResults', contacts);
+        }, 300); // Задержка 300 мс
+    });
+    
+    // Закрываем результаты поиска при клике вне их
+    document.addEventListener('click', (e) => {
+        if (!homeContactsSearch.contains(e.target) && 
+            !homeContactsSearchResults.contains(e.target)) {
+            hideSearchResults('homeContactsSearchResults');
+        }
+    });
+}
+
+// Поиск контактов в модальном окне
+if (contactSearch) {
+    contactSearch.addEventListener('input', function() {
+        const query = this.value.trim();
+        
+        // Очищаем предыдущий таймаут
+        if (searchTimeouts.modalSearch) {
+            clearTimeout(searchTimeouts.modalSearch);
+        }
+        
+        if (query.length < 1) {
+            hideSearchResults('contactSearchResults');
+            if (confirmAddContactBtn) confirmAddContactBtn.disabled = true;
+            return;
+        }
+        
+        // Запускаем поиск с задержкой (дебаунс)
+        searchTimeouts.modalSearch = setTimeout(() => {
+            const searchResults = searchUsers(query, contacts);
+            displaySearchResults(searchResults, 'contactSearchResults', contacts);
+            
+            // Активируем кнопку добавления, если есть результаты
+            if (confirmAddContactBtn) {
+                confirmAddContactBtn.disabled = searchResults.length === 0 || !searchResults.some(r => !r.isContact);
+            }
+        }, 300); // Задержка 300 мс
+    });
+}
+
+// ОТКРЫТИЕ ЧАТА - ИСПРАВЛЕННАЯ ВЕРСИЯ ДЛЯ МОБИЛЬНЫХ
 async function openChat(chatId) {
     const chat = chats.find(c => c.id === chatId);
     if (!chat) return;
@@ -651,14 +1235,64 @@ async function openChat(chatId) {
     replyToMessage = null;
     hideReplyPreview();
 
-    homeScreen.style.display = 'none';
-    chatScreen.style.display = 'flex';
-    
+    console.log("Открываем чат", chatId, "устройство:", isMobile ? "мобильное" : "ПК");
+
     if (isMobile) {
+        // Мобильный интерфейс - ИСПРАВЛЕНО: прячем главный экран, показываем чат поверх всего
+        if (homeScreen) {
+            homeScreen.style.display = 'none';
+            homeScreen.style.position = 'absolute';
+            homeScreen.style.zIndex = '1';
+        }
+        if (chatScreen) {
+            chatScreen.style.display = 'flex';
+            chatScreen.style.position = 'absolute';
+            chatScreen.style.top = '0';
+            chatScreen.style.left = '0';
+            chatScreen.style.right = '0';
+            chatScreen.style.bottom = '0';
+            chatScreen.style.zIndex = '1000';
+            chatScreen.style.background = 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)';
+            chatScreen.classList.add('mobile');
+            chatScreen.classList.remove('desktop');
+        }
+        if (desktopEmptyScreen) desktopEmptyScreen.style.display = 'none';
         closeMobileSidebar();
+        
+        // Выделяем активный чат
+        document.querySelectorAll('.chat-item').forEach(item => {
+            item.classList.remove('active');
+        });
+        const activeChatItem = document.querySelector(`.chat-item[data-chat-id="${chatId}"]`);
+        if (activeChatItem) {
+            activeChatItem.classList.add('active');
+        }
+    } else {
+        // ПК интерфейс - ВАЖНО: скрываем пустой экран и показываем чат
+        if (desktopEmptyScreen) {
+            console.log("Скрываем пустой экран на ПК");
+            desktopEmptyScreen.style.display = 'none';
+        }
+        
+        if (chatScreen) {
+            console.log("Показываем экран чата на ПК");
+            chatScreen.style.display = 'flex';
+            chatScreen.classList.add('desktop', 'active');
+            chatScreen.classList.remove('mobile');
+        }
+        
+        // Обновляем активный чат в боковой панели
+        document.querySelectorAll('.desktop-chat-item').forEach(item => {
+            item.classList.remove('active');
+        });
+        
+        const activeChatItem = document.querySelector(`.desktop-chat-item[data-chat-id="${chatId}"]`);
+        if (activeChatItem) {
+            activeChatItem.classList.add('active');
+        }
     }
 
-    let chatName, chatDescription;
+    let chatName, chatDescription, avatarContent;
 
     if (chat.type === 'private') {
         const otherUserId = Object.keys(chat.members).find(id => id !== currentUser.uid);
@@ -666,31 +1300,85 @@ async function openChat(chatId) {
     
         chatName = otherUser ? otherUser.displayName : "Неизвестный пользователь";
         chatDescription = "Личный чат";
+        avatarContent = otherUser ? otherUser.displayName.charAt(0) : '?';
     } else {
         chatName = chat.name;
         chatDescription = chat.description || `Чат типа ${chat.type === 'channel' ? 'канал' : 'группа'}`;
+        avatarContent = chat.type === 'channel' ? '#' : '<i class="fas fa-users"></i>';
     }
 
-    chatHeaderName.textContent = chatName;
-    chatHeaderDescription.textContent = chatDescription;
+    // Обновляем заголовок в зависимости от устройства
+    if (isMobile) {
+        if (chatHeaderName) chatHeaderName.textContent = chatName;
+        if (chatHeaderDescription) chatHeaderDescription.textContent = chatDescription;
+        if (chatHeaderDesktop) chatHeaderDesktop.style.display = 'none';
+        if (chatHeaderMobile) chatHeaderMobile.style.display = 'flex';
+    } else {
+        if (desktopChatHeaderName) desktopChatHeaderName.textContent = chatName;
+        if (desktopChatHeaderDescription) desktopChatHeaderDescription.textContent = chatDescription;
+        if (desktopChatAvatar) {
+            desktopChatAvatar.innerHTML = avatarContent;
+            desktopChatAvatar.style.background = chat.type === 'channel' ? 
+                'linear-gradient(135deg, #f59e0b, #d97706)' : 
+                chat.type === 'group' ? 
+                'linear-gradient(135deg, #10b981, #059669)' : 
+                'linear-gradient(135deg, #3b82f6, #1d4ed8)';
+        }
+        if (chatHeaderDesktop) chatHeaderDesktop.style.display = 'flex';
+        if (chatHeaderMobile) chatHeaderMobile.style.display = 'none';
+    }
 
     loadMessages(chatId);
 }
 
 function showHomeScreen() {
-    chatScreen.style.display = 'none';
-    homeScreen.style.display = 'block';
+    console.log("Показываем главный экран, устройство:", isMobile ? "мобильное" : "ПК");
+    
     currentChatId = null;
     replyToMessage = null;
     hideReplyPreview();
     
     if (isMobile) {
+        // Мобильный интерфейс - ИСПРАВЛЕНО: возвращаем правильное отображение
+        if (chatScreen) {
+            chatScreen.style.display = 'none';
+            chatScreen.style.position = 'relative';
+            chatScreen.style.zIndex = 'auto';
+        }
+        if (homeScreen) {
+            homeScreen.style.display = 'block';
+            homeScreen.style.position = 'relative';
+            homeScreen.style.zIndex = 'auto';
+        }
+        if (desktopEmptyScreen) desktopEmptyScreen.style.display = 'none';
         closeMobileSidebar();
+        
+        // Снимаем выделение активного чата
+        document.querySelectorAll('.chat-item').forEach(item => {
+            item.classList.remove('active');
+        });
+    } else {
+        // ПК интерфейс
+        if (chatScreen) {
+            chatScreen.style.display = 'none';
+            chatScreen.classList.remove('active');
+        }
+        if (desktopEmptyScreen) {
+            console.log("Показываем пустой экран на ПК");
+            desktopEmptyScreen.style.display = 'flex';
+        }
+        
+        // Снимаем выделение активного чата
+        document.querySelectorAll('.desktop-chat-item').forEach(item => {
+            item.classList.remove('active');
+        });
     }
 }
 
 // СООБЩЕНИЯ
 function loadMessages(chatId) {
+    if (!messagesContainer) return;
+    
     messagesContainer.innerHTML = '';
 
     try {
@@ -735,10 +1423,10 @@ function listenToNewMessages(chatId) {
     
         if (!document.querySelector(`[data-message-id="${message.id}"]`)) {
             const messageElement = createMessageElement(message);
-            messagesContainer.appendChild(messageElement);
+            if (messagesContainer) messagesContainer.appendChild(messageElement);
         
             setTimeout(() => {
-                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                if (messagesContainer) messagesContainer.scrollTop = messagesContainer.scrollHeight;
             }, 100);
         }
     });
@@ -756,7 +1444,7 @@ function createMessageElement(message) {
         `;
     } else {
         const isOutgoing = message.senderId === currentUser.uid;
-        messageElement.className = `message ${isOutgoing ? 'outgoing' : 'incoming'}`;
+        messageElement.className = `message ${isOutgoing ? 'outgoing' : 'incoming'} ${isMobile ? 'mobile' : 'desktop'}`;
         messageElement.dataset.messageId = message.id;
 
         const time = new Date(message.timestamp);
@@ -823,8 +1511,8 @@ async function sendMessage() {
     try {
         if (text.startsWith('/')) {
             await handleCommand(text);
-            messageInput.value = '';
-            messageInput.style.height = '56px';
+            if (messageInput) messageInput.value = '';
+            if (messageInput) messageInput.style.height = '56px';
             hideReplyPreview();
             return;
         }
@@ -845,12 +1533,12 @@ async function sendMessage() {
             };
         }
     
-        messageInput.value = '';
-        messageInput.style.height = '56px';
+        if (messageInput) messageInput.value = '';
+        if (messageInput) messageInput.style.height = '56px';
         hideReplyPreview();
         replyToMessage = null;
         
-        if (isMobile) {
+        if (isMobile && messageInput) {
             messageInput.blur();
         }
     
@@ -867,7 +1555,7 @@ async function sendMessage() {
         });
     
         setTimeout(() => {
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            if (messagesContainer) messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }, 100);
     
     } catch (error) {
@@ -911,8 +1599,8 @@ async function handleCommand(command) {
             showNotification(`Неизвестная команда: ${cmd}. Используйте /help для списка команд.`);
     }
     
-    messageInput.value = '';
-    messageInput.style.height = '56px';
+    if (messageInput) messageInput.value = '';
+    if (messageInput) messageInput.style.height = '56px';
     hideReplyPreview();
     replyToMessage = null;
 }
@@ -922,7 +1610,9 @@ function showMessageContextMenu(event, message, isOutgoing) {
     event.preventDefault();
     event.stopPropagation();
 
-    contextDelete.style.display = isOutgoing ? 'flex' : 'none';
+    if (!messageContextMenu) return;
+    
+    if (contextDelete) contextDelete.style.display = isOutgoing ? 'flex' : 'none';
 
     messageContextMenu.dataset.messageId = message.id;
     messageContextMenu.dataset.isOutgoing = isOutgoing;
@@ -960,90 +1650,102 @@ function showMessageContextMenu(event, message, isOutgoing) {
     }, 10);
 }
 
-contextReply.addEventListener('click', () => {
-    const messageId = messageContextMenu.dataset.messageId;
-    if (!messageId) return;
+if (contextReply) {
+    contextReply.addEventListener('click', () => {
+        const messageId = messageContextMenu.dataset.messageId;
+        if (!messageId) return;
 
-    const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
-    if (!messageElement) return;
+        const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
+        if (!messageElement) return;
 
-    const messageText = messageElement.querySelector('.message-text')?.textContent || '';
-    const senderName = messageElement.querySelector('.message-sender-name')?.textContent.split(' ')[0] || '';
+        const messageText = messageElement.querySelector('.message-text')?.textContent || '';
+        const senderName = messageElement.querySelector('.message-sender-name')?.textContent.split(' ')[0] || '';
 
-    replyToMessage = {
-        id: messageId,
-        text: messageText,
-        senderName: senderName
-    };
+        replyToMessage = {
+            id: messageId,
+            text: messageText,
+            senderName: senderName
+        };
 
-    showReplyPreview(senderName, messageText);
+        showReplyPreview(senderName, messageText);
 
-    messageContextMenu.classList.remove('active');
-    messageInput.focus();
-    showNotification("Вы отвечаете на сообщение");
-});
+        if (messageContextMenu) messageContextMenu.classList.remove('active');
+        if (messageInput) messageInput.focus();
+        showNotification("Вы отвечаете на сообщение");
+    });
+}
 
-contextCopy.addEventListener('click', () => {
-    const messageId = messageContextMenu.dataset.messageId;
-    if (!messageId) return;
+if (contextCopy) {
+    contextCopy.addEventListener('click', () => {
+        const messageId = messageContextMenu.dataset.messageId;
+        if (!messageId) return;
 
-    const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
-    if (!messageElement) return;
+        const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
+        if (!messageElement) return;
 
-    const messageText = messageElement.querySelector('.message-text')?.textContent || '';
-    
-    navigator.clipboard.writeText(messageText)
-        .then(() => {
-            showNotification("Текст скопирован в буфер обмена");
-        })
-        .catch(err => {
-            console.error('Ошибка при копировании: ', err);
-            showNotification('Не удалось скопировать текст');
-        });
-    
-    messageContextMenu.classList.remove('active');
-});
+        const messageText = messageElement.querySelector('.message-text')?.textContent || '';
+        
+        navigator.clipboard.writeText(messageText)
+            .then(() => {
+                showNotification("Текст скопирован в буфер обмена");
+            })
+            .catch(err => {
+                console.error('Ошибка при копировании: ', err);
+                showNotification('Не удалось скопировать текст');
+            });
+        
+        if (messageContextMenu) messageContextMenu.classList.remove('active');
+    });
+}
 
-contextDelete.addEventListener('click', async () => {
-    const messageId = messageContextMenu.dataset.messageId;
-    const isOutgoing = messageContextMenu.dataset.isOutgoing === 'true';
+if (contextDelete) {
+    contextDelete.addEventListener('click', async () => {
+        const messageId = messageContextMenu.dataset.messageId;
+        const isOutgoing = messageContextMenu.dataset.isOutgoing === 'true';
 
-    if (!messageId || !currentChatId || !isOutgoing) {
-        messageContextMenu.classList.remove('active');
-        return;
-    }
+        if (!messageId || !currentChatId || !isOutgoing) {
+            if (messageContextMenu) messageContextMenu.classList.remove('active');
+            return;
+        }
 
-    const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
-    if (!messageElement) {
-        messageContextMenu.classList.remove('active');
-        return;
-    }
-    
-    const messageText = messageElement.querySelector('.message-text')?.textContent || '';
-    const senderName = messageElement.querySelector('.message-sender-name')?.textContent.split(' ')[0] || '';
-    const timeElement = messageElement.querySelector('.message-time');
-    const timestamp = timeElement ? new Date().getTime() : Date.now();
-    
-    showDeleteMessageConfirmation(messageId, currentChatId, messageText, senderName, timestamp);
-});
+        const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
+        if (!messageElement) {
+            if (messageContextMenu) messageContextMenu.classList.remove('active');
+            return;
+        }
+        
+        const messageText = messageElement.querySelector('.message-text')?.textContent || '';
+        const senderName = messageElement.querySelector('.message-sender-name')?.textContent.split(' ')[0] || '';
+        const timeElement = messageElement.querySelector('.message-time');
+        const timestamp = timeElement ? new Date().getTime() : Date.now();
+        
+        showDeleteMessageConfirmation(messageId, currentChatId, messageText, senderName, timestamp);
+    });
+}
 
 // МОДАЛЬНЫЕ ОКНА ПОДТВЕРЖДЕНИЯ
 function showLeaveChatConfirmation(chatId) {
+    if (!confirmLeaveChatModal) return;
+    
     confirmLeaveChatModal.classList.add('active');
     
-    confirmLeaveBtn.onclick = async () => {
-        try {
-            await leaveChat(chatId);
-            confirmLeaveChatModal.classList.remove('active');
-        } catch (error) {
-            console.error("Ошибка при выходе из чата:", error);
-            showNotification("Не удалось покинуть чат");
-            confirmLeaveChatModal.classList.remove('active');
-        }
-    };
+    if (confirmLeaveBtn) {
+        confirmLeaveBtn.onclick = async () => {
+            try {
+                await leaveChat(chatId);
+                confirmLeaveChatModal.classList.remove('active');
+            } catch (error) {
+                console.error("Ошибка при выходе из чата:", error);
+                showNotification("Не удалось покинуть чат");
+                confirmLeaveChatModal.classList.remove('active');
+            }
+        };
+    }
 }
 
 function showDeleteMessageConfirmation(messageId, chatId, messageText, senderName, timestamp) {
+    if (!confirmDeleteMessageModal || !messagePreview) return;
+    
     const time = new Date(timestamp);
     const timeString = time.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
     
@@ -1059,30 +1761,34 @@ function showDeleteMessageConfirmation(messageId, chatId, messageText, senderNam
     `;
     
     confirmDeleteMessageModal.classList.add('active');
-    messageContextMenu.classList.remove('active');
+    if (messageContextMenu) messageContextMenu.classList.remove('active');
     
-    confirmDeleteBtn.onclick = async () => {
-        try {
-            await database.ref(`messages/${chatId}/${messageId}`).remove();
-            showNotification("Сообщение удалено");
-            
-            const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
-            if (messageElement) {
-                messageElement.remove();
+    if (confirmDeleteBtn) {
+        confirmDeleteBtn.onclick = async () => {
+            try {
+                await database.ref(`messages/${chatId}/${messageId}`).remove();
+                showNotification("Сообщение удалено");
+                
+                const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
+                if (messageElement) {
+                    messageElement.remove();
+                }
+                
+                confirmDeleteMessageModal.classList.remove('active');
+                
+            } catch (error) {
+                console.error("Ошибка при удалении сообщения:", error);
+                showNotification("Не удалось удалить сообщение");
+                confirmDeleteMessageModal.classList.remove('active');
             }
-            
-            confirmDeleteMessageModal.classList.remove('active');
-            
-        } catch (error) {
-            console.error("Ошибка при удалении сообщения:", error);
-            showNotification("Не удалось удалить сообщение");
-            confirmDeleteMessageModal.classList.remove('active');
-        }
-    };
+        };
+    }
 }
 
 // ФУНКЦИИ ДЛЯ ОТВЕТА НА СООБЩЕНИЯ
 function showReplyPreview(senderName, messageText) {
+    if (!replyPreviewContainer) return;
+    
     replyPreviewContainer.style.display = 'block';
     replyPreviewContainer.innerHTML = `
         <div class="reply-preview">
@@ -1098,10 +1804,12 @@ function showReplyPreview(senderName, messageText) {
         </div>
     `;
     
-    document.getElementById('cancelReplyBtn').addEventListener('click', hideReplyPreview);
+    document.getElementById('cancelReplyBtn')?.addEventListener('click', hideReplyPreview);
 }
 
 function hideReplyPreview() {
+    if (!replyPreviewContainer) return;
+    
     replyPreviewContainer.style.display = 'none';
     replyPreviewContainer.innerHTML = '';
     replyToMessage = null;
@@ -1164,8 +1872,8 @@ async function leaveChat(chatId) {
 
 // СОЗДАНИЕ ЧАТА
 async function createNewChat() {
-    const name = chatNameInput.value.trim();
-    const description = chatDescriptionInput.value.trim();
+    const name = chatNameInput ? chatNameInput.value.trim() : '';
+    const description = chatDescriptionInput ? chatDescriptionInput.value.trim() : '';
 
     try {
         if (selectedChatType !== 'private' && !name) {
@@ -1176,7 +1884,7 @@ async function createNewChat() {
         let newChat;
     
         if (selectedChatType === 'private') {
-            const targetUserId = privateUserId.value.trim();
+            const targetUserId = privateUserId ? privateUserId.value.trim() : '';
         
             if (!targetUserId) {
                 showNotification("Пожалуйста, введите ID пользователя для личного чата");
@@ -1204,7 +1912,7 @@ async function createNewChat() {
             const existingChatId = await findExistingPrivateChat(targetUser.uid);
         
             if (existingChatId) {
-                createChatModal.classList.remove('active');
+                if (createChatModal) createChatModal.classList.remove('active');
                 resetCreateForm();
                 openChat(existingChatId);
                 return;
@@ -1244,12 +1952,18 @@ async function createNewChat() {
         newChat.id = chatId;
         chats.push(newChat);
     
-        const chatElement = createChatElement(newChat);
-        homeChatsList.appendChild(chatElement);
+        // Обновляем интерфейс в зависимости от устройства
+        if (isMobile && homeChatsList) {
+            const chatElement = createChatElement(newChat);
+            homeChatsList.appendChild(chatElement);
+        } else if (desktopChatsList) {
+            const chatElement = createDesktopChatElement(newChat);
+            desktopChatsList.appendChild(chatElement);
+        }
     
         setupChatListener(chatId);
     
-        createChatModal.classList.remove('active');
+        if (createChatModal) createChatModal.classList.remove('active');
         resetCreateForm();
     
         if (selectedChatType === 'private') {
@@ -1330,9 +2044,10 @@ function setupChatListener(chatId) {
 
     messageListeners[chatId] = messagesRef.on('value', (snapshot) => {
         const messagesData = snapshot.val();
-        const chatElement = document.querySelector(`[data-chat-id="${chatId}"]`);
-    
-        if (chatElement && messagesData) {
+        
+        // Обновляем чат в мобильном интерфейсе
+        const mobileChatElement = document.querySelector(`.chat-item[data-chat-id="${chatId}"]`);
+        if (mobileChatElement && messagesData) {
             const messageKeys = Object.keys(messagesData);
             const lastMessage = messagesData[messageKeys[0]];
             const time = new Date(lastMessage.timestamp);
@@ -1344,318 +2059,107 @@ function setupChatListener(chatId) {
                 messageText = messageText.substring(0, 30) + '...';
             }
         
-            chatElement.querySelector('.last-message').textContent = messageText;
-            chatElement.querySelector('.chat-time').textContent = timeString;
+            mobileChatElement.querySelector('.last-message').textContent = messageText;
+            mobileChatElement.querySelector('.chat-time').textContent = timeString;
+        }
+        
+        // Обновляем чат в ПК интерфейсе
+        const desktopChatElement = document.querySelector(`.desktop-chat-item[data-chat-id="${chatId}"]`);
+        if (desktopChatElement && messagesData) {
+            const messageKeys = Object.keys(messagesData);
+            const lastMessage = messagesData[messageKeys[0]];
+            const time = new Date(lastMessage.timestamp);
+        
+            const timeString = time.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+        
+            let messageText = lastMessage.text;
+            if (messageText.length > 20) {
+                messageText = messageText.substring(0, 20) + '...';
+            }
+        
+            desktopChatElement.querySelector('.desktop-chat-last-message').textContent = `${timeString} • ${messageText}`;
         }
     });
 }
 
-// ПОИСК И КОНТАКТЫ
-async function addContact(targetUserId) {
+// ИСПРАВЛЕННАЯ ФУНКЦИЯ ДОБАВЛЕНИЯ КОНТАКТА
+async function addContact(targetCustomId) {
     try {
-        let targetUser = allUsers[targetUserId];
-    
-        if (!targetUser) {
-            for (const userId in allUsers) {
-                if (allUsers[userId].customId === targetUserId && userId !== currentUser.uid) {
-                    targetUser = allUsers[userId];
-                    targetUserId = userId;
-                    break;
-                }
-            }
-        }
-    
-        if (!targetUser) {
-            const userRef = database.ref(`users/${targetUserId}`);
-            const snapshot = await userRef.once('value');
+        console.log("Попытка добавления контакта по customId:", targetCustomId);
         
-            if (snapshot.exists()) {
-                const userData = snapshot.val();
-                targetUser = {
-                    uid: targetUserId,
-                    displayName: userData.displayName || "Пользователь",
-                    customId: userData.customId || `user_${targetUserId.substr(0, 8)}`,
-                    status: userData.status || 'offline'
-                };
-                
-                allUsers[targetUserId] = targetUser;
-            } else {
-                const usersRef = database.ref('users');
-                const allUsersSnapshot = await usersRef.once('value');
-                const allUsersData = allUsersSnapshot.val();
-                
-                let foundUserId = null;
-                for (const uid in allUsersData) {
-                    if (allUsersData[uid].customId === targetUserId && uid !== currentUser.uid) {
-                        foundUserId = uid;
-                        break;
-                    }
-                }
-                
-                if (foundUserId) {
-                    const foundUserData = allUsersData[foundUserId];
-                    targetUser = {
-                        uid: foundUserId,
-                        displayName: foundUserData.displayName || "Пользователь",
-                        customId: foundUserData.customId || `user_${foundUserId.substr(0, 8)}`,
-                        status: foundUserData.status || 'offline'
-                    };
-                    
-                    allUsers[foundUserId] = targetUser;
-                    targetUserId = foundUserId;
-                } else {
-                    showNotification("Пользователь не найден");
-                    return;
-                }
+        // Ищем пользователя по customId
+        let targetUser = null;
+        let actualUserId = null;
+        
+        for (const userId in allUsers) {
+            if (allUsers[userId].customId === targetCustomId) {
+                targetUser = allUsers[userId];
+                actualUserId = userId;
+                console.log("Найден пользователь по customId:", targetUser);
+                break;
             }
         }
-    
-        if (targetUserId === currentUser.uid) {
+        
+        if (!targetUser) {
+            showNotification("Пользователь не найден");
+            return;
+        }
+
+        if (actualUserId === currentUser.uid) {
             showNotification("Вы не можете добавить себя в контакты");
             return;
         }
-    
-        const isAlreadyContact = contacts.some(contact => contact.userId === targetUserId);
-    
-        if (isAlreadyContact) {
+
+        // Проверяем в базе данных, есть ли уже контакт
+        const contactRef = database.ref(`users/${currentUser.uid}/contacts/${actualUserId}`);
+        const contactSnapshot = await contactRef.once('value');
+        
+        if (contactSnapshot.exists()) {
             showNotification("Этот пользователь уже у вас в контактах");
             return;
         }
-    
+
+        // Добавляем контакт в базу данных
         const contactData = {
-            displayName: targetUser.displayName || "Пользователь",
-            customId: targetUser.customId || `user_${targetUserId.substr(0, 8)}`,
-            status: targetUser.status || 'offline',
-            addedAt: Date.now(),
-            userId: targetUserId
+            displayName: targetUser.displayName,
+            customId: targetUser.customId,
+            status: targetUser.status,
+            lastActive: targetUser.lastActive,
+            addedAt: Date.now()
         };
-    
-        await database.ref(`users/${currentUser.uid}/contacts/${targetUserId}`).set(contactData);
-    
-        contacts.push({
-            userId: targetUserId,
-            ...contactData
-        });
-    
+
+        await contactRef.set(contactData);
+        
         showNotification(`Пользователь ${targetUser.displayName} добавлен в контакты!`);
-    
-        addContactModal.classList.remove('active');
-        resetAddContactForm();
-    
-        updateContactsList({ 
-            val: () => contacts.reduce((acc, contact) => {
-                acc[contact.userId] = contact;
-                return acc;
-            }, {}) 
-        });
-    
+
+        // Обновляем список контактов
+        await loadContacts();
+
     } catch (error) {
         console.error("Ошибка при добавлении контакта:", error);
         showNotification("Не удалось добавить контакт: " + error.message);
     }
 }
 
-// ПРОФИЛЬ
-function openProfileModal() {
-    profileModal.classList.add('active');
+// ИСПРАВЛЕННЫЙ ПОИСК КОНТАКТОВ (для модального окна ручного ввода)
+function handleContactSearchManual() {
+    if (!contactSearch || !confirmAddContactBtn) return;
     
-    if (isMobile) {
-        closeMobileSidebar();
+    const query = contactSearch.value.trim();
+    
+    if (!query) {
+        if (confirmAddContactBtn) confirmAddContactBtn.disabled = true;
+        return;
     }
-}
-
-function updateUserProfileDisplay() {
-    if (!currentUser) return;
-
-    profileName.textContent = currentUser.displayName;
-    profileUserId.textContent = currentUser.customId;
-    document.getElementById('profileAvatarLarge').textContent = currentUser.displayName.charAt(0);
-    document.getElementById('profileStatus').textContent = currentUser.status;
-    document.getElementById('profileStatus').className = `profile-status ${currentUser.status}`;
-    document.getElementById('profileJoinDate').textContent = currentUser.joinDate;
-
-    updateProfileContactsCount();
-    updateProfileChatsCount();
-}
-
-function updateUserIDs() {
-    if (!currentUser) return;
     
-    homeUserId.textContent = currentUser.customId;
-    mobileUserId.textContent = currentUser.customId;
-    profileUserId.textContent = currentUser.customId;
+    // Включить кнопку, если что-то введено
+    if (confirmAddContactBtn) confirmAddContactBtn.disabled = false;
 }
 
-function copyUserIdToClipboard(element) {
-    const userId = element.textContent;
-
-    navigator.clipboard.writeText(userId)
-        .then(() => {
-            const originalIcon = element.nextElementSibling.innerHTML;
-            element.nextElementSibling.innerHTML = '<i class="fas fa-check"></i>';
-            element.nextElementSibling.style.color = '#10b981';
-        
-            setTimeout(() => {
-                element.nextElementSibling.innerHTML = originalIcon;
-                element.nextElementSibling.style.color = '';
-            }, 2000);
-        })
-        .catch(err => {
-            console.error('Ошибка при копировании: ', err);
-            showNotification('Не удалось скопировать ID. Попробуйте еще раз.');
-        });
-}
-
-function updateProfileContactsCount() {
-    profileContactsCount.textContent = contacts.length;
-}
-
-function updateProfileChatsCount() {
-    profileChatsCount.textContent = chats.length;
-}
-
-async function saveProfileChanges() {
-    try {
-        const newName = editProfileName.value.trim();
-        const newStatus = document.querySelector('.status-option.active').dataset.status;
-    
-        if (!newName) {
-            showNotification("Пожалуйста, введите имя");
-            return;
-        }
-    
-        await database.ref(`users/${currentUser.uid}`).update({
-            displayName: newName,
-            status: newStatus
-        });
-    
-        currentUser.displayName = newName;
-        currentUser.status = newStatus;
-    
-        if (allUsers[currentUser.uid]) {
-            allUsers[currentUser.uid].displayName = newName;
-            allUsers[currentUser.uid].status = newStatus;
-        }
-    
-        editProfileModal.classList.remove('active');
-        showNotification("Профиль успешно обновлен!");
-        updateUserProfileDisplay();
-        updateUserIDs();
-    
-    } catch (error) {
-        console.error("Ошибка при обновлении профиля:", error);
-        showNotification("Не удалось обновить профиль. Попробуйте еще раз.");
-    }
-}
-
-// УВЕДОМЛЕНИЯ
-function showNotification(message) {
-    const notification = document.createElement('div');
-    notification.className = 'notification';
-    notification.textContent = message;
-    notification.style.position = 'fixed';
-    notification.style.top = '20px';
-    notification.style.right = '20px';
-    notification.style.background = 'linear-gradient(135deg, #667eea, #764ba2)';
-    notification.style.color = 'white';
-    notification.style.padding = '12px 20px';
-    notification.style.borderRadius = '12px';
-    notification.style.boxShadow = '0 10px 25px rgba(102, 126, 234, 0.5)';
-    notification.style.zIndex = '4000';
-    notification.style.fontWeight = '600';
-    notification.style.maxWidth = isMobile ? 'calc(100% - 40px)' : '300px';
-    notification.style.wordBreak = 'break-word';
-    notification.style.animation = 'slideIn 0.3s ease';
-
-    document.body.appendChild(notification);
-
-    setTimeout(() => {
-        notification.style.animation = 'slideOut 0.3s ease';
-        setTimeout(() => {
-            document.body.removeChild(notification);
-        }, 300);
-    }, 3000);
-}
-
-// ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
-function resetCreateForm() {
-    chatNameInput.value = '';
-    chatDescriptionInput.value = '';
-    privateUserId.value = '';
-    privateUserSearchResults.innerHTML = '';
-    privateUserSearchResults.style.display = 'none';
-    selectedChatType = 'channel';
-    chatTypeOptions.forEach(opt => {
-        opt.classList.remove('active');
-        if (opt.dataset.type === 'channel') {
-            opt.classList.add('active');
-        }
-    });
-    chatDescriptionGroup.style.display = 'block';
-    privateChatUser.style.display = 'none';
-    chatNameInput.disabled = false;
-    chatNameInput.placeholder = "Введите название";
-}
-
-function resetAddContactForm() {
-    contactSearch.value = '';
-    contactSearchResults.innerHTML = '';
-    confirmAddContactBtn.disabled = true;
-}
-
-function showWelcomeMessage() {
-    messagesContainer.innerHTML = `
-        <div class="empty-state">
-            <i class="fas fa-comments"></i>
-            <h3>В этом чате пока нет сообщений</h3>
-            <p>Напишите первое сообщение!</p>
-        </div>
-    `;
-}
-
-function updateHomeScreen() {
-    updateHomeChats();
-    updateContactsList({ val: () => ({}) });
-}
-
-// МОБИЛЬНЫЕ ФУНКЦИИ
-function openMobileSidebar() {
-    mobileSidebarOverlay.classList.add('active');
-    mobileSidebar.classList.add('active');
-    document.body.style.overflow = 'hidden';
-}
-
-function closeMobileSidebar() {
-    mobileSidebarOverlay.classList.remove('active');
-    mobileSidebar.classList.remove('active');
-    document.body.style.overflow = 'auto';
-}
-
-function setupMobileSidebar() {
-    // Переключаем вкладки в мобильном сайдбаре
-    mobileSidebarTabs.forEach(tab => {
-        tab.addEventListener('click', (e) => {
-            if (tab.id === 'mobileLogoutBtn') {
-                logoutUser();
-                closeMobileSidebar();
-                return;
-            }
-            
-            const tabName = tab.dataset.tab;
-            
-            mobileSidebarTabs.forEach(t => t.classList.remove('active'));
-            tab.classList.add('active');
-            
-            if (tabName === 'profile') {
-                openProfileModal();
-                closeMobileSidebar();
-            }
-        });
-    });
-}
-
-// ПОИСК ПОЛЬЗОВАТЕЛЕЙ
+// ПОИСК ПОЛЬЗОВАТЕЛЕЙ ДЛЯ ЛИЧНЫХ ЧАТОВ
 function handlePrivateUserSearch() {
+    if (!privateUserId || !privateUserSearchResults) return;
+    
     const query = privateUserId.value.toLowerCase().trim();
     privateUserSearchResults.innerHTML = '';
 
@@ -1704,8 +2208,8 @@ function handlePrivateUserSearch() {
             `;
             
             resultItem.addEventListener('click', () => {
-                privateUserId.value = result.customId;
-                privateUserSearchResults.style.display = 'none';
+                if (privateUserId) privateUserId.value = result.customId;
+                if (privateUserSearchResults) privateUserSearchResults.style.display = 'none';
             });
         
             privateUserSearchResults.appendChild(resultItem);
@@ -1716,8 +2220,240 @@ function handlePrivateUserSearch() {
     }
 }
 
+// ПРОФИЛЬ
+function openProfileModal() {
+    if (!profileModal) return;
+    
+    profileModal.classList.add('active');
+    
+    if (isMobile) {
+        closeMobileSidebar();
+    }
+}
+
+function updateUserProfileDisplay() {
+    if (!currentUser) return;
+
+    if (profileName) profileName.textContent = currentUser.displayName;
+    if (profileUserId) profileUserId.textContent = currentUser.customId;
+    const profileAvatarLarge = document.getElementById('profileAvatarLarge');
+    if (profileAvatarLarge) profileAvatarLarge.textContent = currentUser.displayName.charAt(0);
+    const profileStatus = document.getElementById('profileStatus');
+    if (profileStatus) {
+        profileStatus.textContent = currentUser.status || "online";
+        profileStatus.className = `profile-status ${currentUser.status || "online"}`;
+    }
+    const profileJoinDate = document.getElementById('profileJoinDate');
+    if (profileJoinDate) profileJoinDate.textContent = currentUser.joinDate;
+
+    // Обновляем информацию в ПК интерфейсе
+    updateDesktopUserInfo();
+
+    updateProfileContactsCount();
+    updateProfileChatsCount();
+}
+
+function updateUserIDs() {
+    if (!currentUser) return;
+    
+    if (homeUserId) homeUserId.textContent = currentUser.customId;
+    if (mobileUserId) mobileUserId.textContent = currentUser.customId;
+    if (profileUserId) profileUserId.textContent = currentUser.customId;
+}
+
+function copyUserIdToClipboard(element) {
+    if (!element) return;
+    
+    const userId = element.textContent;
+
+    navigator.clipboard.writeText(userId)
+        .then(() => {
+            const originalIcon = element.nextElementSibling.innerHTML;
+            element.nextElementSibling.innerHTML = '<i class="fas fa-check"></i>';
+            element.nextElementSibling.style.color = '#10b981';
+        
+            setTimeout(() => {
+                element.nextElementSibling.innerHTML = originalIcon;
+                element.nextElementSibling.style.color = '';
+            }, 2000);
+        })
+        .catch(err => {
+            console.error('Ошибка при копировании: ', err);
+            showNotification('Не удалось скопировать ID. Попробуйте еще раз.');
+        });
+}
+
+function updateProfileContactsCount() {
+    if (profileContactsCount) profileContactsCount.textContent = contacts.length;
+}
+
+function updateProfileChatsCount() {
+    if (profileChatsCount) profileChatsCount.textContent = chats.length;
+}
+
+async function saveProfileChanges() {
+    try {
+        const newName = editProfileName ? editProfileName.value.trim() : '';
+        const activeStatus = document.querySelector('.status-option.active');
+        const newStatus = activeStatus ? activeStatus.dataset.status : 'online';
+    
+        if (!newName) {
+            showNotification("Пожалуйста, введите имя");
+            return;
+        }
+    
+        await database.ref(`users/${currentUser.uid}`).update({
+            displayName: newName,
+            status: newStatus,
+            lastActive: Date.now()
+        });
+    
+        currentUser.displayName = newName;
+        currentUser.status = newStatus;
+    
+        if (allUsers[currentUser.uid]) {
+            allUsers[currentUser.uid].displayName = newName;
+            allUsers[currentUser.uid].status = newStatus;
+        }
+    
+        if (editProfileModal) editProfileModal.classList.remove('active');
+        showNotification("Профиль успешно обновлен!");
+        updateUserProfileDisplay();
+        updateUserIDs();
+    
+    } catch (error) {
+        console.error("Ошибка при обновлении профиля:", error);
+        showNotification("Не удалось обновить профиль. Попробуйте еще раз.");
+    }
+}
+
+// УВЕДОМЛЕНИЯ
+function showNotification(message) {
+    const notification = document.createElement('div');
+    notification.className = 'notification';
+    notification.textContent = message;
+    notification.style.position = 'fixed';
+    notification.style.top = '20px';
+    notification.style.right = '20px';
+    notification.style.background = 'linear-gradient(135deg, #667eea, #764ba2)';
+    notification.style.color = 'white';
+    notification.style.padding = '12px 20px';
+    notification.style.borderRadius = '12px';
+    notification.style.boxShadow = '0 10px 25px rgba(102, 126, 234, 0.5)';
+    notification.style.zIndex = '4000';
+    notification.style.fontWeight = '600';
+    notification.style.maxWidth = isMobile ? 'calc(100% - 40px)' : '300px';
+    notification.style.wordBreak = 'break-word';
+    notification.style.animation = 'slideIn 0.3s ease';
+
+    document.body.appendChild(notification);
+
+    setTimeout(() => {
+        notification.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => {
+            if (document.body.contains(notification)) {
+                document.body.removeChild(notification);
+            }
+        }, 300);
+    }, 3000);
+}
+
+// ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+function resetCreateForm() {
+    if (chatNameInput) chatNameInput.value = '';
+    if (chatDescriptionInput) chatDescriptionInput.value = '';
+    if (privateUserId) privateUserId.value = '';
+    if (privateUserSearchResults) {
+        privateUserSearchResults.innerHTML = '';
+        privateUserSearchResults.style.display = 'none';
+    }
+    selectedChatType = 'channel';
+    chatTypeOptions.forEach(opt => {
+        opt.classList.remove('active');
+        if (opt.dataset.type === 'channel') {
+            opt.classList.add('active');
+        }
+    });
+    if (chatDescriptionGroup) chatDescriptionGroup.style.display = 'block';
+    if (privateChatUser) privateChatUser.style.display = 'none';
+    if (chatNameInput) {
+        chatNameInput.disabled = false;
+        chatNameInput.placeholder = "Введите название";
+    }
+}
+
+function resetAddContactForm() {
+    if (contactSearch) contactSearch.value = '';
+    if (contactSearchResults) {
+        contactSearchResults.innerHTML = '';
+        contactSearchResults.style.display = 'none';
+    }
+    if (confirmAddContactBtn) confirmAddContactBtn.disabled = true;
+}
+
+function showWelcomeMessage() {
+    if (!messagesContainer) return;
+    
+    messagesContainer.innerHTML = `
+        <div class="empty-state">
+            <i class="fas fa-comments"></i>
+            <h3>В этом чате пока нет сообщений</h3>
+            <p>Напишите первое сообщение!</p>
+        </div>
+    `;
+}
+
+function updateHomeScreen() {
+    updateHomeChats();
+    updateHomeContacts();
+}
+
+// МОБИЛЬНЫЕ ФУНКЦИИ
+function openMobileSidebar() {
+    if (!mobileSidebarOverlay || !mobileSidebar) return;
+    
+    mobileSidebarOverlay.classList.add('active');
+    mobileSidebar.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeMobileSidebar() {
+    if (!mobileSidebarOverlay || !mobileSidebar) return;
+    
+    mobileSidebarOverlay.classList.remove('active');
+    mobileSidebar.classList.remove('active');
+    document.body.style.overflow = 'auto';
+}
+
+function setupMobileSidebar() {
+    if (!mobileSidebarTabs) return;
+    
+    // Переключаем вкладки в мобильном сайдбаре
+    mobileSidebarTabs.forEach(tab => {
+        tab.addEventListener('click', (e) => {
+            if (tab.id === 'mobileLogoutBtn') {
+                logoutUser();
+                closeMobileSidebar();
+                return;
+            }
+            
+            const tabName = tab.dataset.tab;
+            
+            mobileSidebarTabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            
+            if (tabName === 'profile') {
+                openProfileModal();
+                closeMobileSidebar();
+            }
+        });
+    });
+}
+
 // ОБРАБОТЧИКИ СОБЫТИЙ
 function setupEventListeners() {
+    console.log("Настройка обработчиков событий");
+    
     // АВТОРИЗАЦИЯ
     authTabs.forEach(tab => {
         tab.addEventListener('click', () => {
@@ -1726,203 +2462,329 @@ function setupEventListeners() {
             authTabs.forEach(t => t.classList.remove('active'));
             tab.classList.add('active');
         
-            loginForm.classList.remove('active');
-            registerForm.classList.remove('active');
+            if (loginForm) loginForm.classList.remove('active');
+            if (registerForm) registerForm.classList.remove('active');
         
             if (formName === 'login') {
-                loginForm.classList.add('active');
+                if (loginForm) loginForm.classList.add('active');
             } else {
-                registerForm.classList.add('active');
+                if (registerForm) registerForm.classList.add('active');
             }
         
             hideError();
         });
     });
 
-    loginBtn.addEventListener('click', loginUser);
-    quickLoginBtn.addEventListener('click', quickLogin);
-    registerBtn.addEventListener('click', registerUser);
+    if (loginBtn) loginBtn.addEventListener('click', loginUser);
+    if (quickLoginBtn) quickLoginBtn.addEventListener('click', quickLogin);
+    if (registerBtn) registerBtn.addEventListener('click', registerUser);
 
     // МОБИЛЬНЫЕ КНОПКИ
-    mobileMenuBtn.addEventListener('click', openMobileSidebar);
-    mobileProfileBtn.addEventListener('click', openProfileModal);
-    mobileSidebarClose.addEventListener('click', closeMobileSidebar);
-    mobileSidebarOverlay.addEventListener('click', closeMobileSidebar);
+    if (mobileMenuBtn) mobileMenuBtn.addEventListener('click', openMobileSidebar);
+    if (mobileProfileBtn) mobileProfileBtn.addEventListener('click', openProfileModal);
+    if (mobileSidebarClose) mobileSidebarClose.addEventListener('click', closeMobileSidebar);
+    if (mobileSidebarOverlay) mobileSidebarOverlay.addEventListener('click', closeMobileSidebar);
     setupMobileSidebar();
     
-    mobileCreateChatBtn.addEventListener('click', () => {
-        createChatModal.classList.add('active');
-        closeMobileSidebar();
-    });
-    
-    mobileAddContactBtn.addEventListener('click', () => {
-        addContactModal.classList.add('active');
-        closeMobileSidebar();
-    });
-
-    // ГЛАВНЫЙ ЭКРАН
-    homeCreateChatBtn.addEventListener('click', () => {
-        createChatModal.classList.add('active');
-    });
-    
-    homeAddContactBtn.addEventListener('click', () => {
-        addContactModal.classList.add('active');
-    });
-    
-    homeTabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-            const tabName = tab.dataset.tab;
-            
-            homeTabs.forEach(t => t.classList.remove('active'));
-            tab.classList.add('active');
-            
-            document.querySelectorAll('.home-tab-pane').forEach(pane => {
-                pane.classList.remove('active');
-            });
-            
-            document.getElementById(`home${tabName.charAt(0).toUpperCase() + tabName.slice(1)}Pane`).classList.add('active');
+    if (mobileCreateChatBtn) {
+        mobileCreateChatBtn.addEventListener('click', () => {
+            if (createChatModal) createChatModal.classList.add('active');
+            closeMobileSidebar();
         });
-    });
+    }
+    
+    if (mobileAddContactBtn) {
+        mobileAddContactBtn.addEventListener('click', () => {
+            if (addContactModal) addContactModal.classList.add('active');
+            closeMobileSidebar();
+        });
+    }
+
+    // ПК КНОПКИ
+    if (desktopCreateChatBtn) {
+        desktopCreateChatBtn.addEventListener('click', () => {
+            console.log("Клик по созданию чата в боковой панели ПК");
+            if (createChatModal) createChatModal.classList.add('active');
+        });
+    }
+    
+    if (desktopAddContactBtn) {
+        desktopAddContactBtn.addEventListener('click', () => {
+            console.log("Клик по добавлению контакта в боковой панели ПК");
+            if (addContactModal) addContactModal.classList.add('active');
+        });
+    }
+    
+    if (desktopEmptyCreateChatBtn) {
+        desktopEmptyCreateChatBtn.addEventListener('click', () => {
+            console.log("Клик по созданию чата из пустого экрана");
+            if (createChatModal) createChatModal.classList.add('active');
+        });
+    }
+    
+    if (desktopEmptyAddContactBtn) {
+        desktopEmptyAddContactBtn.addEventListener('click', () => {
+            console.log("Клик по добавлению контакта из пустого экрана");
+            if (addContactModal) addContactModal.classList.add('active');
+        });
+    }
+    
+    // КНОПКА ИНФОРМАЦИИ О ПРОФИЛЕ НА ПК
+    if (desktopUserInfoBtn) {
+        desktopUserInfoBtn.addEventListener('click', () => {
+            console.log("Открытие профиля из ПК интерфейса");
+            openProfileModal();
+        });
+    }
+    
+    // Вкладки в боковой панели ПК
+    if (desktopSidebarTabs.length > 0) {
+        desktopSidebarTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const tabName = tab.dataset.tab;
+                currentDesktopTab = tabName;
+                
+                desktopSidebarTabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                
+                if (tabName === 'chats') {
+                    if (desktopChatsList) desktopChatsList.style.display = 'flex';
+                    if (desktopContactsList) desktopContactsList.style.display = 'none';
+                } else if (tabName === 'contacts') {
+                    if (desktopChatsList) desktopChatsList.style.display = 'none';
+                    if (desktopContactsList) desktopContactsList.style.display = 'flex';
+                }
+            });
+        });
+    }
+
+    // ГЛАВНЫЙ ЭКРАН (только для мобильных)
+    if (homeCreateChatBtn) {
+        homeCreateChatBtn.addEventListener('click', () => {
+            if (createChatModal) createChatModal.classList.add('active');
+        });
+    }
+    
+    if (homeAddContactBtn) {
+        homeAddContactBtn.addEventListener('click', () => {
+            if (addContactModal) addContactModal.classList.add('active');
+        });
+    }
+    
+    if (homeTabs.length > 0) {
+        homeTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const tabName = tab.dataset.tab;
+                
+                homeTabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                
+                document.querySelectorAll('.home-tab-pane').forEach(pane => {
+                    pane.classList.remove('active');
+                });
+                
+                const pane = document.getElementById(`home${tabName.charAt(0).toUpperCase() + tabName.slice(1)}Pane`);
+                if (pane) pane.classList.add('active');
+            });
+        });
+    }
 
     // ЭКРАН ЧАТА
-    backToHomeBtn.addEventListener('click', showHomeScreen);
-    sendMessageBtn.addEventListener('click', sendMessage);
+    if (backToHomeBtn) {
+        backToHomeBtn.addEventListener('click', showHomeScreen);
+    }
     
-    messageInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            sendMessage();
-        }
-    });
+    if (sendMessageBtn) {
+        sendMessageBtn.addEventListener('click', sendMessage);
+    }
     
-    messageInput.addEventListener('input', function() {
-        if (!this.value.trim()) {
-            this.style.height = '56px';
-        }
-    });
-
-    // СОЗДАНИЕ ЧАТА
-    cancelCreateBtn.addEventListener('click', () => {
-        createChatModal.classList.remove('active');
-        resetCreateForm();
-    });
-
-    chatTypeOptions.forEach(option => {
-        option.addEventListener('click', () => {
-            chatTypeOptions.forEach(opt => opt.classList.remove('active'));
-            option.classList.add('active');
-            selectedChatType = option.dataset.type;
-        
-            if (selectedChatType === 'private') {
-                chatDescriptionGroup.style.display = 'none';
-                privateChatUser.style.display = 'block';
-                chatNameInput.placeholder = "Имя чата (автоматически)";
-                chatNameInput.disabled = true;
-            } else {
-                chatDescriptionGroup.style.display = 'block';
-                privateChatUser.style.display = 'none';
-                chatNameInput.placeholder = "Введите название";
-                chatNameInput.disabled = false;
+    if (messageInput) {
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
             }
         });
-    });
-
-    confirmCreateBtn.addEventListener('click', createNewChat);
-
-    // КОНТАКТЫ
-    cancelAddContactBtn.addEventListener('click', () => {
-        addContactModal.classList.remove('active');
-        resetAddContactForm();
-    });
-
-    confirmAddContactBtn.addEventListener('click', async () => {
-        if (!contactSearch) return;
         
-        const searchValue = contactSearch.value.trim();
-    
-        if (!searchValue) {
-            showNotification("Введите ID или имя пользователя");
-            return;
-        }
-    
-        let foundUserId = null;
-    
-        for (const userId in allUsers) {
-            const user = allUsers[userId];
-            if (user.customId && user.customId.toLowerCase() === searchValue.toLowerCase() && userId !== currentUser.uid) {
-                foundUserId = userId;
-                break;
+        messageInput.addEventListener('input', function() {
+            if (!this.value.trim()) {
+                this.style.height = '56px';
             }
-        }
-    
-        if (!foundUserId) {
+        });
+    }
+
+    // СОЗДАНИЕ ЧАТА
+    if (cancelCreateBtn) {
+        cancelCreateBtn.addEventListener('click', () => {
+            if (createChatModal) createChatModal.classList.remove('active');
+            resetCreateForm();
+        });
+    }
+
+    if (chatTypeOptions.length > 0) {
+        chatTypeOptions.forEach(option => {
+            option.addEventListener('click', () => {
+                chatTypeOptions.forEach(opt => opt.classList.remove('active'));
+                option.classList.add('active');
+                selectedChatType = option.dataset.type;
+            
+                if (selectedChatType === 'private') {
+                    if (chatDescriptionGroup) chatDescriptionGroup.style.display = 'none';
+                    if (privateChatUser) privateChatUser.style.display = 'block';
+                    if (chatNameInput) {
+                        chatNameInput.placeholder = "Имя чата (автоматически)";
+                        chatNameInput.disabled = true;
+                    }
+                } else {
+                    if (chatDescriptionGroup) chatDescriptionGroup.style.display = 'block';
+                    if (privateChatUser) privateChatUser.style.display = 'none';
+                    if (chatNameInput) {
+                        chatNameInput.placeholder = "Введите название";
+                        chatNameInput.disabled = false;
+                    }
+                }
+            });
+        });
+    }
+
+    if (confirmCreateBtn) {
+        confirmCreateBtn.addEventListener('click', createNewChat);
+    }
+
+    // КОНТАКТЫ - ИСПРАВЛЕННЫЕ ОБРАБОТЧИКИ
+    if (cancelAddContactBtn) {
+        cancelAddContactBtn.addEventListener('click', () => {
+            if (addContactModal) addContactModal.classList.remove('active');
+            resetAddContactForm();
+        });
+    }
+
+    if (confirmAddContactBtn) {
+        confirmAddContactBtn.addEventListener('click', async () => {
+            if (!contactSearch) return;
+            
+            const searchValue = contactSearch.value.trim();
+        
+            if (!searchValue) {
+                showNotification("Введите ID или имя пользователя");
+                return;
+            }
+        
+            console.log("Поиск пользователя для добавления:", searchValue);
+            
+            // Сначала ищем по customId
+            let foundCustomId = null;
+            
             for (const userId in allUsers) {
-                const user = allUsers[userId];
-                if (user.displayName && user.displayName.toLowerCase().includes(searchValue.toLowerCase()) && userId !== currentUser.uid) {
-                    foundUserId = userId;
+                if (allUsers[userId].customId && allUsers[userId].customId.toLowerCase() === searchValue.toLowerCase() && userId !== currentUser.uid) {
+                    foundCustomId = allUsers[userId].customId;
+                    console.log("Найден по customId:", foundCustomId);
                     break;
                 }
             }
-        }
-    
-        if (!foundUserId && allUsers[searchValue] && searchValue !== currentUser.uid) {
-            foundUserId = searchValue;
-        }
-    
-        if (foundUserId) {
-            await addContact(foundUserId);
-        } else {
-            showNotification("Пользователь не найден");
-        }
-    });
-
-    // ПОИСК ПОЛЬЗОВАТЕЛЕЙ ДЛЯ ЛИЧНЫХ ЧАТОВ
-    privateUserId.addEventListener('input', handlePrivateUserSearch);
-
-    // ПРОФИЛЬ
-    copyUserIdBtn.addEventListener('click', () => copyUserIdToClipboard(profileUserId));
-    copyHomeIdBtn.addEventListener('click', () => copyUserIdToClipboard(homeUserId));
-    copyMobileIdBtn.addEventListener('click', () => copyUserIdToClipboard(mobileUserId));
-    
-    logoutBtn.addEventListener('click', logoutUser);
-    mobileLogoutBtn.addEventListener('click', logoutUser);
-
-    // РЕДАКТИРОВАНИЕ ПРОФИЛЯ
-    editProfileBtn.addEventListener('click', () => {
-        profileModal.classList.remove('active');
-        editProfileModal.classList.add('active');
-        editProfileName.value = currentUser.displayName;
-    
-        statusOptions.forEach(opt => {
-            opt.classList.remove('active');
-            if (opt.dataset.status === currentUser.status) {
-                opt.classList.add('active');
+            
+            // Если не нашли, ищем по имени
+            if (!foundCustomId) {
+                for (const userId in allUsers) {
+                    if (allUsers[userId].displayName && allUsers[userId].displayName.toLowerCase().includes(searchValue.toLowerCase()) && userId !== currentUser.uid) {
+                        foundCustomId = allUsers[userId].customId;
+                        console.log("Найден по имени:", foundCustomId);
+                        break;
+                    }
+                }
+            }
+        
+            if (foundCustomId) {
+                await addContact(foundCustomId);
+                
+                // Закрываем модальное окно
+                if (addContactModal) addContactModal.classList.remove('active');
+                resetAddContactForm();
+            } else {
+                showNotification("Пользователь не найден. Проверьте правильность ID.");
             }
         });
-    });
+    }
+    
+    // Обработчик поиска контактов (ручной ввод в модальном окне)
+    if (contactSearch) {
+        contactSearch.addEventListener('input', handleContactSearchManual);
+    }
 
-    cancelEditProfileBtn.addEventListener('click', () => {
-        editProfileModal.classList.remove('active');
-        profileModal.classList.add('active');
-    });
+    // ПОИСК ПОЛЬЗОВАТЕЛЕЙ ДЛЯ ЛИЧНЫХ ЧАТОВ
+    if (privateUserId) {
+        privateUserId.addEventListener('input', handlePrivateUserSearch);
+    }
 
-    saveProfileBtn.addEventListener('click', saveProfileChanges);
+    // ПРОФИЛЬ
+    if (copyUserIdBtn) {
+        copyUserIdBtn.addEventListener('click', () => copyUserIdToClipboard(profileUserId));
+    }
+    
+    if (copyHomeIdBtn) {
+        copyHomeIdBtn.addEventListener('click', () => copyUserIdToClipboard(homeUserId));
+    }
+    
+    if (copyMobileIdBtn) {
+        copyMobileIdBtn.addEventListener('click', () => copyUserIdToClipboard(mobileUserId));
+    }
+    
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', logoutUser);
+    }
+    
+    if (mobileLogoutBtn) {
+        mobileLogoutBtn.addEventListener('click', logoutUser);
+    }
 
-    statusOptions.forEach(option => {
-        option.addEventListener('click', () => {
-            statusOptions.forEach(opt => opt.classList.remove('active'));
-            option.classList.add('active');
+    // РЕДАКТИРОВАНИЕ ПРОФИЛЯ
+    if (editProfileBtn) {
+        editProfileBtn.addEventListener('click', () => {
+            if (profileModal) profileModal.classList.remove('active');
+            if (editProfileModal) editProfileModal.classList.add('active');
+            if (editProfileName) editProfileName.value = currentUser.displayName;
+        
+            statusOptions.forEach(opt => {
+                opt.classList.remove('active');
+                if (opt.dataset.status === currentUser.status) {
+                    opt.classList.add('active');
+                }
+            });
         });
-    });
+    }
+
+    if (cancelEditProfileBtn) {
+        cancelEditProfileBtn.addEventListener('click', () => {
+            if (editProfileModal) editProfileModal.classList.remove('active');
+            if (profileModal) profileModal.classList.add('active');
+        });
+    }
+
+    if (saveProfileBtn) {
+        saveProfileBtn.addEventListener('click', saveProfileChanges);
+    }
+
+    if (statusOptions.length > 0) {
+        statusOptions.forEach(option => {
+            option.addEventListener('click', () => {
+                statusOptions.forEach(opt => opt.classList.remove('active'));
+                option.classList.add('active');
+            });
+        });
+    }
 
     // МОДАЛЬНЫЕ ОКНА ПОДТВЕРЖДЕНИЯ
-    cancelLeaveBtn.addEventListener('click', () => {
-        confirmLeaveChatModal.classList.remove('active');
-    });
+    if (cancelLeaveBtn) {
+        cancelLeaveBtn.addEventListener('click', () => {
+            if (confirmLeaveChatModal) confirmLeaveChatModal.classList.remove('active');
+        });
+    }
 
-    cancelDeleteBtn.addEventListener('click', () => {
-        confirmDeleteMessageModal.classList.remove('active');
-    });
+    if (cancelDeleteBtn) {
+        cancelDeleteBtn.addEventListener('click', () => {
+            if (confirmDeleteMessageModal) confirmDeleteMessageModal.classList.remove('active');
+        });
+    }
 
     // ЗАКРЫТИЕ МОДАЛЬНЫХ ОКОН ПРИ КЛИКЕ НА ФОН
     document.querySelectorAll('.modal-overlay').forEach(modal => {
@@ -1932,7 +2794,7 @@ function setupEventListeners() {
                 if (modal.id === 'createChatModal') resetCreateForm();
                 if (modal.id === 'addContactModal') resetAddContactForm();
                 if (modal.id === 'editProfileModal') {
-                    profileModal.classList.add('active');
+                    if (profileModal) profileModal.classList.add('active');
                 }
             }
         });
@@ -1942,12 +2804,12 @@ function setupEventListeners() {
     document.querySelectorAll('.modal-close').forEach(btn => {
         btn.addEventListener('click', () => {
             const modal = btn.closest('.modal-overlay');
-            modal.classList.remove('active');
+            if (modal) modal.classList.remove('active');
             
-            if (modal.id === 'createChatModal') resetCreateForm();
-            if (modal.id === 'addContactModal') resetAddContactForm();
-            if (modal.id === 'editProfileModal') {
-                profileModal.classList.add('active');
+            if (modal && modal.id === 'createChatModal') resetCreateForm();
+            if (modal && modal.id === 'addContactModal') resetAddContactForm();
+            if (modal && modal.id === 'editProfileModal') {
+                if (profileModal) profileModal.classList.add('active');
             }
         });
     });
@@ -1964,24 +2826,62 @@ function setupEventListeners() {
                 modal.classList.remove('active');
             });
             
-            messageContextMenu.classList.remove('active');
+            if (messageContextMenu) messageContextMenu.classList.remove('active');
             
-            if (isMobile && mobileSidebar.classList.contains('active')) {
+            if (isMobile && mobileSidebar && mobileSidebar.classList.contains('active')) {
                 closeMobileSidebar();
             }
+            
+            // Закрываем результаты поиска
+            hideSearchResults('homeContactsSearchResults');
+            hideSearchResults('contactSearchResults');
         }
     });
 
     // Автоматическое изменение высоты textarea
-    messageInput.addEventListener('input', function() {
-        this.style.height = 'auto';
-        this.style.height = Math.min(this.scrollHeight, 120) + 'px';
-    });
+    if (messageInput) {
+        messageInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+        });
+    }
 
     // Предотвращение стандартного контекстного меню
     document.addEventListener('contextmenu', (e) => {
         if (e.target.closest('.message-content')) {
             e.preventDefault();
+        }
+    });
+
+    // Горячие клавиши для поиска
+    document.addEventListener('keydown', (e) => {
+        // Ctrl+K или Cmd+K для фокуса на поиске
+        if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+            e.preventDefault();
+            
+            if (isMobile) {
+                // На мобильных - открываем модальное окно поиска
+                if (homeContactsSearch) {
+                    homeContactsSearch.focus();
+                    // Прокручиваем к поиску
+                    homeContactsSearch.scrollIntoView({ behavior: 'smooth' });
+                }
+            } else {
+                // На ПК - фокус на поиске в боковой панели
+                if (desktopSearchInput) {
+                    desktopSearchInput.focus();
+                }
+            }
+        }
+        
+        // Escape для скрытия результатов поиска
+        if (e.key === 'Escape') {
+            hideSearchResults('homeContactsSearchResults');
+            hideSearchResults('contactSearchResults');
+            
+            // Снимаем фокус с полей поиска
+            if (homeContactsSearch) homeContactsSearch.blur();
+            if (contactSearch) contactSearch.blur();
         }
     });
 }
@@ -2067,7 +2967,11 @@ async function updateChatName(chatId, newName) {
         showNotification("Название чата обновлено");
     
         if (currentChatId === chatId) {
-            chatHeaderName.textContent = newName;
+            if (isMobile) {
+                if (chatHeaderName) chatHeaderName.textContent = newName;
+            } else {
+                if (desktopChatHeaderName) desktopChatHeaderName.textContent = newName;
+            }
         }
     
     } catch (error) {
@@ -2076,7 +2980,7 @@ async function updateChatName(chatId, newName) {
     }
 }
 
-// ОЧИСТКА ПРИ ЗАКРЫТИИ
+// ОБРАБОТЧИКИ ДЛЯ ОНЛАЙН/ОФФЛАЙН СТАТУСОВ
 window.addEventListener('beforeunload', async () => {
     if (currentUser) {
         try {
@@ -2095,6 +2999,87 @@ window.addEventListener('beforeunload', async () => {
 
     Object.values(messageListeners).forEach(unsubscribe => unsubscribe());
     Object.values(typingListeners).forEach(unsubscribe => unsubscribe());
+    
+    if (connectionCheckInterval) {
+        clearInterval(connectionCheckInterval);
+        connectionCheckInterval = null;
+    }
+});
+
+// Обновляем статус при возвращении на страницу
+window.addEventListener('focus', async () => {
+    if (currentUser) {
+        try {
+            await database.ref(`users/${currentUser.uid}`).update({
+                status: "online",
+                lastSeen: null,
+                lastActive: Date.now()
+            });
+            currentUser.status = "online";
+            updateUserProfileDisplay();
+            updateDesktopUserInfo();
+        } catch (error) {
+            console.error("Ошибка обновления статуса при фокусе:", error);
+        }
+    }
+});
+
+// Обновляем статус при уходе со страницы
+window.addEventListener('blur', async () => {
+    if (currentUser) {
+        try {
+            // Не ставим offline сразу, а только away через некоторое время
+            setTimeout(async () => {
+                if (!document.hasFocus()) {
+                    await database.ref(`users/${currentUser.uid}`).update({
+                        status: "away",
+                        lastSeen: Date.now()
+                    });
+                    currentUser.status = "away";
+                    updateUserProfileDisplay();
+                    updateDesktopUserInfo();
+                }
+            }, 30000); // 30 секунд после ухода со страницы
+        } catch (error) {
+            console.error("Ошибка обновления статуса при блюре:", error);
+        }
+    }
+});
+
+// Обработка изменения сетевого соединения
+window.addEventListener('online', async () => {
+    if (currentUser) {
+        try {
+            await database.ref(`users/${currentUser.uid}`).update({
+                status: "online",
+                lastSeen: null,
+                lastActive: Date.now()
+            });
+            currentUser.status = "online";
+            updateUserProfileDisplay();
+            updateDesktopUserInfo();
+            showNotification("Соединение восстановлено");
+        } catch (error) {
+            console.error("Ошибка обновления статуса при восстановлении сети:", error);
+        }
+    }
+});
+
+window.addEventListener('offline', async () => {
+    if (currentUser) {
+        try {
+            await database.ref(`users/${currentUser.uid}`).update({
+                status: "offline",
+                lastSeen: Date.now()
+            });
+            currentUser.status = "offline";
+            updateUserProfileDisplay();
+            updateDesktopUserInfo();
+            showNotification("Потеряно соединение с интернетом");
+        } catch (error) {
+            console.error("Ошибка обновления статуса при потере сети:", error);
+        }
+    }
 });
 
 // Инициализация при загрузке
