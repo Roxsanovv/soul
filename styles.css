@@ -42,6 +42,482 @@ body {
     position: relative;
 }
 
+/* ================================================ */
+/* ОБЩИЕ СТИЛИ ДЛЯ ЭЛЕМЕНТОВ СПИСКОВ */
+/* ================================================ */
+
+/* Базовые стили для десктопных чатов и контактов */
+.desktop-chat-item {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    border-radius: var(--radius-md);
+    background: rgba(255, 255, 255, 0.05);
+    cursor: pointer;
+    transition: var(--transition);
+    margin-bottom: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    width: 100%;
+    box-sizing: border-box;
+    position: relative;
+    overflow: hidden;
+    min-height: 64px;
+}
+
+/* Hover эффект для десктопных чатов и контактов */
+.desktop-chat-item:hover {
+    background: rgba(139, 92, 246, 0.15);
+    border-color: rgba(139, 92, 246, 0.3);
+    transform: translateX(5px);
+    box-shadow: 0 5px 15px rgba(139, 92, 246, 0.2);
+}
+
+/* Active эффект для десктопных чатов и контактов (при нажатии) */
+.desktop-chat-item:active {
+    transform: scale(0.98);
+    background: rgba(139, 92, 246, 0.2);
+}
+
+/* Active состояние (выбранный чат/контакт) */
+.desktop-chat-item.active {
+    background: rgba(139, 92, 246, 0.2);
+    border-color: rgba(139, 92, 246, 0.4);
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.15);
+}
+
+/* Эффект свечения для активного элемента */
+.desktop-chat-item.active::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(
+        circle at center,
+        rgba(139, 92, 246, 0.1) 0%,
+        transparent 70%
+    );
+    z-index: -1;
+    animation: pulse-glow 2s infinite;
+}
+
+@keyframes pulse-glow {
+    0%, 100% {
+        opacity: 0.5;
+    }
+    50% {
+        opacity: 0.8;
+    }
+}
+
+/* Анимация аватара при hover */
+.desktop-chat-item:hover .desktop-chat-avatar {
+    transform: scale(1.1);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+/* Специальная анимация для аватара контактов */
+.desktop-chat-item[data-user-id]:hover .desktop-chat-avatar {
+    transform: scale(1.1) rotate(3deg);
+}
+
+/* Изменение цвета текста при hover и active */
+.desktop-chat-item:hover .desktop-chat-name {
+    color: #c4b5fd;
+}
+
+.desktop-chat-item.active .desktop-chat-name {
+    color: #c4b5fd;
+    font-weight: 700;
+}
+
+.desktop-chat-item:hover .desktop-chat-last-message {
+    color: #a78bfa;
+}
+
+.desktop-chat-item.active .desktop-chat-last-message {
+    color: #a78bfa;
+}
+
+/* Индикатор нового сообщения при hover */
+.desktop-chat-item:hover::after {
+    content: '';
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 6px;
+    height: 6px;
+    background: #8b5cf6;
+    border-radius: 50%;
+    animation: pulse-dot 1.5s infinite;
+}
+
+@keyframes pulse-dot {
+    0%, 100% {
+        transform: translateY(-50%) scale(1);
+        opacity: 0.8;
+    }
+    50% {
+        transform: translateY(-50%) scale(1.3);
+        opacity: 1;
+    }
+}
+
+/* Убираем индикатор у активного элемента */
+.desktop-chat-item.active::after {
+    display: none;
+}
+
+/* Стили для аватара */
+.desktop-chat-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    color: white;
+    margin-right: 12px;
+    flex-shrink: 0;
+    transition: var(--transition);
+    font-size: 16px;
+}
+
+/* Стили для информации о чате/контакте */
+.desktop-chat-info {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.desktop-chat-name {
+    font-weight: 600;
+    font-size: 14px;
+    color: white;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+    line-height: 1.2;
+}
+
+.desktop-chat-last-message {
+    font-size: 12px;
+    color: #94a3b8;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+    line-height: 1.2;
+}
+
+/* Плавное появление элементов */
+.desktop-chat-item {
+    animation: fadeInUp 0.5s ease;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Улучшение доступности */
+.desktop-chat-item:focus {
+    outline: 2px solid #8b5cf6;
+    outline-offset: 2px;
+}
+
+.desktop-chat-item:focus:not(:focus-visible) {
+    outline: none;
+}
+
+/* Поддержка режима снижения движения */
+@media (prefers-reduced-motion: reduce) {
+    .desktop-chat-item,
+    .desktop-chat-item:hover,
+    .desktop-chat-item:active {
+        transition: none;
+        animation: none;
+    }
+    
+    .desktop-chat-item:hover .desktop-chat-avatar {
+        transform: none;
+    }
+}
+
+/* ================================================ */
+/* СПИСКИ ЧАТОВ И КОНТАКТОВ ДЛЯ ПК */
+/* ================================================ */
+
+/* Общие стили для списков на ПК */
+.desktop-chats-list,
+.desktop-contacts-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Пустое состояние для списков */
+.desktop-chats-list:empty::before,
+.desktop-contacts-list:empty::before {
+    content: '';
+    display: block;
+    padding: 40px 20px;
+    text-align: center;
+    color: #64748b;
+}
+
+.desktop-chats-list:empty::before {
+    content: 'Чатов пока нет\AСоздайте первый чат, чтобы начать общение';
+    white-space: pre;
+}
+
+.desktop-contacts-list:empty::before {
+    content: 'Контактов пока нет\AДобавьте контакты, чтобы начать общение';
+    white-space: pre;
+}
+
+/* Эффект для онлайн статуса в контактах */
+.desktop-chat-item .desktop-chat-last-message[style*="#10b981"] {
+    position: relative;
+    padding-left: 14px;
+}
+
+.desktop-chat-item .desktop-chat-last-message[style*="#10b981"]::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #10b981;
+    animation: pulse-online 2s infinite;
+}
+
+@keyframes pulse-online {
+    0% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 4px rgba(16, 185, 129, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+    }
+}
+
+/* ================================================ */
+/* УЛУЧШЕННЫЙ ПОИСК КОНТАКТОВ */
+/* ================================================ */
+
+/* Контейнер для результатов поиска */
+.search-results-container {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    max-height: 300px;
+    overflow-y: auto;
+    background: rgba(30, 41, 59, 0.98);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: var(--radius-md);
+    margin-top: 5px;
+    z-index: 1000;
+    backdrop-filter: blur(20px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    display: none;
+    animation: fadeIn 0.2s ease;
+}
+
+.search-results-container.active {
+    display: block;
+}
+
+/* Для поиска на главном экране */
+.home-tab-pane .search-results-container {
+    position: relative;
+    top: 0;
+    margin-top: 10px;
+    max-height: 250px;
+}
+
+/* Для модального окна */
+.modal .search-results-container {
+    position: relative;
+    top: 0;
+    margin-top: 10px;
+    max-height: 250px;
+}
+
+/* Элемент результата поиска */
+.search-result-item {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    cursor: pointer;
+    transition: var(--transition);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    margin: 5px;
+    min-height: 60px;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.search-result-item:last-child {
+    border-bottom: none;
+}
+
+.search-result-item:hover {
+    background: rgba(139, 92, 246, 0.15);
+    border-color: rgba(139, 92, 246, 0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(139, 92, 246, 0.2);
+}
+
+.search-result-item:active {
+    transform: scale(0.98);
+}
+
+/* Аватар в результатах поиска */
+.search-result-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 16px;
+    color: white;
+    margin-right: 12px;
+    flex-shrink: 0;
+    transition: var(--transition);
+}
+
+.search-result-item:hover .search-result-avatar {
+    transform: scale(1.1);
+    box-shadow: 0 5px 15px rgba(59, 130, 246, 0.4);
+}
+
+/* Информация в результатах поиска */
+.search-result-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.search-result-name {
+    font-weight: 600;
+    font-size: 15px;
+    color: white;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.search-result-id {
+    font-size: 12px;
+    color: #94a3b8;
+    font-family: 'SF Mono', Monaco, monospace;
+    margin-bottom: 2px;
+}
+
+.search-result-status {
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.search-result-status.online {
+    color: #10b981;
+}
+
+.search-result-status.away {
+    color: #f59e0b;
+}
+
+.search-result-status.dnd {
+    color: #ef4444;
+}
+
+.search-result-status.offline {
+    color: #94a3b8;
+}
+
+/* Кнопка добавления в результатах поиска */
+.add-user-btn {
+    padding: 8px 16px;
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: var(--transition);
+    flex-shrink: 0;
+}
+
+.add-user-btn:hover {
+    background: linear-gradient(135deg, #34d399, #10b981);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(16, 185, 129, 0.3);
+}
+
+.add-user-btn:active {
+    transform: scale(0.98);
+}
+
+.add-user-btn:disabled {
+    background: rgba(255, 255, 255, 0.1);
+    color: #94a3b8;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Нет результатов поиска */
+.no-search-results {
+    padding: 30px 20px;
+    text-align: center;
+    color: #94a3b8;
+}
+
+.no-search-results i {
+    font-size: 32px;
+    margin-bottom: 15px;
+    opacity: 0.5;
+    display: block;
+}
+
+.no-search-results p {
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.search-info {
+    margin-top: 10px;
+    font-size: 12px;
+    color: #64748b;
+    text-align: center;
+    padding: 0 10px;
+}
+
 /* Auth Container */
 .auth-container {
     position: fixed;
@@ -538,11 +1014,20 @@ body {
     border: 1px solid rgba(255, 255, 255, 0.1);
     cursor: pointer;
     transition: var(--transition);
+    width: 100%;
+    margin-bottom: 10px;
+    min-height: 70px;
 }
 
 .chat-item:hover {
-    background: rgba(255, 255, 255, 0.08);
+    background: rgba(139, 92, 246, 0.15);
+    border-color: rgba(139, 92, 246, 0.3);
     transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(139, 92, 246, 0.2);
+}
+
+.chat-item:active {
+    transform: scale(0.98);
 }
 
 .chat-avatar {
@@ -557,6 +1042,7 @@ body {
     color: white;
     margin-right: 15px;
     flex-shrink: 0;
+    transition: var(--transition);
 }
 
 .channel-avatar {
@@ -569,6 +1055,10 @@ body {
 
 .private-avatar {
     background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+}
+
+.chat-item:hover .chat-avatar {
+    transform: scale(1.05);
 }
 
 .chat-info {
@@ -620,7 +1110,7 @@ body {
     text-align: center;
 }
 
-/* Контакт элемент */
+/* Контакт элемент - мобильная версия */
 .contact-item {
     display: flex;
     align-items: center;
@@ -629,19 +1119,42 @@ body {
     border-radius: var(--radius-lg);
     border: 1px solid rgba(255, 255, 255, 0.1);
     cursor: pointer;
-    transition: var(--transition);
+    transition: all 0.2s ease;
+    width: 100%;
+    margin-bottom: 10px;
+    min-height: 70px;
 }
 
 .contact-item:hover {
-    background: rgba(255, 255, 255, 0.08);
+    background: rgba(139, 92, 246, 0.15);
+    border-color: rgba(139, 92, 246, 0.3);
     transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(139, 92, 246, 0.2);
+}
+
+.contact-item:active {
+    transform: scale(0.98);
+}
+
+.contact-item.active {
+    background: rgba(139, 92, 246, 0.2);
+    border-color: rgba(139, 92, 246, 0.4);
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.15);
+}
+
+.contact-item.active .contact-name {
+    color: #c4b5fd;
+}
+
+.contact-item.active .contact-status {
+    color: #a78bfa;
 }
 
 .contact-avatar {
     width: 50px;
     height: 50px;
     border-radius: var(--radius-md);
-    background: linear-gradient(135deg, #f093fb, #f5576c);
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -650,6 +1163,12 @@ body {
     color: white;
     margin-right: 15px;
     flex-shrink: 0;
+    transition: var(--transition);
+}
+
+.contact-item:hover .contact-avatar {
+    transform: scale(1.05);
+    box-shadow: 0 5px 15px rgba(240, 147, 251, 0.3);
 }
 
 .contact-info {
@@ -670,10 +1189,25 @@ body {
 .contact-status {
     font-size: 14px;
     color: #94a3b8;
+    position: relative;
+    padding-left: 16px;
 }
 
 .contact-status.online {
     color: #10b981;
+}
+
+.contact-status.online::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #10b981;
+    animation: pulse-online 2s infinite;
 }
 
 /* Экран чата */
@@ -1190,7 +1724,7 @@ body {
     font-size: 16px;
 }
 
-/* Search results */
+/* Search results (старая версия, для совместимости) */
 .search-results {
     position: absolute;
     top: 100%;
@@ -1217,6 +1751,9 @@ body {
     cursor: pointer;
     transition: var(--transition);
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    margin: 5px;
+    min-height: 60px;
 }
 
 .search-result-item:last-child {
@@ -1224,7 +1761,19 @@ body {
 }
 
 .search-result-item:hover {
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(139, 92, 246, 0.15);
+    border-color: rgba(139, 92, 246, 0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(139, 92, 246, 0.2);
+}
+
+.search-result-item:hover .search-result-avatar {
+    transform: scale(1.1);
+    box-shadow: 0 5px 15px rgba(240, 147, 251, 0.4);
+}
+
+.search-result-item:active {
+    transform: scale(0.95);
 }
 
 .search-result-avatar {
@@ -1240,6 +1789,7 @@ body {
     color: white;
     margin-right: 12px;
     flex-shrink: 0;
+    transition: var(--transition);
 }
 
 .search-result-info {
@@ -1613,7 +2163,7 @@ body {
 /* Пустые состояния */
 .empty-state {
     text-align: center;
-    padding: 60px 20px;
+    padding: 300px 20px;
     color: #64748b;
 }
 
@@ -1676,56 +2226,476 @@ input, textarea, select {
     transition: background-color 0.3s ease, border-color 0.3s ease, transform 0.3s ease, opacity 0.3s ease;
 }
 
-/* Адаптация для планшетов и десктопов */
-@media (min-width: 768px) {
+/* ================================================ */
+/* СТИЛИ ДЛЯ ПК ВЕРСИИ */
+/* ================================================ */
+
+/* Исправление для правильного отображения ПК интерфейса */
+@media (min-width: 769px) {
     .container {
-        display: flex;
+        display: flex !important;
+        height: 100vh;
+        overflow: hidden;
     }
     
-    .mobile-header {
-        display: none;
+    /* Скрываем мобильные элементы на ПК */
+    .mobile-header,
+    .mobile-sidebar-overlay,
+    .mobile-sidebar,
+    .mobile-sidebar-tabs,
+    .mobile-sidebar-footer,
+    .home-screen {
+        display: none !important;
+    }
+    
+    /* Показываем ПК элементы */
+    .desktop-sidebar {
+        display: flex !important;
+        width: 320px;
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        border-right: 1px solid var(--border-color);
+        flex-direction: column;
+        overflow: hidden;
     }
     
     .main-content {
-        padding-top: 0;
         flex: 1;
-    }
-    
-    .home-screen {
-        max-width: 800px;
-        margin: 0 auto;
-        padding: 40px;
-    }
-    
-    .chat-screen {
+        display: flex;
+        flex-direction: column;
         height: 100vh;
-        padding-top: 0;
+        padding-top: 0 !important;
+        position: relative;
     }
     
-    .chat-header {
-        position: static;
-        padding: 20px 30px;
+    /* Пустой экран для ПК */
+    .desktop-empty-screen {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        z-index: 10;
+    }
+    
+    /* Экран чата на ПК */
+    .chat-screen {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: none;
+        flex-direction: column;
+        z-index: 20;
+    }
+    
+    .chat-screen.desktop.active {
+        display: flex !important;
+    }
+    
+    .chat-header.desktop {
+        display: flex !important;
+        padding: 15px 20px;
+        background: rgba(15, 23, 42, 0.95);
+        border-bottom: 1px solid var(--border-color);
     }
     
     .messages-container {
-        padding: 30px;
+        flex: 1;
+        padding: 20px;
+        overflow-y: auto;
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
     }
     
     .chat-input-container {
-        padding: 20px 30px;
+        padding: 15px 20px;
+        background: rgba(15, 23, 42, 0.95);
+        border-top: 1px solid var(--border-color);
     }
     
-    .modal {
-        max-width: 600px;
+    /* Сообщения на ПК */
+    .message.desktop {
+        max-width: 70%;
     }
     
-    .user-id-container {
+    /* Улучшенные стили для пустого экрана ПК */
+    .desktop-empty-content {
+        text-align: center;
+        max-width: 400px;
+        padding: 40px;
+    }
+    
+    .desktop-empty-title {
+        font-size: 24px;
+        font-weight: 800;
+        color: white;
+        margin-bottom: 15px;
+        letter-spacing: -0.5px;
+    }
+    
+    .desktop-empty-text {
+        font-size: 14px;
+        color: #94a3b8;
+        line-height: 1.6;
+        margin-bottom: 40px;
+    }
+    
+    .desktop-empty-actions {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+    }
+    
+    .desktop-empty-actions .desktop-action-btn {
+        min-width: 160px;
+        padding: 16px 20px;
+    }
+    
+    /* Контейнер контента */
+    .desktop-sidebar-content {
+        flex: 1;
+        overflow-y: auto;
         padding: 20px;
+        width: 100%;
+        box-sizing: border-box;
     }
     
-    .action-btn {
-        min-width: 180px;
-        padding: 18px 24px;
+    /* Кнопка информации о профиле на ПК */
+    .desktop-user-info-btn {
+        width: 36px;
+        height: 36px;
+        background: rgba(139, 92, 246, 0.2);
+        border: 1px solid rgba(139, 92, 246, 0.3);
+        border-radius: 8px;
+        color: #a78bfa;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        transition: var(--transition);
+        flex-shrink: 0;
+    }
+    
+    .desktop-user-info-btn:hover {
+        background: rgba(139, 92, 246, 0.3);
+        color: #c4b5fd;
+        border-color: rgba(139, 92, 246, 0.4);
+        transform: scale(1.05);
+        animation: pulse-info 1.5s infinite;
+    }
+    
+    .desktop-user-info-btn:active {
+        transform: scale(0.95);
+    }
+    
+    @keyframes pulse-info {
+        0% {
+            box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.4);
+        }
+        70% {
+            box-shadow: 0 0 0 6px rgba(139, 92, 246, 0);
+        }
+        100% {
+            box-shadow: 0 0 0 0 rgba(139, 92, 246, 0);
+        }
+    }
+    
+    /* Улучшаем отображение информации о пользователе на ПК */
+    .desktop-user-info {
+        padding: 20px;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        position: relative;
+    }
+    
+    .desktop-user-avatar {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        color: white;
+        font-size: 18px;
+        flex-shrink: 0;
+        position: relative;
+    }
+    
+    /* Индикатор статуса для ПК аватара */
+    .desktop-user-avatar::after {
+        content: '';
+        position: absolute;
+        bottom: -2px;
+        right: -2px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        border: 2px solid var(--darker-bg);
+        background: #10b981;
+    }
+    
+    .desktop-user-avatar.status-offline::after {
+        background: #64748b;
+    }
+    
+    .desktop-user-avatar.status-away::after {
+        background: #f59e0b;
+    }
+    
+    .desktop-user-avatar.status-dnd::after {
+        background: #ef4444;
+    }
+    
+    .desktop-user-avatar.status-invisible::after {
+        background: #64748b;
+    }
+    
+    .desktop-user-details {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    .desktop-user-name {
+        font-weight: 600;
+        font-size: 15px;
+        color: white;
+        margin-bottom: 4px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    .desktop-user-status {
+        font-size: 12px;
+        color: #10b981;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+    
+    .desktop-user-status i {
+        font-size: 8px;
+    }
+    
+    /* Делаем все кнопки в боковой панели в одной цветовой гамме */
+    .desktop-action-btn {
+        flex: 1;
+        padding: 12px;
+        background: rgba(139, 92, 246, 0.2);
+        border: 1px solid rgba(139, 92, 246, 0.3);
+        border-radius: var(--radius-md);
+        color: #a78bfa;
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: var(--transition);
+    }
+    
+    .desktop-action-btn:hover {
+        background: rgba(139, 92, 246, 0.3);
+        color: #c4b5fd;
+    }
+    
+    .desktop-action-btn.secondary {
+        background: rgba(59, 130, 246, 0.2);
+        border-color: rgba(59, 130, 246, 0.3);
+        color: #60a5fa;
+    }
+    
+    .desktop-action-btn.secondary:hover {
+        background: rgba(59, 130, 246, 0.3);
+        color: #93c5fd;
+    }
+    
+    /* ================================================ */
+    /* ЕДИНЫЕ СТИЛИ ДЛЯ ЧАТОВ И КОНТАКТОВ НА ПК */
+    /* ================================================ */
+    
+    /* Общие стили для списков */
+    .desktop-chats-list,
+    .desktop-contacts-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    
+    /* Управление видимостью списков */
+    .desktop-contacts-list {
+        display: none;
+    }
+    
+    .desktop-contacts-list.active {
+        display: flex !important;
+    }
+    
+    /* Аватар для разных типов */
+    .desktop-chat-item .desktop-chat-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        color: white;
+        margin-right: 12px;
+        flex-shrink: 0;
+        transition: var(--transition);
+        font-size: 16px;
+    }
+    
+    /* Цвета аватаров для разных типов чатов */
+    .desktop-chat-item[data-chat-id] .desktop-chat-avatar {
+        background: linear-gradient(135deg, #f59e0b, #d97706); /* Канал */
+    }
+    
+    .desktop-chat-item[data-chat-id][data-chat-type="group"] .desktop-chat-avatar {
+        background: linear-gradient(135deg, #10b981, #059669); /* Группа */
+    }
+    
+    .desktop-chat-item[data-chat-id][data-chat-type="private"] .desktop-chat-avatar {
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8); /* Личный */
+    }
+    
+    /* Цвет аватара для контактов */
+    .desktop-chat-item[data-user-id] .desktop-chat-avatar {
+        background: linear-gradient(135deg, #f093fb, #f5576c) !important;
+    }
+    
+    /* Поиск на ПК */
+    .desktop-search-container {
+        padding: 20px;
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    .desktop-search-box {
+        width: 100%;
+        padding: 12px 16px;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: var(--radius-md);
+        color: white;
+        font-size: 14px;
+        outline: none;
+    }
+    
+    .desktop-search-box:focus {
+        border-color: #8b5cf6;
+        background: rgba(255, 255, 255, 0.12);
+    }
+    
+    .desktop-search-box::placeholder {
+        color: #94a3b8;
+    }
+    
+    /* Табы на ПК */
+    .desktop-sidebar-tabs {
+        display: flex;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: var(--radius-md);
+        padding: 8px;
+    }
+    
+    .desktop-sidebar-tab {
+        flex: 1;
+        text-align: center;
+        padding: 12px 8px;
+        border-radius: var(--radius-md);
+        color: #94a3b8;
+        font-weight: 600;
+        cursor: pointer;
+        font-size: 14px;
+        transition: var(--transition);
+    }
+    
+    .desktop-sidebar-tab:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+    }
+    
+    .desktop-sidebar-tab.active {
+        background: rgba(139, 92, 246, 0.2);
+        color: white;
+    }
+    
+    /* Кнопки действий */
+    .desktop-sidebar-actions {
+        padding: 20px;
+        display: flex;
+        gap: 10px;
+        border-top: 1px solid var(--border-color);
+    }
+    
+    /* Заголовок чата для ПК */
+    .desktop-chat-header {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        padding: 0;
+    }
+    
+    .desktop-chat-header .desktop-chat-avatar {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        color: white;
+        font-size: 18px;
+    }
+    
+    .desktop-chat-header-info {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    .desktop-chat-header-name {
+        font-size: 16px;
+        font-weight: 700;
+        color: white;
+        margin-bottom: 4px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    .desktop-chat-header-description {
+        font-size: 13px;
+        color: #94a3b8;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+}
+
+/* Скрываем ПК элементы на мобильных */
+@media (max-width: 768px) {
+    .desktop-sidebar,
+    .desktop-empty-screen,
+    .chat-header.desktop {
+        display: none !important;
+    }
+    
+    .home-screen {
+        display: block !important;
     }
 }
 
@@ -1820,25 +2790,6 @@ input, textarea, select {
     line-height: 1.6;
 }
 
-/* Кнопка добавления пользователя в результатах поиска */
-.add-user-btn {
-    padding: 8px 16px;
-    background: linear-gradient(135deg, #10b981, #059669);
-    color: white;
-    border: none;
-    border-radius: var(--radius-md);
-    font-weight: 600;
-    font-size: 13px;
-    cursor: pointer;
-    white-space: nowrap;
-}
-
-.add-user-btn:disabled {
-    background: rgba(255, 255, 255, 0.1);
-    color: #94a3b8;
-    cursor: not-allowed;
-}
-
 /* Анимация slideOut для уведомлений */
 @keyframes slideOut {
     from {
@@ -1849,6 +2800,14 @@ input, textarea, select {
         transform: translateX(100%);
         opacity: 0;
     }
+}
+
+.notification {
+    animation: slideIn 0.3s ease;
+}
+
+.notification.hide {
+    animation: slideOut 0.3s ease forwards;
 }
 
 /* Улучшенная анимация для сайдбара */
@@ -1881,17 +2840,6 @@ input, textarea, select {
 
 .messages-container::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.3);
-}
-
-/* Эффект при наведении на элементы */
-.chat-item:active,
-.contact-item:active {
-    transform: scale(0.98);
-}
-
-.action-btn:active,
-.btn:active {
-    transform: translateY(0);
 }
 
 /* Улучшенные тени для модальных окон */
@@ -1973,10 +2921,6 @@ input, textarea, select {
 
 /* Адаптация для очень больших экранов */
 @media (min-width: 1200px) {
-    .home-screen {
-        max-width: 1000px;
-    }
-    
     .modal {
         max-width: 700px;
     }
@@ -1987,6 +2931,10 @@ input, textarea, select {
     
     .message {
         max-width: 70%;
+    }
+    
+    .desktop-sidebar {
+        width: 320px;
     }
 }
 
@@ -2144,3 +3092,309 @@ body::before {
         opacity: 0.8;
     }
 }
+
+/* Дополнительные стили для ПК (добавляются если не в медиа-запросе) */
+.desktop-chats-list,
+.desktop-contacts-list,
+.desktop-empty-screen,
+.desktop-user-info,
+.desktop-search-container,
+.desktop-sidebar-tabs,
+.desktop-sidebar-actions,
+.desktop-sidebar-header,
+.desktop-sidebar-content,
+.desktop-chat-header,
+.chat-header.desktop {
+    display: none;
+}
+
+/* Показываем только на ПК */
+@media (min-width: 769px) {
+    .desktop-chats-list,
+    .desktop-contacts-list,
+    .desktop-empty-screen,
+    .desktop-user-info,
+    .desktop-search-container,
+    .desktop-sidebar-tabs,
+    .desktop-sidebar-actions,
+    .desktop-sidebar-header,
+    .desktop-sidebar-content,
+    .desktop-chat-header,
+    .chat-header.desktop,
+    .desktop-sidebar {
+        display: flex;
+    }
+    
+    .desktop-contacts-list {
+        display: none; /* По умолчанию скрываем, показывается при переключении вкладок */
+    }
+}
+
+/* Исправление для правильного отображения ПК интерфейса */
+@media (min-width: 769px) {
+    /* Главный контейнер */
+    .container {
+        display: flex !important;
+        height: 100vh;
+        overflow: hidden;
+    }
+    
+    /* Скрываем мобильные элементы на ПК */
+    .mobile-header,
+    .mobile-sidebar-overlay,
+    .mobile-sidebar,
+    .mobile-sidebar-tabs,
+    .mobile-sidebar-footer,
+    .home-screen {
+        display: none !important;
+    }
+    
+    /* Показываем ПК элементы */
+    .desktop-sidebar {
+        display: flex !important;
+        width: 300px;
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        border-right: 1px solid var(--border-color);
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    /* Увеличим отступы для лучшего восприятия */
+    .desktop-user-info {
+        padding: 20px;
+    }
+    
+    .desktop-search-container {
+        padding: 20px;
+    }
+    
+    .desktop-sidebar-content {
+        padding: 20px;
+    }
+    
+    .desktop-sidebar-actions {
+        padding: 20px;
+    }
+    
+    /* Увеличим аватары и шрифты */
+    .desktop-user-avatar {
+        width: 48px;
+        height: 48px;
+        font-size: 20px;
+    }
+    
+    .desktop-user-name {
+        font-size: 16px;
+    }
+    
+    .desktop-user-status {
+        font-size: 13px;
+    }
+    
+    /* Увеличим элементы чатов */
+    .desktop-chat-avatar {
+        width: 40px;
+        height: 40px;
+        font-size: 16px;
+    }
+    
+    .desktop-chat-name {
+        font-size: 14px;
+    }
+    
+    .desktop-chat-last-message {
+        font-size: 12px;
+    }
+    
+    /* Увеличим кнопки действий */
+    .desktop-action-btn {
+        padding: 14px;
+        font-size: 15px;
+    }
+    
+    /* Увеличим табы */
+    .desktop-sidebar-tabs {
+        padding: 10px;
+        margin: 20px 20px 0;
+    }
+    
+    .desktop-sidebar-tab {
+        padding: 12px 8px;
+        font-size: 14px;
+    }
+    
+    /* Увеличим поле поиска */
+    .desktop-search-box {
+        padding: 12px 16px;
+        font-size: 14px;
+    }
+    
+    .desktop-empty-screen {
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        flex: 1;
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    }
+    
+    .main-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        padding-top: 0 !important;
+    }
+    
+    /* Экран чата на ПК */
+    .chat-screen {
+        display: none;
+        flex: 1;
+        flex-direction: column;
+        height: 100vh;
+    }
+    
+    .chat-screen.desktop.active {
+        display: flex !important;
+    }
+    
+    .chat-header.desktop {
+        display: flex !important;
+        padding: 20px 30px;
+        background: rgba(15, 23, 42, 0.95);
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .messages-container.desktop {
+        padding: 30px;
+    }
+    
+    .chat-input-container.desktop {
+        padding: 20px 30px;
+    }
+    
+    /* Увеличим заголовок чата */
+    .desktop-chat-header .desktop-chat-avatar {
+        width: 44px;
+        height: 44px;
+        font-size: 18px;
+    }
+    
+    .desktop-chat-header-name {
+        font-size: 16px;
+    }
+    
+    .desktop-chat-header-description {
+        font-size: 13px;
+    }
+    
+    .messages-container {
+        flex: 1;
+        padding: 20px;
+        overflow-y: auto;
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    }
+    
+    .chat-input-container {
+        padding: 15px 20px;
+        background: rgba(15, 23, 42, 0.95);
+        border-top: 1px solid var(--border-color);
+    }
+    
+    /* Сообщения на ПК */
+    .message.desktop {
+        max-width: 70%;
+    }
+    
+    /* Улучшенные стили для пустого экрана ПК */
+    .desktop-empty-content {
+        text-align: center;
+        max-width: 400px;
+        padding: 40px;
+    }
+    
+    .desktop-empty-title {
+        font-size: 24px;
+        font-weight: 800;
+        color: white;
+        margin-bottom: 15px;
+        letter-spacing: -0.5px;
+    }
+    
+    .desktop-empty-text {
+        font-size: 14px;
+        color: #94a3b8;
+        line-height: 1.6;
+        margin-bottom: 40px;
+    }
+    
+    .desktop-empty-actions {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+    }
+    
+    .desktop-empty-actions .desktop-action-btn {
+        min-width: 160px;
+        padding: 16px 20px;
+    }
+}
+
+/* Скрываем ПК элементы на мобильных */
+@media (max-width: 768px) {
+    .desktop-sidebar,
+    .desktop-empty-screen,
+    .chat-header.desktop {
+        display: none !important;
+    }
+    
+    .home-screen {
+        display: block !important;
+    }
+}
+
+/* Анимация загрузки при поиске */
+.search-loading {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: none;
+}
+
+.search-loading.active {
+    display: block;
+}
+
+.search-loading .search-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(139, 92, 246, 0.3);
+    border-top-color: #8b5cf6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+/* Подсветка совпадений в результатах поиска */
+.search-result-name .highlight {
+    background: rgba(139, 92, 246, 0.3);
+    padding: 1px 4px;
+    border-radius: 4px;
+    color: #c4b5fd;
+    font-weight: 700;
+}
+
+/* Анимация плавного появления результатов поиска */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.search-results-container {
+    animation: fadeIn 0.2s ease;
+    }
