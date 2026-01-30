@@ -10,6 +10,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <link rel="stylesheet" href="styles.css">
+    <!-- Дополнительный стиль для ПК версии -->
     <style id="desktop-styles">
         /* Скрываем мобильные элементы на ПК */
         @media (min-width: 769px) {
@@ -641,13 +642,18 @@
                         <div class="chats-list" id="homeChatsList"></div>
                     </div>
                     <div class="home-tab-pane" id="homeContactsPane">
-                        <!-- Поиск контактов на главном экране -->
-                        <div class="search-container home-contacts-search" style="margin: 0 15px 15px 15px;">
-                            <i class="fas fa-search search-icon"></i>
-                            <input type="text" class="search-box" id="homeContactsSearch" placeholder="Поиск контактов по имени или ID...">
+                        <!-- ДОБАВЬТЕ ЭТОТ БЛОК ПЕРЕД contacts-list -->
+                        <div class="search-container" style="margin-bottom: 15px; padding: 0 10px;">
+                            <div class="search-input-wrapper">
+                                <input type="text" id="homeContactsSearch" placeholder="Поиск контактов...">
+                                <div class="search-loading" id="homeContactsSearchLoading">
+                                    <div class="search-spinner"></div>
+                                </div>
+                            </div>
+                            <div class="search-results-container" id="homeContactsSearchResults">
+                                <!-- Результаты поиска -->
+                            </div>
                         </div>
-                        <!-- Результаты поиска -->
-                        <div class="search-results-container" id="homeContactsSearchResults"></div>
                         <!-- Список контактов на главном экране -->
                         <div class="contacts-list" id="homeContactsList"></div>
                     </div>
@@ -733,18 +739,15 @@
                 </button>
             </div>
             <div class="modal-body">
+                <!-- ИЗМЕНЕНИЕ: Убрал тип "Канал" -->
                 <div class="chat-type-selector">
-                    <div class="chat-type-option active" data-type="channel">
-                        <i class="fas fa-hashtag"></i>
-                        Канал
-                    </div>
-                    <div class="chat-type-option" data-type="group">
+                    <div class="chat-type-option active" data-type="group">
                         <i class="fas fa-users"></i>
-                        Группа
+                        Групповой чат
                     </div>
                     <div class="chat-type-option" data-type="private">
                         <i class="fas fa-user"></i>
-                        Личный
+                        Личный чат
                     </div>
                 </div>
                 
@@ -781,23 +784,25 @@
             </div>
             <div class="modal-body">
                 <div class="form-group">
-                    <label for="contactSearch">Поиск пользователей</label>
+                    <label for="contactSearch">Введите имя или ID пользователя</label>
                     <div class="search-container">
-                        <i class="fas fa-search search-icon"></i>
-                        <input type="text" id="contactSearch" placeholder="Введите имя или ID пользователя...">
-                    </div>
-                    <!-- Результаты поиска -->
-                    <div class="search-results-container" id="contactSearchResults">
-                        <!-- Результаты поиска будут добавляться через JS -->
+                        <div class="search-input-wrapper">
+                            <input type="text" id="contactSearch" placeholder="Начните вводить имя или ID...">
+                            <div class="search-loading" id="contactSearchLoading">
+                                <div class="search-spinner"></div>
+                            </div>
+                        </div>
+                        <div class="search-results-container" id="contactSearchResults">
+                            <!-- Результаты будут добавляться динамически -->
+                        </div>
                     </div>
                 </div>
-                
+
                 <div id="contactSearchHelp" style="margin-top: 20px; padding: 16px; background: rgba(59, 130, 246, 0.1); border-radius: 12px; border-left: 4px solid #3b82f6;">
                     <h4 style="margin-bottom: 8px; color: #93c5fd;">Как найти пользователя?</h4>
                     <p style="color: #cbd5e1; font-size: 14px; line-height: 1.5;">
-                        Вы можете искать пользователей по их имени или уникальному ID. 
-                        Начните вводить имя или ID, и вы увидите подходящие результаты.
-                        Нажмите на пользователя, чтобы добавить его в контакты.
+                        Вы можете искать пользователей по имени или их уникальному ID. 
+                        При вводе будут показываться подсказки с доступными пользователями.
                     </p>
                 </div>
             </div>
