@@ -20,7 +20,7 @@ let chats = [];
 let contacts = [];
 let allUsers = {};
 let currentChatId = null;
-let selectedChatType = "channel";
+let selectedChatType = "group"; // ИЗМЕНЕНИЕ: изменено с "channel" на "group"
 let currentTab = "chats";
 let authUnsubscribe = null;
 let messageListeners = {};
@@ -30,6 +30,7 @@ let replyToMessage = null;
 let currentDesktopTab = "chats";
 let connectionCheckInterval = null;
 let searchTimeouts = {};
+let lastSearchResults = [];
 
 // DOM элементы
 const authContainer = document.getElementById('authContainer');
@@ -163,6 +164,271 @@ const privateChatUser = document.getElementById('privateChatUser');
 document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
 });
+
+// ================================================
+// ФУНКЦИИ ДЛЯ ПОИСКА С ПОДСКАЗКАМИ
+// ================================================
+
+// Функция для поиска пользователей с подсказками
+function searchUsers(query, currentContacts = []) {
+    query = query.toLowerCase().trim();
+    
+    if (!query || query.length < 1) {
+        return [];
+    }
+    
+    const results = [];
+    
+    // Ищем среди всех пользователей, кроме текущего
+    for (const userId in allUsers) {
+        if (userId === currentUser.uid) continue;
+        
+        const user = allUsers[userId];
+        
+        // Проверяем совпадения по имени и customId
+        const matchesName = user.displayName && user.displayName.toLowerCase().includes(query);
+        const matchesCustomId = user.customId && user.customId.toLowerCase().includes(query);
+        const matchesUserId = userId.toLowerCase().includes(query);
+        
+        if (matchesName || matchesCustomId || matchesUserId) {
+            // Проверяем, не является ли пользователь уже контактом
+            const isAlreadyContact = currentContacts.some(contact => contact.userId === userId);
+            
+            results.push({
+                userId: userId,
+                displayName: user.displayName,
+                customId: user.customId || `user_${userId.substr(0, 8)}`,
+                status: user.status || 'offline',
+                lastActive: user.lastActive || 0,
+                isContact: isAlreadyContact
+            });
+        }
+    }
+    
+    // Сортируем результаты:
+    // 1. Сначала онлайн пользователи
+    // 2. Потом те, кто еще не в контактах
+    // 3. По алфавиту
+    results.sort((a, b) => {
+        // Сначала онлайн
+        if (a.status === 'online' && b.status !== 'online') return -1;
+        if (a.status !== 'online' && b.status === 'online') return 1;
+        
+        // Потом те, кто еще не в контактах
+        if (!a.isContact && b.isContact) return -1;
+        if (a.isContact && !b.isContact) return 1;
+        
+        // Затем по алфавиту
+        return a.displayName.localeCompare(b.displayName);
+    });
+    
+    return results;
+}
+
+// Функция для отображения результатов поиска с подсказками
+function displaySearchResults(results, containerId, currentContacts = []) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    // Сохраняем последние результаты
+    lastSearchResults = results;
+    
+    // Очищаем контейнер
+    container.innerHTML = '';
+    
+    if (results.length === 0) {
+        container.innerHTML = `
+            <div class="no-search-results">
+                <i class="fas fa-user-friends"></i>
+                <p>Пользователи не найдены</p>
+                <p class="search-info">Попробуйте ввести другое имя или ID</p>
+            </div>
+        `;
+        container.classList.add('active');
+        return;
+    }
+    
+    results.forEach(result => {
+        const resultItem = document.createElement('div');
+        resultItem.className = 'search-result-item';
+        resultItem.dataset.userId = result.userId;
+        resultItem.dataset.customId = result.customId;
+        
+        const statusClass = result.status === 'online' ? 'online' : 
+                           result.status === 'away' ? 'away' : 
+                           result.status === 'dnd' ? 'dnd' : 'offline';
+        
+        const statusText = result.status === 'online' ? 'online' : 
+                          result.status === 'away' ? 'неактивен' : 
+                          result.status === 'dnd' ? 'не беспокоить' : 'offline';
+        
+        const buttonText = result.isContact ? 'В контактах ✓' : 'Добавить';
+        const buttonDisabled = result.isContact ? 'disabled' : '';
+        
+        resultItem.innerHTML = `
+            <div class="search-result-avatar">
+                ${result.displayName.charAt(0)}
+            </div>
+            <div class="search-result-info">
+                <div class="search-result-name">${result.displayName}</div>
+                <div class="search-result-id">${result.customId}</div>
+                <div class="search-result-status ${statusClass}">
+                    ${statusText}
+                </div>
+            </div>
+            <button class="add-user-btn" ${buttonDisabled}>
+                ${buttonText}
+            </button>
+        `;
+        
+        // Обработчик добавления контакта
+        const addBtn = resultItem.querySelector('.add-user-btn');
+        if (!result.isContact) {
+            addBtn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                await addContact(result.customId);
+                
+                // Обновляем отображение этого пользователя
+                result.isContact = true;
+                displaySearchResults(results, containerId, currentContacts);
+            });
+        }
+        
+        // Обработчик открытия чата (если уже контакт)
+        resultItem.addEventListener('click', () => {
+            if (result.isContact) {
+                openOrCreatePrivateChat(result.userId);
+                if (addContactModal) addContactModal.classList.remove('active');
+            }
+        });
+        
+        container.appendChild(resultItem);
+    });
+    
+    container.classList.add('active');
+}
+
+// Функция для скрытия результатов поиска
+function hideSearchResults(containerId) {
+    const container = document.getElementById(containerId);
+    if (container) {
+        container.classList.remove('active');
+    }
+}
+
+// Функция показа/скрытия индикатора загрузки
+function setSearchLoading(containerId, isLoading) {
+    const loadingEl = document.getElementById(`${containerId}Loading`);
+    if (loadingEl) {
+        if (isLoading) {
+            loadingEl.classList.add('active');
+        } else {
+            loadingEl.classList.remove('active');
+        }
+    }
+}
+
+// Обработчик поиска в модальном окне добавления контакта
+function setupContactSearch() {
+    if (!contactSearch) return;
+    
+    contactSearch.addEventListener('input', function() {
+        const query = this.value.trim();
+        
+        // Очищаем предыдущий таймаут
+        if (searchTimeouts.modalSearch) {
+            clearTimeout(searchTimeouts.modalSearch);
+        }
+        
+        if (query.length < 1) {
+            hideSearchResults('contactSearchResults');
+            setSearchLoading('contactSearch', false);
+            if (confirmAddContactBtn) confirmAddContactBtn.disabled = true;
+            return;
+        }
+        
+        // Показываем индикатор загрузки
+        setSearchLoading('contactSearch', true);
+        
+        // Запускаем поиск с задержкой (дебаунс)
+        searchTimeouts.modalSearch = setTimeout(() => {
+            const searchResults = searchUsers(query, contacts);
+            displaySearchResults(searchResults, 'contactSearchResults', contacts);
+            
+            // Скрываем индикатор загрузки
+            setSearchLoading('contactSearch', false);
+            
+            // Активируем кнопку добавления, если есть результаты
+            if (confirmAddContactBtn) {
+                confirmAddContactBtn.disabled = searchResults.length === 0 || !searchResults.some(r => !r.isContact);
+            }
+        }, 300); // Задержка 300 мс
+    });
+    
+    // Закрываем результаты поиска при клике вне их
+    document.addEventListener('click', (e) => {
+        if (contactSearch && !contactSearch.contains(e.target) && 
+            contactSearchResults && !contactSearchResults.contains(e.target)) {
+            hideSearchResults('contactSearchResults');
+        }
+    });
+    
+    // Обработка нажатия клавиш
+    contactSearch.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            hideSearchResults('contactSearchResults');
+        } else if (e.key === 'Enter' && lastSearchResults.length > 0) {
+            // Если нажат Enter и есть результаты, добавляем первый доступный контакт
+            const availableContact = lastSearchResults.find(r => !r.isContact);
+            if (availableContact) {
+                addContact(availableContact.customId);
+                if (addContactModal) addContactModal.classList.remove('active');
+                resetAddContactForm();
+            }
+        }
+    });
+}
+
+// Обработчик поиска на главном экране (мобильная версия)
+function setupHomeContactsSearch() {
+    const homeSearchInput = document.getElementById('homeContactsSearch');
+    if (!homeSearchInput) return;
+    
+    homeSearchInput.addEventListener('input', function() {
+        const query = this.value.trim();
+        
+        // Очищаем предыдущий таймаут
+        if (searchTimeouts.homeSearch) {
+            clearTimeout(searchTimeouts.homeSearch);
+        }
+        
+        if (query.length < 1) {
+            hideSearchResults('homeContactsSearchResults');
+            setSearchLoading('homeContactsSearch', false);
+            return;
+        }
+        
+        // Показываем индикатор загрузки
+        setSearchLoading('homeContactsSearch', true);
+        
+        // Запускаем поиск с задержкой (дебаунс)
+        searchTimeouts.homeSearch = setTimeout(() => {
+            const searchResults = searchUsers(query, contacts);
+            displaySearchResults(searchResults, 'homeContactsSearchResults', contacts);
+            
+            // Скрываем индикатор загрузки
+            setSearchLoading('homeContactsSearch', false);
+        }, 300); // Задержка 300 мс
+    });
+    
+    // Закрываем результаты поиска при клике вне их
+    document.addEventListener('click', (e) => {
+        if (!homeSearchInput.contains(e.target) && 
+            !document.getElementById('homeContactsSearchResults')?.contains(e.target)) {
+            hideSearchResults('homeContactsSearchResults');
+        }
+    });
+}
 
 async function initializeApp() {
     console.log("Инициализация приложения");
@@ -746,11 +1012,7 @@ function createChatElement(chat) {
 
     let avatarClass, avatarContent, chatName;
 
-    if (chat.type === 'channel') {
-        avatarClass = 'channel-avatar';
-        avatarContent = '#';
-        chatName = chat.name;
-    } else if (chat.type === 'group') {
+    if (chat.type === 'group') {
         avatarClass = 'group-avatar';
         avatarContent = '<i class="fas fa-users"></i>';
         chatName = chat.name;
@@ -800,11 +1062,7 @@ function createDesktopChatElement(chat) {
 
     let avatarClass, avatarContent, chatName;
 
-    if (chat.type === 'channel') {
-        avatarClass = 'desktop-chat-avatar';
-        avatarContent = '#';
-        chatName = chat.name;
-    } else if (chat.type === 'group') {
+    if (chat.type === 'group') {
         avatarClass = 'desktop-chat-avatar';
         avatarContent = '<i class="fas fa-users" style="font-size: 16px;"></i>';
         chatName = chat.name;
@@ -824,7 +1082,7 @@ function createDesktopChatElement(chat) {
     }
 
     chatElement.innerHTML = `
-        <div class="${avatarClass}" style="background: ${chat.type === 'channel' ? 'linear-gradient(135deg, #f59e0b, #d97706)' : chat.type === 'group' ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #3b82f6, #1d4ed8)'}">
+        <div class="${avatarClass}" style="background: ${chat.type === 'group' ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #3b82f6, #1d4ed8)'}">
             ${avatarContent}
         </div>
         <div class="desktop-chat-info">
@@ -1145,7 +1403,7 @@ function displaySearchResults(results, containerId, currentContacts = []) {
             });
         }
         
-        // Обработчик открытия чата
+        // Обработчик открытия чата (если уже контакт)
         resultItem.addEventListener('click', () => {
             if (result.isContact) {
                 openOrCreatePrivateChat(result.userId);
@@ -1303,8 +1561,8 @@ async function openChat(chatId) {
         avatarContent = otherUser ? otherUser.displayName.charAt(0) : '?';
     } else {
         chatName = chat.name;
-        chatDescription = chat.description || `Чат типа ${chat.type === 'channel' ? 'канал' : 'группа'}`;
-        avatarContent = chat.type === 'channel' ? '#' : '<i class="fas fa-users"></i>';
+        chatDescription = chat.description || `Групповой чат`;
+        avatarContent = '<i class="fas fa-users"></i>';
     }
 
     // Обновляем заголовок в зависимости от устройства
@@ -1318,9 +1576,7 @@ async function openChat(chatId) {
         if (desktopChatHeaderDescription) desktopChatHeaderDescription.textContent = chatDescription;
         if (desktopChatAvatar) {
             desktopChatAvatar.innerHTML = avatarContent;
-            desktopChatAvatar.style.background = chat.type === 'channel' ? 
-                'linear-gradient(135deg, #f59e0b, #d97706)' : 
-                chat.type === 'group' ? 
+            desktopChatAvatar.style.background = chat.type === 'group' ? 
                 'linear-gradient(135deg, #10b981, #059669)' : 
                 'linear-gradient(135deg, #3b82f6, #1d4ed8)';
         }
@@ -2082,7 +2338,7 @@ function setupChatListener(chatId) {
     });
 }
 
-// ИСПРАВЛЕННАЯ ФУНКЦИЯ ДОБАВЛЕНИЯ КОНТАКТА
+// Обновленная функция добавления контакта
 async function addContact(targetCustomId) {
     try {
         console.log("Попытка добавления контакта по customId:", targetCustomId);
@@ -2134,6 +2390,12 @@ async function addContact(targetCustomId) {
 
         // Обновляем список контактов
         await loadContacts();
+        
+        // Обновляем результаты поиска
+        if (contactSearch && contactSearch.value.trim()) {
+            const newResults = searchUsers(contactSearch.value.trim(), contacts);
+            displaySearchResults(newResults, 'contactSearchResults', contacts);
+        }
 
     } catch (error) {
         console.error("Ошибка при добавлении контакта:", error);
@@ -2367,10 +2629,10 @@ function resetCreateForm() {
         privateUserSearchResults.innerHTML = '';
         privateUserSearchResults.style.display = 'none';
     }
-    selectedChatType = 'channel';
+    selectedChatType = 'group'; // ИЗМЕНЕНИЕ: изменено с 'channel' на 'group'
     chatTypeOptions.forEach(opt => {
         opt.classList.remove('active');
-        if (opt.dataset.type === 'channel') {
+        if (opt.dataset.type === 'group') { // ИЗМЕНЕНИЕ: изменено с 'channel' на 'group'
             opt.classList.add('active');
         }
     });
@@ -2382,12 +2644,12 @@ function resetCreateForm() {
     }
 }
 
+// Обновленная функция сброса формы добавления контакта
 function resetAddContactForm() {
     if (contactSearch) contactSearch.value = '';
-    if (contactSearchResults) {
-        contactSearchResults.innerHTML = '';
-        contactSearchResults.style.display = 'none';
-    }
+    hideSearchResults('contactSearchResults');
+    setSearchLoading('contactSearch', false);
+    lastSearchResults = [];
     if (confirmAddContactBtn) confirmAddContactBtn.disabled = true;
 }
 
@@ -2659,56 +2921,74 @@ function setupEventListeners() {
         });
     }
 
+    // ПОИСК КОНТАКТОВ В МОДАЛЬНОМ ОКНЕ
+    if (contactSearch) {
+        contactSearch.addEventListener('input', function() {
+            const query = this.value.trim();
+            
+            // Очищаем предыдущий таймаут
+            if (searchTimeouts.modalSearch) {
+                clearTimeout(searchTimeouts.modalSearch);
+            }
+            
+            if (query.length < 1) {
+                hideSearchResults('contactSearchResults');
+                if (confirmAddContactBtn) confirmAddContactBtn.disabled = true;
+                return;
+            }
+            
+            // Запускаем поиск с задержкой (дебаунс)
+            searchTimeouts.modalSearch = setTimeout(() => {
+                const searchResults = searchUsers(query, contacts);
+                displaySearchResults(searchResults, 'contactSearchResults', contacts);
+                
+                // Активируем кнопку добавления, если есть результаты
+                if (confirmAddContactBtn) {
+                    confirmAddContactBtn.disabled = searchResults.length === 0 || !searchResults.some(r => !r.isContact);
+                }
+            }, 300); // Задержка 300 мс
+        });
+    }
+
+    // Закрываем результаты поиска в модальном окне при клике вне их
+    document.addEventListener('click', (e) => {
+        if (contactSearch && !contactSearch.contains(e.target) && 
+            contactSearchResults && !contactSearchResults.contains(e.target)) {
+            hideSearchResults('contactSearchResults');
+        }
+    });
+
+    // Обновленный обработчик кнопки "Добавить" в модальном окне
     if (confirmAddContactBtn) {
         confirmAddContactBtn.addEventListener('click', async () => {
             if (!contactSearch) return;
-            
+
             const searchValue = contactSearch.value.trim();
         
             if (!searchValue) {
-                showNotification("Введите ID или имя пользователя");
+                showNotification("Введите имя или ID пользователя");
                 return;
             }
-        
+
             console.log("Поиск пользователя для добавления:", searchValue);
-            
-            // Сначала ищем по customId
-            let foundCustomId = null;
-            
-            for (const userId in allUsers) {
-                if (allUsers[userId].customId && allUsers[userId].customId.toLowerCase() === searchValue.toLowerCase() && userId !== currentUser.uid) {
-                    foundCustomId = allUsers[userId].customId;
-                    console.log("Найден по customId:", foundCustomId);
-                    break;
-                }
-            }
-            
-            // Если не нашли, ищем по имени
-            if (!foundCustomId) {
-                for (const userId in allUsers) {
-                    if (allUsers[userId].displayName && allUsers[userId].displayName.toLowerCase().includes(searchValue.toLowerCase()) && userId !== currentUser.uid) {
-                        foundCustomId = allUsers[userId].customId;
-                        console.log("Найден по имени:", foundCustomId);
-                        break;
-                    }
-                }
-            }
-        
-            if (foundCustomId) {
-                await addContact(foundCustomId);
-                
+
+            // Ищем среди последних результатов
+            let foundContact = lastSearchResults.find(r => 
+                (!r.isContact && 
+                 (r.displayName.toLowerCase() === searchValue.toLowerCase() || 
+                  r.customId.toLowerCase() === searchValue.toLowerCase()))
+            );
+
+            if (foundContact) {
+                await addContact(foundContact.customId);
+
                 // Закрываем модальное окно
                 if (addContactModal) addContactModal.classList.remove('active');
                 resetAddContactForm();
             } else {
-                showNotification("Пользователь не найден. Проверьте правильность ID.");
+                showNotification("Выберите пользователя из списка или введите корректные данные");
             }
         });
-    }
-    
-    // Обработчик поиска контактов (ручной ввод в модальном окне)
-    if (contactSearch) {
-        contactSearch.addEventListener('input', handleContactSearchManual);
     }
 
     // ПОИСК ПОЛЬЗОВАТЕЛЕЙ ДЛЯ ЛИЧНЫХ ЧАТОВ
@@ -2836,25 +3116,7 @@ function setupEventListeners() {
             hideSearchResults('homeContactsSearchResults');
             hideSearchResults('contactSearchResults');
         }
-    });
-
-    // Автоматическое изменение высоты textarea
-    if (messageInput) {
-        messageInput.addEventListener('input', function() {
-            this.style.height = 'auto';
-            this.style.height = Math.min(this.scrollHeight, 120) + 'px';
-        });
-    }
-
-    // Предотвращение стандартного контекстного меню
-    document.addEventListener('contextmenu', (e) => {
-        if (e.target.closest('.message-content')) {
-            e.preventDefault();
-        }
-    });
-
-    // Горячие клавиши для поиска
-    document.addEventListener('keydown', (e) => {
+        
         // Ctrl+K или Cmd+K для фокуса на поиске
         if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
             e.preventDefault();
@@ -2873,17 +3135,57 @@ function setupEventListeners() {
                 }
             }
         }
-        
-        // Escape для скрытия результатов поиска
-        if (e.key === 'Escape') {
-            hideSearchResults('homeContactsSearchResults');
-            hideSearchResults('contactSearchResults');
-            
-            // Снимаем фокус с полей поиска
-            if (homeContactsSearch) homeContactsSearch.blur();
-            if (contactSearch) contactSearch.blur();
+    });
+
+    // Автоматическое изменение высоты textarea
+    if (messageInput) {
+        messageInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+        });
+    }
+
+    // Предотвращение стандартного контекстного меню
+    document.addEventListener('contextmenu', (e) => {
+        if (e.target.closest('.message-content')) {
+            e.preventDefault();
         }
     });
+
+    // ДОПОЛНИТЕЛЬНЫЕ ОБРАБОТЧИКИ ДЛЯ ПОИСКА
+    
+    // Поиск контактов на главном экране
+    if (homeContactsSearch) {
+        homeContactsSearch.addEventListener('input', function() {
+            const query = this.value.trim();
+            
+            // Очищаем предыдущий таймаут
+            if (searchTimeouts.homeSearch) {
+                clearTimeout(searchTimeouts.homeSearch);
+            }
+            
+            if (query.length < 1) {
+                hideSearchResults('homeContactsSearchResults');
+                return;
+            }
+            
+            // Запускаем поиск с задержкой (дебаунс)
+            searchTimeouts.homeSearch = setTimeout(() => {
+                const searchResults = searchUsers(query, contacts);
+                displaySearchResults(searchResults, 'homeContactsSearchResults', contacts);
+            }, 300); // Задержка 300 мс
+        });
+        
+        // Закрываем результаты поиска на главном экране при клике вне их
+        document.addEventListener('click', (e) => {
+            if (!homeContactsSearch.contains(e.target) && 
+                !homeContactsSearchResults.contains(e.target)) {
+                hideSearchResults('homeContactsSearchResults');
+            }
+        });
+    }
+    setupContactSearch();
+    setupHomeContactsSearch();
 }
 
 // ДОПОЛНИТЕЛЬНЫЕ ФУНКЦИИ ЧАТА
