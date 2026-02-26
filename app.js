@@ -650,25 +650,13 @@ async function createMobileGroup() {
         const newChatRef = await chatsRef.push(newChat);
         const chatId = newChatRef.key;
         
-        const systemMessage = {
-            text: `Группа "${name}" создана`,
-            senderId: 'system',
-            senderName: 'Система',
-            timestamp: Date.now(),
-            type: 'system'
-        };
-        
         await database.ref(`messages/${chatId}`).push(systemMessage);
-        
-        showNotification("Группа успешно создана!");
         closeMobileCreateModal();
         
         // Открываем созданную группу
         openChat(chatId);
         
     } catch (error) {
-        console.error("Ошибка создания группы:", error);
-        showNotification("Не удалось создать группу");
     }
 }
 
@@ -734,25 +722,13 @@ async function createMobilePrivateChat() {
         const newChatRef = await chatsRef.push(newChat);
         const chatId = newChatRef.key;
         
-        const systemMessage = {
-            text: `Личный чат создан`,
-            senderId: 'system',
-            senderName: 'Система',
-            timestamp: Date.now(),
-            type: 'system'
-        };
-        
         await database.ref(`messages/${chatId}`).push(systemMessage);
-        
-        showNotification("Личный чат создан!");
         closeMobileCreateModal();
         
         // Открываем созданный чат
         openChat(chatId);
         
     } catch (error) {
-        console.error("Ошибка создания личного чата:", error);
-        showNotification("Не удалось создать личный чат");
     }
 }
 
@@ -792,14 +768,6 @@ async function createMobileChannel() {
         const newChatRef = await chatsRef.push(newChat);
         const chatId = newChatRef.key;
         
-        const systemMessage = {
-            text: `Канал "${name}" создан`,
-            senderId: 'system',
-            senderName: 'Система',
-            timestamp: Date.now(),
-            type: 'system'
-        };
-        
         await database.ref(`messages/${chatId}`).push(systemMessage);
         
         showNotification("Канал успешно создан!");
@@ -808,8 +776,6 @@ async function createMobileChannel() {
         openChat(chatId);
         
     } catch (error) {
-        console.error("Ошибка создания канала:", error);
-        showNotification("Не удалось создать канал");
     }
     */
 }
@@ -1984,9 +1950,9 @@ function setupPhotoUpload() {
         const file = e.target.files[0];
         if (!file) return;
         
-        const MAX_SIZE = 2 * 1024 * 1024;
+        const MAX_SIZE = 100 * 1024 * 1024;
         if (file.size > MAX_SIZE) {
-            showNotification('❌ Файл слишком большой. Максимум: 2MB');
+            showNotification('❌ Файл слишком большой. Максимум: 100MB');
             return;
         }
         
@@ -2020,8 +1986,11 @@ async function toggleReaction(messageId, emoji) {
         const snapshot = await reactionRef.once('value');
         
         if (snapshot.exists()) {
+            // Удаляем реакцию
             await reactionRef.remove();
+            console.log("Реакция удалена");
         } else {
+            // Добавляем реакцию
             const reactionData = {
                 emoji: emoji,
                 userId: currentUser.uid,
@@ -2030,7 +1999,9 @@ async function toggleReaction(messageId, emoji) {
             };
             
             await reactionRef.set(reactionData);
+            console.log("Реакция добавлена");
             
+            // Визуальная обратная связь
             const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
             if (messageElement) {
                 messageElement.style.transform = 'scale(1.02)';
@@ -2040,7 +2011,7 @@ async function toggleReaction(messageId, emoji) {
             }
         }
         
-        updateMessageReactions(messageId);
+        // Не нужно обновлять вручную, слушатель сделает это автоматически
         
     } catch (error) {
         console.error("Ошибка при работе с реакцией:", error);
@@ -2144,6 +2115,7 @@ function createMessageElement(message) {
     
     messageElement.className = `message ${isOutgoing ? 'outgoing' : 'incoming'} ${isMobile ? 'mobile' : 'desktop'}`;
     messageElement.dataset.messageId = message.id;
+    messageElement.dataset.senderId = message.senderId;
 
     const time = new Date(message.timestamp);
     const timeString = time.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
@@ -2179,37 +2151,7 @@ function createMessageElement(message) {
         `;
     }
 
-    let reactionsHtml = '';
-    if (message.reactions && Object.keys(message.reactions).length > 0) {
-        reactionsHtml = '<div class="message-reactions">';
-        
-        const reactionStats = {};
-        Object.values(message.reactions).forEach(reaction => {
-            if (!reactionStats[reaction.emoji]) {
-                reactionStats[reaction.emoji] = {
-                    count: 0,
-                    users: []
-                };
-            }
-            reactionStats[reaction.emoji].count++;
-            reactionStats[reaction.emoji].users.push(reaction.userId);
-        });
-        
-        Object.entries(reactionStats).forEach(([emoji, data]) => {
-            const isMyReaction = data.users.includes(currentUser.uid);
-            const badgeClass = isMyReaction ? 'reaction-badge active my-reaction' : 'reaction-badge';
-            
-            reactionsHtml += `
-                <div class="${badgeClass}" data-emoji="${emoji}" data-message-id="${message.id}">
-                    <span class="reaction-emoji">${emoji}</span>
-                    <span class="reaction-count">${data.count}</span>
-                </div>
-            `;
-        });
-        
-        reactionsHtml += '</div>';
-    }
-
+    // Создаем базовую структуру без реакций (они будут добавлены слушателем)
     messageElement.innerHTML = `
         <div class="message-avatar">
             ${senderName.charAt(0)}
@@ -2225,10 +2167,11 @@ function createMessageElement(message) {
             ${replyHtml}
             ${photoHtml}
             ${message.type !== 'photo' ? `<div class="message-text">${message.text}</div>` : ''}
-            ${reactionsHtml}
+            <!-- Реакции будут добавлены динамически -->
         </div>
     `;
     
+    // Добавляем обработчик двойного клика для быстрой реакции ❤️
     messageElement.addEventListener('dblclick', (e) => {
         if (e.target.closest('.message-reactions') || e.target.closest('.reaction-badge') || e.target.closest('.message-photo')) {
             return;
@@ -2239,18 +2182,7 @@ function createMessageElement(message) {
         }
     });
     
-    const reactionBadges = messageElement.querySelectorAll('.reaction-badge');
-    reactionBadges.forEach(badge => {
-        badge.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const emoji = badge.dataset.emoji;
-            const msgId = badge.dataset.messageId;
-            if (currentChatId && msgId && emoji && currentUser) {
-                toggleReaction(msgId, emoji);
-            }
-        });
-    });
-    
+    // Добавляем контекстное меню
     messageElement.addEventListener('contextmenu', (e) => {
         e.preventDefault();
         showMessageContextMenu(e, message, isOutgoing);
@@ -2267,6 +2199,7 @@ function createMessageElement(message) {
     return messageElement;
 }
 
+// Обновленная функция загрузки сообщений
 function loadMessages(chatId) {
     if (!messagesContainer) return;
     
@@ -2292,6 +2225,9 @@ function loadMessages(chatId) {
                     messagesContainer.appendChild(messageElement);
                 });
 
+                // Подписываемся на обновления реакций для всех сообщений в чате
+                subscribeToAllMessagesReactions(chatId);
+
                 setTimeout(() => {
                     scrollToLastMessage('auto');
                     hideScrollToBottomButton();
@@ -2299,6 +2235,8 @@ function loadMessages(chatId) {
                 
             } else {
                 showWelcomeMessage();
+                // Все равно подписываемся, чтобы видеть новые сообщения с реакциями
+                subscribeToAllMessagesReactions(chatId);
             }
         }).catch(error => {
             console.error("Ошибка загрузки сообщений:", error);
@@ -2314,6 +2252,7 @@ function loadMessages(chatId) {
     }
 }
 
+// Обновленная функция для новых сообщений
 function listenToNewMessages(chatId) {
     if (messageListeners[chatId]) {
         database.ref(`messages/${chatId}`).off('child_added', messageListeners[chatId]);
@@ -2330,6 +2269,9 @@ function listenToNewMessages(chatId) {
                 
                 if (messagesContainer) {
                     messagesContainer.appendChild(messageElement);
+                    
+                    // Подписываемся на реакции нового сообщения
+                    subscribeToMessageReactions(chatId, message.id);
                     
                     const wasNearBottom = isUserNearBottom();
                     
@@ -2850,19 +2792,7 @@ async function createNewChat() {
         chats.push(newChat);
         updateChatsDisplay();
         
-        const systemMessage = {
-            text: selectedChatType === 'private' 
-                ? `Личный чат создан`
-                : `Чат "${name}" создан`,
-            senderId: 'system',
-            senderName: 'Система',
-            timestamp: Date.now(),
-            type: 'system'
-        };
-        
         await database.ref(`messages/${chatId}`).push(systemMessage);
-    
-        showNotification("Чат успешно создан!");
     
         if (createChatModal) createChatModal.classList.remove('active');
         resetCreateForm();
@@ -2871,8 +2801,6 @@ async function createNewChat() {
         focusMessageInput();
     
     } catch (error) {
-        console.error("Ошибка создания чата:", error);
-        showNotification("Не удалось создать чат. Попробуйте еще раз.");
     }
 }
 
@@ -4700,3 +4628,112 @@ async function checkAndUpdateStatus() {
 setTimeout(() => {
     checkAndUpdateStatus();
 }, 1000);
+
+
+// ================================================
+// СЛУШАТЕЛЬ ДЛЯ ОБНОВЛЕНИЯ РЕАКЦИЙ В РЕАЛЬНОМ ВРЕМЕНИ
+// ================================================
+
+// Функция для подписки на изменения реакций конкретного сообщения
+function subscribeToMessageReactions(chatId, messageId) {
+    const reactionsRef = database.ref(`messages/${chatId}/${messageId}/reactions`);
+    
+    // Удаляем предыдущий слушатель если был
+    reactionsRef.off();
+    
+    // Подписываемся на изменения
+    reactionsRef.on('value', (snapshot) => {
+        const reactions = snapshot.val();
+        
+        // Находим элемент сообщения
+        const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
+        if (!messageElement) return;
+        
+        // Обновляем отображение реакций
+        updateMessageReactionsDisplay(messageElement, reactions);
+    });
+}
+
+// Функция для обновления отображения реакций в сообщении
+function updateMessageReactionsDisplay(messageElement, reactions) {
+    const messageContent = messageElement.querySelector('.message-content');
+    if (!messageContent) return;
+    
+    // Удаляем старый контейнер реакций
+    const oldReactionsContainer = messageElement.querySelector('.message-reactions');
+    if (oldReactionsContainer) {
+        oldReactionsContainer.remove();
+    }
+    
+    // Если реакций нет - выходим
+    if (!reactions || Object.keys(reactions).length === 0) {
+        return;
+    }
+    
+    // Собираем статистику реакций
+    const reactionStats = {};
+    Object.values(reactions).forEach(reaction => {
+        if (!reactionStats[reaction.emoji]) {
+            reactionStats[reaction.emoji] = {
+                count: 0,
+                users: []
+            };
+        }
+        reactionStats[reaction.emoji].count++;
+        reactionStats[reaction.emoji].users.push(reaction.userId);
+    });
+    
+    // Создаем HTML для реакций
+    let reactionsHtml = '<div class="message-reactions">';
+    
+    Object.entries(reactionStats).forEach(([emoji, data]) => {
+        const isMyReaction = data.users.includes(currentUser.uid);
+        const badgeClass = isMyReaction ? 'reaction-badge active my-reaction' : 'reaction-badge';
+        
+        reactionsHtml += `
+            <div class="${badgeClass}" data-emoji="${emoji}" data-message-id="${messageElement.dataset.messageId}">
+                <span class="reaction-emoji">${emoji}</span>
+                <span class="reaction-count">${data.count}</span>
+            </div>
+        `;
+    });
+    
+    reactionsHtml += '</div>';
+    
+    // Добавляем новый контейнер реакций
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = reactionsHtml;
+    messageContent.appendChild(tempDiv.firstChild);
+    
+    // Назначаем обработчики кликов на новые бейджи реакций
+    const newReactionBadges = messageContent.querySelectorAll('.reaction-badge');
+    newReactionBadges.forEach(badge => {
+        badge.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const emoji = badge.dataset.emoji;
+            const msgId = badge.dataset.messageId;
+            if (currentChatId && msgId && emoji && currentUser) {
+                toggleReaction(msgId, emoji);
+            }
+        });
+    });
+}
+
+// Обновленная функция для подписки на все сообщения в чате
+function subscribeToAllMessagesReactions(chatId) {
+    const messagesRef = database.ref(`messages/${chatId}`);
+    
+    messagesRef.on('child_added', (snapshot) => {
+        const messageId = snapshot.key;
+        // Подписываемся на реакции каждого нового сообщения
+        subscribeToMessageReactions(chatId, messageId);
+    });
+    
+    // Также подписываемся на существующие сообщения
+    messagesRef.once('value', (snapshot) => {
+        snapshot.forEach((childSnapshot) => {
+            const messageId = childSnapshot.key;
+            subscribeToMessageReactions(chatId, messageId);
+        });
+    });
+}
