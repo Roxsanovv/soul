@@ -10,387 +10,6 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <link rel="stylesheet" href="styles.css">
-    <!-- Дополнительный стиль для ПК версии -->
-    <style id="desktop-styles">
-        /* Скрываем мобильные элементы на ПК */
-        @media (min-width: 769px) {
-            .mobile-header,
-            .mobile-sidebar-overlay,
-            .mobile-sidebar,
-            .mobile-sidebar-tabs,
-            .mobile-sidebar-footer {
-                display: none !important;
-            }
-            
-            .main-content {
-                padding-top: 0 !important;
-            }
-            
-            .container {
-                display: flex;
-                height: 100vh;
-                overflow: hidden;
-            }
-            
-            /* Боковая панель для ПК */
-            .desktop-sidebar {
-                width: 300px;
-                background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-                border-right: 1px solid var(--border-color);
-                display: flex;
-                flex-direction: column;
-                overflow: hidden;
-            }
-            
-            .desktop-sidebar-header {
-                padding: 20px;
-                border-bottom: 1px solid var(--border-color);
-            }
-            
-            .desktop-sidebar-content {
-                flex: 1;
-                overflow-y: auto;
-                padding: 15px;
-            }
-            
-            .desktop-sidebar-tabs {
-                display: flex;
-                margin-bottom: 20px;
-                background: rgba(255, 255, 255, 0.05);
-                border-radius: var(--radius-lg);
-                padding: 8px;
-            }
-            
-            .desktop-sidebar-tab {
-                flex: 1;
-                text-align: center;
-                padding: 12px 8px;
-                border-radius: var(--radius-md);
-                color: #94a3b8;
-                font-weight: 600;
-                cursor: pointer;
-                font-size: 14px;
-                transition: var(--transition);
-            }
-            
-            .desktop-sidebar-tab:hover {
-                background: rgba(255, 255, 255, 0.1);
-                color: white;
-            }
-            
-            .desktop-sidebar-tab.active {
-                background: rgba(139, 92, 246, 0.2);
-                color: white;
-            }
-            
-            /* Основная область на ПК */
-            .main-content.desktop {
-                flex: 1;
-                display: flex;
-                flex-direction: column;
-                background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-            }
-            
-            /* Экран чата на ПК */
-            .chat-screen.desktop {
-                flex: 1;
-                display: flex;
-                flex-direction: column;
-                height: 100vh;
-            }
-            
-            .chat-header.desktop {
-                padding: 15px 20px;
-                background: rgba(15, 23, 42, 0.95);
-                border-bottom: 1px solid var(--border-color);
-            }
-            
-            .messages-container.desktop {
-                flex: 1;
-                padding: 20px;
-                background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-            }
-            
-            .chat-input-container.desktop {
-                padding: 15px 20px;
-                background: rgba(15, 23, 42, 0.95);
-                border-top: 1px solid var(--border-color);
-            }
-            
-            /* Список чатов на ПК */
-            .desktop-chats-list {
-                display: flex;
-                flex-direction: column;
-                gap: 8px;
-            }
-            
-            .desktop-chat-item {
-                display: flex;
-                align-items: center;
-                padding: 12px;
-                border-radius: var(--radius-md);
-                background: rgba(255, 255, 255, 0.05);
-                cursor: pointer;
-                transition: var(--transition);
-            }
-            
-            .desktop-chat-item:hover {
-                background: rgba(255, 255, 255, 0.1);
-            }
-            
-            .desktop-chat-item.active {
-                background: rgba(139, 92, 246, 0.2);
-                border: 1px solid rgba(139, 92, 246, 0.3);
-            }
-            
-            .desktop-chat-avatar {
-                width: 40px;
-                height: 40px;
-                border-radius: 10px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-weight: 600;
-                margin-right: 12px;
-                font-size: 16px;
-            }
-            
-            .desktop-chat-info {
-                flex: 1;
-                min-width: 0;
-            }
-            
-            .desktop-chat-name {
-                font-weight: 600;
-                font-size: 14px;
-                color: white;
-                margin-bottom: 4px;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-            }
-            
-            .desktop-chat-last-message {
-                font-size: 12px;
-                color: #94a3b8;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-            }
-            
-            /* Кнопки действий на ПК */
-            .desktop-sidebar-actions {
-                padding: 15px;
-                display: flex;
-                gap: 10px;
-                border-top: 1px solid var(--border-color);
-            }
-            
-            .desktop-action-btn {
-                flex: 1;
-                padding: 12px;
-                background: rgba(139, 92, 246, 0.2);
-                border: 1px solid rgba(139, 92, 246, 0.3);
-                border-radius: var(--radius-md);
-                color: #a78bfa;
-                font-weight: 600;
-                font-size: 14px;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                gap: 8px;
-                transition: var(--transition);
-            }
-            
-            .desktop-action-btn:hover {
-                background: rgba(139, 92, 246, 0.3);
-                color: #c4b5fd;
-            }
-            
-            .desktop-action-btn.secondary {
-                background: rgba(59, 130, 246, 0.2);
-                border-color: rgba(59, 130, 246, 0.3);
-                color: #60a5fa;
-            }
-            
-            .desktop-action-btn.secondary:hover {
-                background: rgba(59, 130, 246, 0.3);
-                color: #93c5fd;
-            }
-            
-            /* Информация о пользователе на ПК */
-            .desktop-user-info {
-                padding: 15px;
-                border-bottom: 1px solid var(--border-color);
-                display: flex;
-                align-items: center;
-                gap: 12px;
-            }
-            
-            .desktop-user-avatar {
-                width: 40px;
-                height: 40px;
-                border-radius: 10px;
-                background: linear-gradient(135deg, #8b5cf6, #7c3aed);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-weight: 700;
-                color: white;
-                font-size: 16px;
-            }
-            
-            .desktop-user-details {
-                flex: 1;
-                min-width: 0;
-            }
-            
-            .desktop-user-name {
-                font-weight: 600;
-                font-size: 14px;
-                color: white;
-                margin-bottom: 4px;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-            }
-            
-            .desktop-user-status {
-                font-size: 12px;
-                color: #10b981;
-                display: flex;
-                align-items: center;
-                gap: 4px;
-            }
-            
-            .desktop-user-status i {
-                font-size: 8px;
-            }
-            
-            /* Поиск на ПК */
-            .desktop-search-container {
-                padding: 15px;
-                border-bottom: 1px solid var(--border-color);
-            }
-            
-            .desktop-search-box {
-                width: 100%;
-                padding: 10px 12px;
-                background: rgba(255, 255, 255, 0.08);
-                border: 1px solid rgba(255, 255, 255, 0.15);
-                border-radius: var(--radius-md);
-                color: white;
-                font-size: 14px;
-            }
-            
-            .desktop-search-box:focus {
-                outline: none;
-                border-color: #8b5cf6;
-            }
-            
-            /* Пустой экран на ПК */
-            .desktop-empty-screen {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                height: 100%;
-                color: #64748b;
-                text-align: center;
-                padding: 40px;
-            }
-            
-            .desktop-empty-content {
-                max-width: 400px;
-            }
-            
-            .desktop-empty-icon {
-                font-size: 64px;
-                margin-bottom: 20px;
-                opacity: 0.5;
-            }
-            
-            .desktop-empty-title {
-                font-size: 20px;
-                font-weight: 600;
-                margin-bottom: 10px;
-                color: #94a3b8;
-            }
-            
-            .desktop-empty-text {
-                font-size: 14px;
-                line-height: 1.5;
-                margin-bottom: 20px;
-            }
-            
-            /* Адаптация сообщений для ПК */
-            .message.desktop {
-                max-width: 70%;
-            }
-            
-            /* Заголовок на ПК */
-            .desktop-chat-header {
-                display: flex;
-                align-items: center;
-                gap: 15px;
-            }
-            
-            .desktop-chat-avatar {
-                width: 44px;
-                height: 44px;
-                border-radius: 12px;
-                background: linear-gradient(135deg, #8b5cf6, #7c3aed);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-weight: 700;
-                color: white;
-                font-size: 18px;
-            }
-            
-            .desktop-chat-header-info {
-                flex: 1;
-                min-width: 0;
-            }
-            
-            .desktop-chat-header-name {
-                font-size: 16px;
-                font-weight: 700;
-                color: white;
-                margin-bottom: 4px;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-            }
-            
-            .desktop-chat-header-description {
-                font-size: 13px;
-                color: #94a3b8;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-            }
-            
-            /* Улучшения для ввода сообщений на ПК */
-            .chat-input-container.desktop .input-area {
-                max-width: 800px;
-                margin: 0 auto;
-            }
-            
-            .chat-input-container.desktop .message-input {
-                background: rgba(255, 255, 255, 0.1);
-            }
-            
-            /* Стили для активного чата на ПК */
-            .desktop-chat-item.active .desktop-chat-name {
-                color: #c4b5fd;
-            }
-            
-            .desktop-chat-item.active .desktop-chat-last-message {
-                color: #a78bfa;
-            }
-        }
-    </style>
 </head>
 <body>
     <!-- Авторизация -->
@@ -468,8 +87,8 @@
 
     <!-- Основной интерфейс -->
     <div class="container" id="mainContainer" style="display: none;">
-        <!-- Мобильный заголовок -->
-        <div class="mobile-header" id="mobileHeader">
+        <!-- Мобильный заголовок (скрыт, используется новое меню) -->
+        <div class="mobile-header" id="mobileHeader" style="display: none;">
             <button class="mobile-menu-btn" id="mobileMenuBtn">
                 <i class="fas fa-bars"></i>
             </button>
@@ -479,7 +98,7 @@
             </button>
         </div>
 
-        <!-- Боковая панель для мобильных -->
+        <!-- Боковая панель для мобильных (скрыта) -->
         <div class="mobile-sidebar-overlay" id="mobileSidebarOverlay"></div>
         <div class="mobile-sidebar" id="mobileSidebar">
             <div class="mobile-sidebar-header">
@@ -540,13 +159,7 @@
         </div>
 
         <!-- Боковая панель для ПК (скрыта на мобильных) -->
-        <div class="desktop-sidebar" id="desktopSidebar" style="display: none;">
-            <div class="desktop-sidebar-header">
-                <div class="logo">
-                    <div class="logo-icon"><img src="img/s.png" width="35px"></div>
-                </div>
-            </div>
-            
+        <div class="desktop-sidebar" id="desktopSidebar" style="display: none;">            
             <div class="desktop-user-info" id="desktopUserInfo">
                 <div class="desktop-user-avatar" id="desktopUserAvatar">И</div>
                 <div class="desktop-user-details">
@@ -592,7 +205,262 @@
             </div>
         </div>
 
-        <!-- Основная область -->
+        <!-- НОВЫЙ МОБИЛЬНЫЙ ИНТЕРФЕЙС -->
+        <div class="mobile-container" id="mobileContainer">
+            <!-- Нижнее меню (фиксированное) -->
+            <div class="mobile-bottom-nav">
+                <div class="mobile-nav-item active" data-tab="chats">
+                    <i class="fas fa-comment"></i>
+                    <span>Чаты</span>
+                </div>
+                <div class="mobile-nav-item" data-tab="contacts">
+                    <i class="fas fa-user-friends"></i>
+                    <span>Контакты</span>
+                </div>
+                <div class="mobile-nav-item" data-tab="profile">
+                    <i class="fas fa-user"></i>
+                    <span>Профиль</span>
+                </div>
+                <div class="mobile-nav-item" data-tab="settings">
+                    <i class="fas fa-cog"></i>
+                    <span>Настройки</span>
+                </div>
+            </div>
+
+            <!-- Контентные экраны -->
+            <div class="mobile-content">
+                <!-- Экран чатов (главный) -->
+                <div class="mobile-tab-content active" id="mobileChatsTab">
+                    <div class="mobile-chats-header">
+                        <div class="mobile-chats-title">
+                            <h2>Чаты</h2>
+                            <span class="chats-count" id="chatsCount">0</span>
+                        </div>
+                        <div class="mobile-search-bar">
+                            <i class="fas fa-search"></i>
+                            <input type="text" placeholder="Поиск по чатам..." id="mobileSearchChats">
+                        </div>
+                    </div>
+                    <div class="mobile-chats-list" id="mobileChatsList">
+                        <!-- Список чатов будет здесь -->
+                    </div>
+                </div>
+
+                <!-- Экран контактов -->
+                <div class="mobile-tab-content" id="mobileContactsTab">
+                    <div class="mobile-contacts-header">
+                        <div class="mobile-contacts-title">
+                            <h2>Контакты</h2>
+                            <span class="contacts-count" id="contactsCount">0</span>
+                        </div>
+                        <div class="mobile-search-bar">
+                            <i class="fas fa-search"></i>
+                            <input type="text" placeholder="Поиск контактов..." id="mobileSearchContacts">
+                        </div>
+                    </div>
+                    <div class="mobile-contacts-list" id="mobileContactsList">
+                        <!-- Список контактов будет здесь -->
+                    </div>
+                </div>
+
+                <!-- Экран профиля -->
+                <div class="mobile-tab-content" id="mobileProfileTab">
+                    <div class="mobile-profile">
+                        <div class="mobile-profile-header">
+                            <div class="mobile-profile-avatar-large" id="mobileProfileAvatar">
+                                И
+                            </div>
+                            <div class="mobile-profile-info">
+                                <div class="mobile-profile-name" id="mobileProfileName">Имя пользователя</div>
+                                <div class="mobile-profile-status" id="mobileProfileStatus">
+                                    <i class="fas fa-circle"></i> online
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mobile-profile-section">
+                            <div class="mobile-profile-item">
+                                <i class="fas fa-id-card"></i>
+                                <div class="mobile-profile-item-content">
+                                    <span class="label">Ваш ID</span>
+                                    <span class="value" id="mobileProfileId">user_123456</span>
+                                </div>
+                                <button class="copy-btn" id="mobileCopyIdBtn">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                            
+                            <div class="mobile-profile-item">
+                                <i class="fas fa-calendar"></i>
+                                <div class="mobile-profile-item-content">
+                                    <span class="label">На Soul с</span>
+                                    <span class="value" id="mobileProfileJoinDate">01.01.2023</span>
+                                </div>
+                            </div>
+                            
+                            <div class="mobile-profile-stats">
+                                <div class="stat">
+                                    <span class="stat-value" id="mobileProfileContacts">0</span>
+                                    <span class="stat-label">Контактов</span>
+                                </div>
+                                <div class="stat">
+                                    <span class="stat-value" id="mobileProfileChats">0</span>
+                                    <span class="stat-label">Чатов</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button class="mobile-edit-profile-btn" id="mobileEditProfileBtn">
+                            <i class="fas fa-edit"></i> Редактировать профиль
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Экран настроек -->
+                <div class="mobile-tab-content" id="mobileSettingsTab">
+                    <div class="mobile-settings">
+                        <div class="mobile-settings-header">
+                            <h2>Настройки</h2>
+                        </div>
+                        
+                        <div class="mobile-settings-section">
+                            <div class="mobile-settings-item">
+                                <i class="fas fa-bell"></i>
+                                <span>Уведомления</span>
+                                <label class="switch">
+                                    <input type="checkbox" id="notificationsSwitch" checked>
+                                    <span class="slider round"></span>
+                                </label>
+                            </div>
+                            
+                            <div class="mobile-settings-item">
+                                <i class="fas fa-moon"></i>
+                                <span>Тёмная тема</span>
+                                <label class="switch">
+                                    <input type="checkbox" id="themeSwitch" checked>
+                                    <span class="slider round"></span>
+                                </label>
+                            </div>
+                            
+                            <div class="mobile-settings-item">
+                                <i class="fas fa-language"></i>
+                                <span>Язык</span>
+                                <span class="settings-value">Русский</span>
+                                <i class="fas fa-chevron-right"></i>
+                            </div>
+                            
+                            <div class="mobile-settings-item">
+                                <i class="fas fa-shield-alt"></i>
+                                <span>Конфиденциальность</span>
+                                <i class="fas fa-chevron-right"></i>
+                            </div>
+                            
+                            <div class="mobile-settings-item">
+                                <i class="fas fa-database"></i>
+                                <span>Данные и хранилище</span>
+                                <i class="fas fa-chevron-right"></i>
+                            </div>
+                        </div>
+                        
+                        <div class="mobile-settings-section">
+                            <div class="mobile-settings-item">
+                                <i class="fas fa-question-circle"></i>
+                                <span>Помощь</span>
+                                <i class="fas fa-chevron-right"></i>
+                            </div>
+                            
+                            <div class="mobile-settings-item">
+                                <i class="fas fa-info-circle"></i>
+                                <span>О приложении</span>
+                                <i class="fas fa-chevron-right"></i>
+                            </div>
+                        </div>
+                        
+                        <button class="mobile-logout-btn" id="mobileLogoutBtn">
+                            <i class="fas fa-sign-out-alt"></i> Выйти из аккаунта
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Кнопка создания чата (плавающая) -->
+            <button class="mobile-create-fab" id="mobileCreateFAB">
+                <i class="fas fa-plus"></i>
+            </button>
+
+            <!-- Модальное окно создания чата/группы -->
+            <div class="mobile-create-modal" id="mobileCreateModal">
+                <div class="mobile-create-modal-content">
+                    <div class="mobile-create-modal-header">
+                        <h3>Создать новый чат</h3>
+                        <button class="mobile-close-modal" id="mobileCloseCreateModal">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="mobile-create-modal-body">
+                        <!-- Выбор типа чата -->
+                        <div class="mobile-chat-type-selector">
+                            <div class="mobile-chat-type-option active" data-type="group">
+                                <i class="fas fa-users"></i>
+                                <span>Группа</span>
+                            </div>
+                            <div class="mobile-chat-type-option" data-type="private">
+                                <i class="fas fa-user"></i>
+                                <span>Личный</span>
+                            </div>
+                            <div class="mobile-chat-type-option" data-type="channel">
+                                <i class="fas fa-bullhorn"></i>
+                                <span>Канал</span>
+                            </div>
+                        </div>
+                    
+                        <!-- Форма создания группы -->
+                        <div class="mobile-create-form active" id="mobileGroupForm">
+                            <div class="mobile-form-group">
+                                <label>Название группы</label>
+                                <input type="text" id="mobileGroupName" placeholder="Например: Друзья, Работа...">
+                            </div>
+                            <div class="mobile-form-group">
+                                <label>Описание (необязательно)</label>
+                                <textarea id="mobileGroupDescription" rows="3" placeholder="Опишите цель группы..."></textarea>
+                            </div>
+                            <button class="mobile-create-submit" id="mobileCreateGroupBtn">
+                                <i class="fas fa-users"></i> Создать группу
+                            </button>
+                        </div>
+                    
+                        <!-- Форма создания личного чата -->
+                        <div class="mobile-create-form" id="mobilePrivateForm">
+                            <div class="mobile-form-group">
+                                <label>ID пользователя</label>
+                                <input type="text" id="mobilePrivateUserId" placeholder="Введите ID пользователя">
+                            </div>
+                            <div class="mobile-search-results" id="mobilePrivateSearchResults"></div>
+                            <button class="mobile-create-submit" id="mobileCreatePrivateBtn" disabled>
+                                <i class="fas fa-user"></i> Начать диалог
+                            </button>
+                        </div>
+                    
+                        <!-- Форма создания канала -->
+                        <div class="mobile-create-form" id="mobileChannelForm">
+                            <div class="mobile-form-group">
+                                <label>Название канала</label>
+                                <input type="text" id="mobileChannelName" placeholder="Например: Новости, Блог...">
+                            </div>
+                            <div class="mobile-form-group">
+                                <label>Описание канала</label>
+                                <textarea id="mobileChannelDescription" rows="3" placeholder="О чем ваш канал?"></textarea>
+                            </div>
+                            <button class="mobile-create-submit" id="mobileCreateChannelBtn">
+                                <i class="fas fa-bullhorn"></i> Создать канал
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Основная область (для ПК) -->
         <div class="main-content" id="mainContent">
             <!-- Главный экран с ID (только для мобильных) -->
             <div class="home-screen" id="homeScreen">
@@ -642,7 +510,7 @@
                         <div class="chats-list" id="homeChatsList"></div>
                     </div>
                     <div class="home-tab-pane" id="homeContactsPane">
-                        <!-- ДОБАВЬТЕ ЭТОТ БЛОК ПЕРЕД contacts-list -->
+                        <!-- Поиск контактов -->
                         <div class="search-container" style="margin-bottom: 15px; padding: 0 10px;">
                             <div class="search-input-wrapper">
                                 <input type="text" id="homeContactsSearch" placeholder="Поиск контактов...">
@@ -716,43 +584,42 @@
                     <!-- Сообщения будут добавляться через JS -->
                 </div>
                 
-                <!-- В .chat-input-container замените содержимое на: -->
-                    <div class="chat-input-container" id="chatInputContainer">
-                        <!-- Контейнер для превью (над полем ввода) -->
-                        <div class="preview-container">
-                            <!-- Превью ответа -->
-                            <div class="reply-preview-container" id="replyPreviewContainer" style="display: none;"></div>
-                            
-                            <!-- Превью фото -->
-                            <div class="photo-preview-container" id="photoPreviewContainer" style="display: none;">
-                                <div class="photo-preview">
-                                    <img id="photoPreview" src="" alt="Preview">
-                                    <div class="photo-preview-info">
-                                        <span id="photoPreviewName"></span>
-                                        <span id="photoPreviewSize"></span>
-                                    </div>
-                                    <button class="photo-preview-remove" id="photoPreviewRemove">
-                                        <i class="fas fa-times"></i>
-                                    </button>
+                <!-- Поле ввода -->
+                <div class="chat-input-container" id="chatInputContainer">
+                    <!-- Контейнер для превью (над полем ввода) -->
+                    <div class="preview-container">
+                        <!-- Превью ответа -->
+                        <div class="reply-preview-container" id="replyPreviewContainer" style="display: none;"></div>
+                        
+                        <!-- Превью фото -->
+                        <div class="photo-preview-container" id="photoPreviewContainer" style="display: none;">
+                            <div class="photo-preview">
+                                <img id="photoPreview" src="" alt="Preview">
+                                <div class="photo-preview-info">
+                                    <span id="photoPreviewName"></span>
+                                    <span id="photoPreviewSize"></span>
                                 </div>
-                                <div class="photo-progress" id="photoProgress" style="display: none;">
-                                    <div class="photo-progress-bar" id="photoProgressBar"></div>
-                                    <span class="photo-progress-text" id="photoProgressText">0%</span>
-                                </div>
+                                <button class="photo-preview-remove" id="photoPreviewRemove">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            <div class="photo-progress" id="photoProgress" style="display: none;">
+                                <div class="photo-progress-bar" id="photoProgressBar"></div>
+                                <span class="photo-progress-text" id="photoProgressText">0%</span>
                             </div>
                         </div>
-                        
-                        <!-- Область ввода (фиксированная высота) -->
-                        <div class="chat-input-wrapper">
-                            <div class="input-area">
-                                <button class="attach-btn" id="attachPhotoBtn" title="Прикрепить фото">
-                                    <i class="fas fa-image"></i>
-                                </button>
-                                <textarea class="message-input" id="messageInput" placeholder="Напишите сообщение..." rows="1"></textarea>
-                                <button class="send-btn" id="sendMessageBtn">
-                                    <i class="fas fa-paper-plane"></i>
-                                </button>
-                            </div>
+                    </div>
+                    
+                    <!-- Область ввода (фиксированная высота) -->
+                    <div class="chat-input-wrapper">
+                        <div class="input-area">
+                            <button class="attach-btn" id="attachPhotoBtn" title="Прикрепить фото">
+                                <i class="fas fa-image"></i>
+                            </button>
+                            <textarea class="message-input" id="messageInput" placeholder="Напишите сообщение..." rows="1"></textarea>
+                            <button class="send-btn" id="sendMessageBtn">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -770,7 +637,6 @@
                 </button>
             </div>
             <div class="modal-body">
-                <!-- ИЗМЕНЕНИЕ: Убрал тип "Канал" -->
                 <div class="chat-type-selector">
                     <div class="chat-type-option active" data-type="group">
                         <i class="fas fa-users"></i>
@@ -952,33 +818,21 @@
     <div class="message-context-menu" id="messageContextMenu">
         <!-- Реакции (сверху) -->
         <div class="reactions-container">
-            <div class="reaction-option" data-reaction="👍">
-                👍
-            </div>
-            <div class="reaction-option" data-reaction="👎">
-                👎
-            </div>
-            <div class="reaction-option" data-reaction="❤️">
-                ❤️
-            </div>
-            <div class="reaction-option" data-reaction="🔥">
-                🔥
-            </div>
-            <div class="reaction-option" data-reaction="💩">
-                💩
-            </div>
+            <div class="reaction-option" data-reaction="👍">👍</div>
+            <div class="reaction-option" data-reaction="👎">👎</div>
+            <div class="reaction-option" data-reaction="❤️">❤️</div>
+            <div class="reaction-option" data-reaction="🔥">🔥</div>
+            <div class="reaction-option" data-reaction="💩">💩</div>
+            <div class="reaction-option" data-reaction="🎉">🎉</div>
         </div>
         <div class="message-context-item" id="contextReply">
-            <i class="fas fa-reply"></i>
-            Ответить
+            <i class="fas fa-reply"></i> Ответить
         </div>
         <div class="message-context-item" id="contextCopy">
-            <i class="fas fa-copy"></i>
-            Копировать текст
+            <i class="fas fa-copy"></i> Копировать текст
         </div>
         <div class="message-context-item delete" id="contextDelete">
-            <i class="fas fa-trash"></i>
-            Удалить сообщение
+            <i class="fas fa-trash"></i> Удалить сообщение
         </div>
     </div>
 
