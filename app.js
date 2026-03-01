@@ -466,11 +466,17 @@ function listenForIncomingCalls() {
     // Удаляем предыдущие слушатели
     callsRef.off();
     
-    // Слушаем новые звонки - НИЧЕГО НЕ УДАЛЯЕМ АВТОМАТИЧЕСКИ
+    // Слушаем новые звонки
     callsRef.on('child_added', (snapshot) => {
         const callData = snapshot.val();
         
         if (!callData) return;
+        
+        // Игнорируем устаревшие сигналы (старше 30 секунд)
+        if (callData.timestamp && Date.now() - callData.timestamp > 30000) {
+            console.log("Игнорируем устаревший сигнал:", callData.type);
+            return;
+        }
         
         console.log(`📨 Получен сигнал ${callData.type}:`, {
             callId: callData.callId,
@@ -510,15 +516,10 @@ function listenForIncomingCalls() {
             case 'call-connected':
                 handleCallConnected(callData);
                 break;
+                
+            default:
+                console.log("Неизвестный тип сигнала:", callData.type);
         }
-        
-        // НИЧЕГО НЕ УДАЛЯЕМ! Сигналы остаются в базе до завершения звонка
-    });
-    
-    // Также слушаем изменения существующих сигналов
-    callsRef.on('child_changed', (snapshot) => {
-        const callData = snapshot.val();
-        console.log("📨 Изменение сигнала:", callData?.type);
     });
 }
 
@@ -546,15 +547,25 @@ function resetCallState() {
 function handleIncomingCall(callData) {
     console.log("📞 Обработка входящего звонка:", callData);
     
-    // Если мы уже в звонке, отправляем сигнал "занято"
+    // Проверяем, не занят ли пользователь
     if (callState.isInCall) {
         console.log("Пользователь уже в звонке, отправляем busy");
+        
+        // Отправляем сигнал "занято"
         sendCallSignal({
             type: 'call-busy',
             callId: callData.callId,
             targetUserId: callData.callerId,
-            chatId: callData.chatId
-        });
+            chatId: callData.chatId,
+            timestamp: Date.now()
+        }).catch(err => console.error("Ошибка отправки busy:", err));
+        
+        return;
+    }
+    
+    // Проверяем, не обрабатываем ли мы уже этот звонок
+    if (callState.callId === callData.callId) {
+        console.log("Звонок уже обрабатывается");
         return;
     }
     
@@ -572,30 +583,38 @@ function handleIncomingCall(callData) {
     
     console.log("✅ Сохранен callId:", callState.callId);
     
+    // Обновляем модальное окно
     if (incomingCallName) incomingCallName.textContent = callerName;
     if (incomingCallAvatarLetter) incomingCallAvatarLetter.textContent = callerName.charAt(0);
     
+    // Показываем модальное окно
     if (incomingCallModal) {
         incomingCallModal.classList.add('active');
         console.log("Показано модальное окно входящего звонка");
     }
     
+    // Воспроизводим звук звонка
     playRingtone();
     
+    // Добавляем системное сообщение
     if (chatId) {
         addCallSystemMessage(chatId, {
             status: 'incoming',
             callType: callData.isVideo ? 'video' : 'audio',
             callerId: callerId,
             targetId: currentUser.uid
-        });
+        }).catch(err => console.error("Ошибка добавления сообщения:", err));
     }
     
+    // Вибрация на мобильных
     if (isMobile && window.navigator.vibrate) {
-        window.navigator.vibrate([500, 200, 500]);
+        try {
+            window.navigator.vibrate([500, 200, 500]);
+        } catch (e) {
+            console.error("Ошибка вибрации:", e);
+        }
     }
 }
-
 // Начать звонок
 async function startCall(chatId, isVideo = true) {
     try {
@@ -1106,17 +1125,36 @@ async function declineCall() {
 
 // Отменить звонок
 async function cancelCall() {
-    if (outgoingCallModal) outgoingCallModal.classList.remove('active');
+    console.log("📞 Отмена звонка");
     
-    sendCallSignal({
-        type: 'call-cancel',
-        callId: callState.callId,
-        targetUserId: callState.targetUserId,
-        chatId: callState.chatId
-    });
-    
-    cleanupCall();
-    stopRingtone();
+    try {
+        // Скрываем модальное окно исходящего звонка
+        if (outgoingCallModal) {
+            outgoingCallModal.classList.remove('active');
+        }
+        
+        // Отправляем сигнал об отмене, если есть кому отправить
+        if (callState.targetUserId && callState.callId) {
+            await sendCallSignal({
+                type: 'call-cancel',
+                callId: callState.callId,
+                targetUserId: callState.targetUserId,
+                chatId: callState.chatId,
+                timestamp: Date.now()
+            });
+            console.log("✅ Сигнал об отмене отправлен");
+        }
+        
+        // Очищаем звонок
+        cleanupCall();
+        
+        // Показываем уведомление
+        showNotification('Звонок отменен');
+        
+    } catch (error) {
+        console.error("❌ Ошибка при отмене звонка:", error);
+        cleanupCall();
+    }
 }
 
 // Завершить звонок
@@ -1206,11 +1244,35 @@ function handleCallEnd(callData) {
 }
 
 // Обработка занятости
-function handleCallBusy() {
-    if (outgoingCallModal) outgoingCallModal.classList.remove('active');
-    cleanupCall();
-    showNotification('Пользователь занят');
-    stopRingtone();
+function handleCallBusy(callData) {
+    console.log("📞 Пользователь занят:", callData);
+    
+    try {
+        // Скрываем модальное окно исходящего звонка
+        if (outgoingCallModal) {
+            outgoingCallModal.classList.remove('active');
+        }
+        
+        // Показываем уведомление
+        showNotification('Пользователь занят');
+        
+        // Добавляем системное сообщение о занятости
+        if (callState.chatId) {
+            addCallSystemMessage(callState.chatId, {
+                status: 'busy',
+                callType: callState.callType,
+                callerId: currentUser.uid,
+                targetId: callState.targetUserId
+            }).catch(err => console.error("Ошибка добавления сообщения:", err));
+        }
+        
+        // Очищаем звонок
+        cleanupCall();
+        
+    } catch (error) {
+        console.error("❌ Ошибка в handleCallBusy:", error);
+        cleanupCall();
+    }
 }
 
 let audioContext = null;
@@ -1407,6 +1469,41 @@ async function switchCamera() {
     } catch (error) {
         console.error('Ошибка переключения камеры:', error);
         showNotification('Не удалось переключить камеру');
+    }
+}
+
+// ================================================
+// ОЧИСТКА ВСЕХ СИГНАЛОВ ПРИ ЗАВЕРШЕНИИ ЗВОНКА
+// ================================================
+async function cleanupCallSignals() {
+    if (!currentUser || !callState.callId) {
+        console.log("Нет данных для очистки сигналов");
+        return;
+    }
+    
+    console.log("🧹 Очистка сигналов звонка:", callState.callId);
+    
+    try {
+        // Получаем все сигналы для текущего пользователя
+        const callsRef = database.ref(`calls/${currentUser.uid}`);
+        const snapshot = await callsRef.once('value');
+        
+        if (snapshot.exists()) {
+            const calls = snapshot.val();
+            let deletedCount = 0;
+            
+            // Удаляем только сигналы, относящиеся к текущему звонку
+            for (const [key, callData] of Object.entries(calls)) {
+                if (callData.callId === callState.callId) {
+                    await callsRef.child(key).remove();
+                    deletedCount++;
+                }
+            }
+            
+            console.log(`✅ Удалено ${deletedCount} сигналов звонка`);
+        }
+    } catch (error) {
+        console.error("❌ Ошибка очистки сигналов:", error);
     }
 }
 
@@ -1754,46 +1851,71 @@ async function checkAudioDevices() {
 function cleanupCall() {
     console.log("🧹 Очистка звонка");
     
-    // Очищаем сигналы из Firebase
-    cleanupCallSignals().then(() => {
-        console.log("✅ Сигналы очищены");
-    }).catch(err => {
-        console.error("❌ Ошибка очистки сигналов:", err);
-    });
+    // Очищаем сигналы из Firebase (но не ждем результата)
+    if (currentUser && callState.callId) {
+        cleanupCallSignals().catch(err => {
+            console.error("❌ Ошибка очистки сигналов:", err);
+        });
+    }
     
     // Останавливаем треки
     if (callState.localStream) {
-        callState.localStream.getTracks().forEach(track => {
-            console.log(`Остановка трека: ${track.kind}`);
-            track.stop();
-        });
+        try {
+            callState.localStream.getTracks().forEach(track => {
+                console.log(`Остановка трека: ${track.kind}`);
+                track.stop();
+            });
+        } catch (e) {
+            console.error("Ошибка остановки треков:", e);
+        }
         callState.localStream = null;
     }
     
     // Закрываем PeerConnection
     if (callState.peerConnection) {
-        console.log("Закрытие PeerConnection");
-        callState.peerConnection.close();
+        try {
+            console.log("Закрытие PeerConnection");
+            callState.peerConnection.close();
+        } catch (e) {
+            console.error("Ошибка закрытия PeerConnection:", e);
+        }
         callState.peerConnection = null;
     }
     
     // Очищаем видео элементы
     if (remoteVideo) {
-        remoteVideo.srcObject = null;
-        remoteVideo.classList.remove('active');
-        remoteVideo.muted = false;
+        try {
+            remoteVideo.srcObject = null;
+            remoteVideo.classList.remove('active');
+            remoteVideo.muted = false;
+        } catch (e) {
+            console.error("Ошибка очистки remoteVideo:", e);
+        }
     }
+    
     if (localVideo) {
-        localVideo.srcObject = null;
+        try {
+            localVideo.srcObject = null;
+        } catch (e) {
+            console.error("Ошибка очистки localVideo:", e);
+        }
     }
     
     if (remoteVideoPlaceholder) {
-        remoteVideoPlaceholder.classList.remove('hidden');
+        try {
+            remoteVideoPlaceholder.classList.remove('hidden');
+        } catch (e) {
+            console.error("Ошибка показа плейсхолдера:", e);
+        }
     }
     
     // Останавливаем таймер
     if (callState.callTimer) {
-        clearInterval(callState.callTimer);
+        try {
+            clearInterval(callState.callTimer);
+        } catch (e) {
+            console.error("Ошибка остановки таймера:", e);
+        }
         callState.callTimer = null;
     }
     
@@ -1811,11 +1933,28 @@ function cleanupCall() {
     callState.offer = null;
     
     // Закрываем модальные окна
-    if (incomingCallModal) incomingCallModal.classList.remove('active');
-    if (outgoingCallModal) outgoingCallModal.classList.remove('active');
+    if (incomingCallModal) {
+        try {
+            incomingCallModal.classList.remove('active');
+        } catch (e) {
+            console.error("Ошибка закрытия incomingCallModal:", e);
+        }
+    }
+    
+    if (outgoingCallModal) {
+        try {
+            outgoingCallModal.classList.remove('active');
+        } catch (e) {
+            console.error("Ошибка закрытия outgoingCallModal:", e);
+        }
+    }
     
     // Удаляем минимизированное окно
-    document.querySelector('.call-minimized')?.remove();
+    try {
+        document.querySelector('.call-minimized')?.remove();
+    } catch (e) {
+        console.error("Ошибка удаления минимизированного окна:", e);
+    }
     
     // Останавливаем звук звонка
     stopRingtone();
