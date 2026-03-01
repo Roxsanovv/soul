@@ -439,13 +439,14 @@ async function sendCallSignal(data) {
             cleanData.timestamp = Date.now();
         }
         
-        if (!cleanData.callId) {
-            cleanData.callId = `call_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        }
+        // Добавляем флаг, что сигнал активен
+        cleanData.active = true;
         
         const signalRef = database.ref(`calls/${data.targetUserId}`).push();
         await signalRef.set(cleanData);
         console.log(`✅ Сигнал ${data.type} успешно отправлен`);
+        
+        // НЕ УДАЛЯЕМ СИГНАЛ! Он останется в базе
         
     } catch (error) {
         console.error(`❌ Ошибка отправки сигнала ${data.type}:`, error);
@@ -465,7 +466,7 @@ function listenForIncomingCalls() {
     // Удаляем предыдущие слушатели
     callsRef.off();
     
-    // Слушаем новые звонки - НЕ УДАЛЯЕМ СРАЗУ!
+    // Слушаем новые звонки - НИЧЕГО НЕ УДАЛЯЕМ АВТОМАТИЧЕСКИ
     callsRef.on('child_added', (snapshot) => {
         const callData = snapshot.val();
         
@@ -511,16 +512,13 @@ function listenForIncomingCalls() {
                 break;
         }
         
-        // НЕ УДАЛЯЕМ СИГНАЛЫ СРАЗУ! Они удалятся автоматически через 30 секунд
-        // или когда звонок завершится
-        setTimeout(async () => {
-            try {
-                await snapshot.ref.remove();
-                console.log(`🧹 Сигнал ${callData.type} удален (по таймауту)`);
-            } catch (error) {
-                console.error("Ошибка удаления сигнала:", error);
-            }
-        }, 30000); // Удаляем через 30 секунд, а не сразу
+        // НИЧЕГО НЕ УДАЛЯЕМ! Сигналы остаются в базе до завершения звонка
+    });
+    
+    // Также слушаем изменения существующих сигналов
+    callsRef.on('child_changed', (snapshot) => {
+        const callData = snapshot.val();
+        console.log("📨 Изменение сигнала:", callData?.type);
     });
 }
 
@@ -1044,15 +1042,13 @@ async function handleIceCandidate(callData) {
         });
         
         if (callState.peerConnection) {
-            // Добавляем кандидата с небольшой задержкой
-            setTimeout(async () => {
-                try {
-                    await callState.peerConnection.addIceCandidate(candidate);
-                    console.log("✅ ICE кандидат добавлен");
-                } catch (error) {
-                    console.error("❌ Ошибка добавления ICE кандидата:", error);
-                }
-            }, 100);
+            // Добавляем кандидата сразу
+            try {
+                await callState.peerConnection.addIceCandidate(candidate);
+                console.log("✅ ICE кандидат добавлен");
+            } catch (error) {
+                console.error("❌ Ошибка добавления ICE кандидата:", error);
+            }
         } else {
             // Сохраняем кандидата для будущего использования
             if (!callState.iceCandidates) {
@@ -1758,16 +1754,12 @@ async function checkAudioDevices() {
 function cleanupCall() {
     console.log("🧹 Очистка звонка");
     
-    // Очищаем AudioContext
-    if (sourceNode) {
-        sourceNode.disconnect();
-        sourceNode = null;
-    }
-    
-    if (audioContext) {
-        audioContext.close();
-        audioContext = null;
-    }
+    // Очищаем сигналы из Firebase
+    cleanupCallSignals().then(() => {
+        console.log("✅ Сигналы очищены");
+    }).catch(err => {
+        console.error("❌ Ошибка очистки сигналов:", err);
+    });
     
     // Останавливаем треки
     if (callState.localStream) {
@@ -1778,16 +1770,18 @@ function cleanupCall() {
         callState.localStream = null;
     }
     
+    // Закрываем PeerConnection
     if (callState.peerConnection) {
         console.log("Закрытие PeerConnection");
         callState.peerConnection.close();
         callState.peerConnection = null;
     }
     
+    // Очищаем видео элементы
     if (remoteVideo) {
         remoteVideo.srcObject = null;
         remoteVideo.classList.remove('active');
-        remoteVideo.volume = 1.0;
+        remoteVideo.muted = false;
     }
     if (localVideo) {
         localVideo.srcObject = null;
@@ -1797,18 +1791,33 @@ function cleanupCall() {
         remoteVideoPlaceholder.classList.remove('hidden');
     }
     
+    // Останавливаем таймер
     if (callState.callTimer) {
         clearInterval(callState.callTimer);
         callState.callTimer = null;
     }
     
-    resetCallState();
+    // Сбрасываем состояние
+    callState.isInCall = false;
+    callState.isCallActive = false;
+    callState.isMuted = false;
+    callState.isVideoOff = false;
+    callState.callType = null;
+    callState.targetUserId = null;
+    callState.callId = null;
+    callState.chatId = null;
+    callState.iceCandidates = [];
+    callState.isMinimized = false;
+    callState.offer = null;
     
+    // Закрываем модальные окна
     if (incomingCallModal) incomingCallModal.classList.remove('active');
     if (outgoingCallModal) outgoingCallModal.classList.remove('active');
     
+    // Удаляем минимизированное окно
     document.querySelector('.call-minimized')?.remove();
     
+    // Останавливаем звук звонка
     stopRingtone();
     
     console.log("✅ Звонок очищен");
