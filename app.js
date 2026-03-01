@@ -472,10 +472,21 @@ function listenForIncomingCalls() {
         
         if (!callData) return;
         
-        // Игнорируем устаревшие сигналы (старше 30 секунд)
-        if (callData.timestamp && Date.now() - callData.timestamp > 30000) {
-            console.log("Игнорируем устаревший сигнал:", callData.type);
-            return;
+        // Проверяем возраст сигнала
+        if (callData.timestamp) {
+            const age = Date.now() - callData.timestamp;
+            
+            // Игнорируем сигналы старше 15 секунд
+            if (age > 15000) {
+                console.log(`Игнорируем старый сигнал ${callData.type} (возраст: ${age}ms)`);
+                
+                // Удаляем старый сигнал
+                snapshot.ref.remove().catch(err => {
+                    console.error("Ошибка удаления старого сигнала:", err);
+                });
+                
+                return;
+            }
         }
         
         console.log(`📨 Получен сигнал ${callData.type}:`, {
@@ -516,9 +527,6 @@ function listenForIncomingCalls() {
             case 'call-connected':
                 handleCallConnected(callData);
                 break;
-                
-            default:
-                console.log("Неизвестный тип сигнала:", callData.type);
         }
     });
 }
@@ -1099,28 +1107,130 @@ function handleCallConnected(callData) {
 
 // Отклонить звонок
 async function declineCall() {
-    if (incomingCallModal) incomingCallModal.classList.remove('active');
+    console.log("📞 Отклонение звонка");
     
-    if (callState.chatId) {
-        await addCallSystemMessage(callState.chatId, {
-            status: 'declined',
-            callType: callState.callType,
-            callerId: callState.targetUserId,
-            targetId: currentUser.uid
-        });
+    try {
+        // Скрываем модальное окно входящего звонка
+        if (incomingCallModal) {
+            incomingCallModal.classList.remove('active');
+        }
+        
+        // Добавляем системное сообщение об отклоненном звонке
+        if (callState.chatId) {
+            await addCallSystemMessage(callState.chatId, {
+                status: 'declined',
+                callType: callState.callType,
+                callerId: callState.targetUserId,
+                targetId: currentUser.uid
+            }).catch(err => console.error("Ошибка добавления сообщения:", err));
+        }
+        
+        // Отправляем сигнал об отклонении
+        if (callState.targetUserId && callState.callId) {
+            await sendCallSignal({
+                type: 'call-decline',
+                callId: callState.callId,
+                targetUserId: callState.targetUserId,
+                chatId: callState.chatId,
+                callerName: currentUser.displayName,
+                timestamp: Date.now()
+            });
+            console.log("✅ Сигнал об отклонении отправлен");
+        }
+        
+        // Очищаем звонок
+        cleanupCall();
+        
+        // Показываем уведомление
+        showNotification('Звонок отклонен');
+        
+    } catch (error) {
+        console.error("❌ Ошибка при отклонении звонка:", error);
+        cleanupCall();
     }
+}
+
+// ================================================
+// ПРОВЕРКА АКТИВНЫХ ЗВОНКОВ ПРИ ЗАГРУЗКЕ
+// ================================================
+async function checkActiveCallsOnLoad() {
+    if (!currentUser) return;
     
-    sendCallSignal({
-        type: 'call-decline',
-        callId: callState.callId,
-        targetUserId: callState.targetUserId,
-        chatId: callState.chatId,
-        callerName: currentUser.displayName
-    });
+    console.log("🔍 Проверка активных звонков при загрузке...");
     
-    cleanupCall();
-    showNotification('Звонок отклонен');
-    stopRingtone();
+    try {
+        const callsRef = database.ref(`calls/${currentUser.uid}`);
+        const snapshot = await callsRef.once('value');
+        
+        if (snapshot.exists()) {
+            const calls = snapshot.val();
+            let now = Date.now();
+            
+            // Проверяем каждый сигнал
+            for (const [key, callData] of Object.entries(calls)) {
+                // Если сигнал слишком старый - удаляем
+                if (!callData.timestamp || now - callData.timestamp > 10000) {
+                    await callsRef.child(key).remove();
+                    console.log(`Удален старый сигнал ${callData?.type}`);
+                    continue;
+                }
+                
+                // Если есть активный offer - показываем уведомление
+                if (callData.type === 'call-offer' && callData.timestamp && now - callData.timestamp < 10000) {
+                    console.log("Найден активный входящий звонок:", callData);
+                    
+                    // Показываем уведомление о пропущенном звонке
+                    if (callData.chatId) {
+                        await addCallSystemMessage(callData.chatId, {
+                            status: 'missed',
+                            callType: callData.isVideo ? 'video' : 'audio',
+                            callerId: callData.callerId,
+                            targetId: currentUser.uid
+                        });
+                    }
+                    
+                    // Удаляем этот сигнал
+                    await callsRef.child(key).remove();
+                }
+            }
+        }
+    } catch (error) {
+        console.error("❌ Ошибка проверки активных звонков:", error);
+    }
+}
+
+// Добавьте вызов в loadUserData
+// await checkActiveCallsOnLoad();
+
+async function cleanupOldSignalsOnLoad() {
+    if (!currentUser) return;
+    
+    console.log("🧹 Очистка старых сигналов при загрузке...");
+    
+    try {
+        const callsRef = database.ref(`calls/${currentUser.uid}`);
+        const snapshot = await callsRef.once('value');
+        
+        if (snapshot.exists()) {
+            const calls = snapshot.val();
+            let deletedCount = 0;
+            let now = Date.now();
+            
+            // Удаляем ВСЕ сигналы старше 5 секунд при загрузке
+            for (const [key, callData] of Object.entries(calls)) {
+                if (!callData.timestamp || now - callData.timestamp > 5000) {
+                    await callsRef.child(key).remove();
+                    deletedCount++;
+                }
+            }
+            
+            if (deletedCount > 0) {
+                console.log(`✅ Удалено ${deletedCount} старых сигналов при загрузке`);
+            }
+        }
+    } catch (error) {
+        console.error("❌ Ошибка очистки старых сигналов:", error);
+    }
 }
 
 // Отменить звонок
@@ -1476,31 +1586,33 @@ async function switchCamera() {
 // ОЧИСТКА ВСЕХ СИГНАЛОВ ПРИ ЗАВЕРШЕНИИ ЗВОНКА
 // ================================================
 async function cleanupCallSignals() {
-    if (!currentUser || !callState.callId) {
-        console.log("Нет данных для очистки сигналов");
+    if (!currentUser) {
+        console.log("Нет текущего пользователя для очистки сигналов");
         return;
     }
     
-    console.log("🧹 Очистка сигналов звонка:", callState.callId);
+    console.log("🧹 Очистка всех старых сигналов для пользователя:", currentUser.uid);
     
     try {
-        // Получаем все сигналы для текущего пользователя
         const callsRef = database.ref(`calls/${currentUser.uid}`);
         const snapshot = await callsRef.once('value');
         
         if (snapshot.exists()) {
             const calls = snapshot.val();
             let deletedCount = 0;
+            let now = Date.now();
             
-            // Удаляем только сигналы, относящиеся к текущему звонку
+            // Удаляем все сигналы старше 10 секунд
             for (const [key, callData] of Object.entries(calls)) {
-                if (callData.callId === callState.callId) {
+                if (callData.timestamp && now - callData.timestamp > 10000) {
                     await callsRef.child(key).remove();
                     deletedCount++;
                 }
             }
             
-            console.log(`✅ Удалено ${deletedCount} сигналов звонка`);
+            if (deletedCount > 0) {
+                console.log(`✅ Удалено ${deletedCount} старых сигналов`);
+            }
         }
     } catch (error) {
         console.error("❌ Ошибка очистки сигналов:", error);
@@ -1851,8 +1963,8 @@ async function checkAudioDevices() {
 function cleanupCall() {
     console.log("🧹 Очистка звонка");
     
-    // Очищаем сигналы из Firebase (но не ждем результата)
-    if (currentUser && callState.callId) {
+    // Очищаем сигналы из Firebase (не ждем результат)
+    if (currentUser) {
         cleanupCallSignals().catch(err => {
             console.error("❌ Ошибка очистки сигналов:", err);
         });
@@ -2971,6 +3083,11 @@ async function loadUserData(userId) {
             
             setupContactsListener();
             setupChatsListener();
+            
+            // Очищаем старые сигналы и проверяем активные звонки
+            await cleanupOldSignalsOnLoad();
+            await checkActiveCallsOnLoad();
+            
             setupCalls();
             
         } else {
@@ -2991,6 +3108,10 @@ async function loadUserData(userId) {
             setupVerifiedUsersListener();
             setupContactsListener();
             setupChatsListener();
+            
+            // Очищаем старые сигналы для нового пользователя
+            await cleanupOldSignalsOnLoad();
+            
             setupCalls();
         }
     
