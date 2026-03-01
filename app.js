@@ -785,17 +785,8 @@ async function acceptCall() {
             chatId: callState.chatId
         });
         
-        // Проверяем наличие необходимых данных
         if (!callState.callId) {
             console.error("❌ Нет callId для принятия звонка");
-            showNotification("Ошибка: нет данных о звонке");
-            cleanupCall();
-            return;
-        }
-        
-        if (!callState.targetUserId) {
-            console.error("❌ Нет targetUserId для принятия звонка");
-            showNotification("Ошибка: нет информации о собеседнике");
             cleanupCall();
             return;
         }
@@ -809,12 +800,11 @@ async function acceptCall() {
         
         if (!targetUser) {
             console.error("❌ Целевой пользователь не найден");
-            showNotification("Пользователь не найден");
             cleanupCall();
             return;
         }
         
-        // Добавляем системное сообщение о принятом звонке
+        // Добавляем системное сообщение
         if (callState.chatId) {
             await addCallSystemMessage(callState.chatId, {
                 status: 'incoming',
@@ -824,124 +814,52 @@ async function acceptCall() {
             });
         }
         
-        // Запрашиваем разрешения на мобильных устройствах
-        if (isMobile) {
-            try {
-                // Проверяем разрешения перед получением потока
-                const permissionStream = await navigator.mediaDevices.getUserMedia({ 
-                    audio: true, 
-                    video: false 
-                });
-                permissionStream.getTracks().forEach(track => track.stop());
-                console.log("✅ Разрешения на микрофон получены");
-            } catch (permError) {
-                console.error("❌ Нет разрешения на микрофон:", permError);
-                showNotification("Нет доступа к микрофону. Проверьте разрешения в браузере");
-                cleanupCall();
-                return;
-            }
-        }
-        
-        // Получаем медиапоток с улучшенными настройками для мобильных
+        // Получаем медиапоток
         const constraints = {
             audio: {
                 echoCancellation: true,
                 noiseSuppression: true,
-                autoGainControl: true,
-                sampleRate: 48000,
-                channelCount: 1
+                autoGainControl: true
             },
             video: callState.callType === 'video' ? {
                 facingMode: callState.usingFrontCamera ? 'user' : 'environment',
-                width: { ideal: 640, max: 1280 },
-                height: { ideal: 480, max: 720 },
-                frameRate: { ideal: 30, max: 30 }
+                width: { ideal: 640 },
+                height: { ideal: 480 }
             } : false
         };
         
-        console.log("📹 Запрос медиапотока с настройками:", constraints);
+        console.log("Запрос медиапотока с настройками:", constraints);
+        callState.localStream = await navigator.mediaDevices.getUserMedia(constraints);
         
-        try {
-            callState.localStream = await navigator.mediaDevices.getUserMedia(constraints);
-            console.log("✅ Медиапоток получен");
-        } catch (streamError) {
-            console.error("❌ Ошибка получения медиапотока:", streamError);
-            
-            if (streamError.name === 'NotAllowedError') {
-                showNotification("Доступ к микрофону запрещен. Разрешите в настройках браузера");
-            } else if (streamError.name === 'NotFoundError') {
-                showNotification("Микрофон не найден на устройстве");
-            } else if (streamError.name === 'NotReadableError') {
-                showNotification("Микрофон занят другим приложением");
-            } else {
-                showNotification("Не удалось получить доступ к микрофону");
-            }
-            
-            cleanupCall();
-            return;
-        }
-        
-        // Проверяем аудиотреки
+        // Проверяем аудио
         const audioTracks = callState.localStream.getAudioTracks();
         if (audioTracks.length > 0) {
-            console.log("🎤 Аудиотрек получен:", audioTracks[0].label);
+            console.log("✅ Аудиотрек получен:", audioTracks[0].label);
             audioTracks[0].enabled = true;
-            
-            // Дополнительная информация о треке
-            console.log("  - ID:", audioTracks[0].id);
-            console.log("  - Enabled:", audioTracks[0].enabled);
-            console.log("  - Muted:", audioTracks[0].muted);
-            console.log("  - ReadyState:", audioTracks[0].readyState);
-        } else {
-            console.warn("⚠️ Нет аудиотреков в потоке");
-            showNotification("Предупреждение: аудио не доступно");
         }
         
-        // Отображаем локальное видео если есть
         if (localVideo) {
             localVideo.srcObject = callState.localStream;
             localVideo.setAttribute('playsinline', 'true');
-            localVideo.muted = true; // Локальное видео всегда без звука
-            console.log("📹 Локальное видео отображается");
         }
         
-        // Создаем PeerConnection с улучшенной конфигурацией для мобильных
-        const mobileIceServers = {
-            iceServers: [
-                { urls: 'stun:stun.l.google.com:19302' },
-                { urls: 'stun:stun1.l.google.com:19302' },
-                { urls: 'stun:stun2.l.google.com:19302' },
-                { urls: 'stun:stun3.l.google.com:19302' },
-                { urls: 'stun:stun4.l.google.com:19302' },
-                { urls: 'stun:stun.stunprotocol.org:3478' },
-                { urls: 'stun:stun.voipbuster.com:3478' }
-            ],
-            iceCandidatePoolSize: 10,
-            iceTransportPolicy: 'all',
-            bundlePolicy: 'max-bundle',
-            rtcpMuxPolicy: 'require'
-        };
+        // Создаем PeerConnection
+        callState.peerConnection = new RTCPeerConnection(iceServers);
         
-        callState.peerConnection = new RTCPeerConnection(mobileIceServers);
-        console.log("🔌 PeerConnection создан");
-        
-        // Добавляем все треки в PeerConnection
+        // Добавляем треки
         callState.localStream.getTracks().forEach(track => {
-            console.log("➕ Добавление трека:", track.kind, track.label);
+            console.log("Добавление трека:", track.kind);
             callState.peerConnection.addTrack(track, callState.localStream);
         });
         
         // Обработка ICE кандидатов
         callState.peerConnection.onicecandidate = (event) => {
             if (event.candidate) {
-                console.log("🧊 ICE кандидат сгенерирован:", event.candidate.type, event.candidate.protocol);
-                
-                // Очищаем кандидата от undefined значений
+                console.log("ICE кандидат сгенерирован:", event.candidate.type);
                 const cleanCandidate = {
                     candidate: event.candidate.candidate || '',
                     sdpMid: event.candidate.sdpMid || '',
-                    sdpMLineIndex: event.candidate.sdpMLineIndex || 0,
-                    usernameFragment: event.candidate.usernameFragment || ''
+                    sdpMLineIndex: event.candidate.sdpMLineIndex || 0
                 };
                 
                 sendCallSignal({
@@ -956,49 +874,20 @@ async function acceptCall() {
         // Обработка удаленного потока
         callState.peerConnection.ontrack = (event) => {
             console.log("📹 Получен удаленный поток:", event.track.kind);
-            
             if (!callState.remoteStream) {
                 callState.remoteStream = event.streams[0];
-                
                 if (remoteVideo) {
                     remoteVideo.srcObject = callState.remoteStream;
-                    remoteVideo.setAttribute('playsinline', 'true');
                     remoteVideo.classList.add('active');
-                    
-                    // Важно: remoteVideo НЕ должен быть muted
-                    remoteVideo.muted = false;
-                    
+                    remoteVideo.setAttribute('playsinline', 'true');
                     if (remoteVideoPlaceholder) {
                         remoteVideoPlaceholder.classList.add('hidden');
                     }
-                    
-                    console.log("✅ Удаленное видео отображается");
-                    
-                    // Настраиваем аудио для удаленного видео
-                    setTimeout(() => {
-                        setupCallAudio();
-                    }, 500);
-                }
-                
-                if (remoteAvatarLarge) {
-                    remoteAvatarLarge.textContent = targetUser.displayName.charAt(0);
                 }
             }
         };
         
-        // Мониторинг ICE состояния
-        callState.peerConnection.oniceconnectionstatechange = () => {
-            console.log("🧊 ICE состояние:", callState.peerConnection.iceConnectionState);
-            
-            if (callState.peerConnection.iceConnectionState === 'connected') {
-                console.log("✅ ICE соединение установлено");
-            } else if (callState.peerConnection.iceConnectionState === 'failed') {
-                console.error("❌ ICE соединение не удалось");
-                showNotification("Проблемы с соединением. Проверьте интернет");
-            }
-        };
-        
-        // Мониторинг состояния соединения
+        // Обработка состояния соединения
         callState.peerConnection.onconnectionstatechange = () => {
             console.log("🔌 Состояние соединения:", callState.peerConnection.connectionState);
             
@@ -1006,94 +895,60 @@ async function acceptCall() {
                 console.log("✅ Соединение установлено!");
                 callState.isCallActive = true;
                 
-                // Уведомляем звонящего
                 sendCallSignal({
                     type: 'call-connected',
                     callId: callState.callId,
                     targetUserId: callState.targetUserId
                 });
                 
-                // Запускаем таймер
                 startCallTimer();
-                
-                showNotification("Соединение установлено");
-                
-            } else if (callState.peerConnection.connectionState === 'disconnected') {
-                console.log("⚠️ Соединение потеряно");
-            } else if (callState.peerConnection.connectionState === 'failed') {
-                console.error("❌ Соединение не удалось");
-                showNotification("Не удалось установить соединение");
-            } else if (callState.peerConnection.connectionState === 'closed') {
-                console.log("🔌 Соединение закрыто");
             }
         };
         
-        // Проверяем наличие offer
+        // Устанавливаем удаленное описание
         if (!callState.offer) {
             console.error("❌ Нет offer для установки");
-            showNotification("Ошибка: нет данных о звонке");
             cleanupCall();
             return;
         }
         
-        // Устанавливаем удаленное описание
-        console.log("📄 Установка remote description...");
-        try {
-            const offerDescription = new RTCSessionDescription(callState.offer);
-            await callState.peerConnection.setRemoteDescription(offerDescription);
-            console.log("✅ Remote description установлен");
-        } catch (sdpError) {
-            console.error("❌ Ошибка установки remote description:", sdpError);
-            showNotification("Ошибка при установке соединения");
-            cleanupCall();
-            return;
-        }
+        console.log("Установка remote description...");
+        const offerDescription = new RTCSessionDescription(callState.offer);
+        await callState.peerConnection.setRemoteDescription(offerDescription);
+        console.log("✅ Remote description установлен");
         
         // Создаем answer
-        console.log("📄 Создание answer...");
-        try {
-            const answer = await callState.peerConnection.createAnswer();
-            await callState.peerConnection.setLocalDescription(answer);
-            console.log("✅ Local description установлен");
-            
-            // Отправляем answer
-            await sendCallSignal({
-                type: 'call-answer',
-                callId: callState.callId,
-                targetUserId: callState.targetUserId,
-                answer: {
-                    sdp: answer.sdp,
-                    type: answer.type
-                }
-            });
-            console.log("✅ Answer отправлен");
-            
-        } catch (answerError) {
-            console.error("❌ Ошибка создания answer:", answerError);
-            showNotification("Ошибка при создании ответа");
-            cleanupCall();
-            return;
-        }
+        console.log("Создание answer...");
+        const answer = await callState.peerConnection.createAnswer();
+        await callState.peerConnection.setLocalDescription(answer);
+        console.log("✅ Local description установлен");
         
-        // Отправляем все накопленные ICE кандидаты
+        // Отправляем answer
+        console.log("Отправка answer...");
+        await sendCallSignal({
+            type: 'call-answer',
+            callId: callState.callId,
+            targetUserId: callState.targetUserId,
+            answer: {
+                sdp: answer.sdp,
+                type: answer.type
+            }
+        });
+        
+        // Отправляем накопленные ICE кандидаты
         if (callState.iceCandidates && callState.iceCandidates.length > 0) {
-            console.log(`📦 Отправка ${callState.iceCandidates.length} накопленных ICE кандидатов`);
-            
+            console.log(`Отправка ${callState.iceCandidates.length} накопленных ICE кандидатов`);
             for (const candidate of callState.iceCandidates) {
-                try {
-                    await sendCallSignal({
-                        type: 'ice-candidate',
-                        callId: callState.callId,
-                        targetUserId: callState.targetUserId,
-                        candidate: {
-                            candidate: candidate.candidate || '',
-                            sdpMid: candidate.sdpMid || '',
-                            sdpMLineIndex: candidate.sdpMLineIndex || 0
-                        }
-                    });
-                } catch (candidateError) {
-                    console.error("Ошибка отправки ICE кандидата:", candidateError);
-                }
+                await sendCallSignal({
+                    type: 'ice-candidate',
+                    callId: callState.callId,
+                    targetUserId: callState.targetUserId,
+                    candidate: {
+                        candidate: candidate.candidate || '',
+                        sdpMid: candidate.sdpMid || '',
+                        sdpMLineIndex: candidate.sdpMLineIndex || 0
+                    }
+                });
             }
             callState.iceCandidates = [];
         }
@@ -1104,19 +959,7 @@ async function acceptCall() {
         // Останавливаем звук звонка
         stopRingtone();
         
-        // Проверяем аудио на мобильных
-        if (isMobile) {
-            setTimeout(() => {
-                // Принудительно включаем аудио на мобильных
-                if (remoteVideo) {
-                    remoteVideo.muted = false;
-                    remoteVideo.play().catch(e => console.log("Ошибка воспроизведения:", e));
-                }
-            }, 1000);
-        }
-        
         console.log("✅ Звонок успешно принят");
-        showNotification("Звонок подключен");
         
     } catch (error) {
         console.error('❌ Ошибка принятия звонка:', error);
@@ -1127,30 +970,37 @@ async function acceptCall() {
 
 // Обработка ответа на звонок
 async function handleCallAnswer(callData) {
+    console.log("📞 Получен ответ на звонок:", callData);
+    console.log("Текущий callState.callId:", callState.callId);
+    console.log("Полученный callId:", callData.callId);
+    
+    // Проверяем, что это наш звонок
     if (callState.callId !== callData.callId) {
-        console.log("ID звонка не совпадает:", callState.callId, "!=", callData.callId);
+        console.log("ID звонка не совпадает, игнорируем");
+        return;
+    }
+    
+    if (!callState.peerConnection) {
+        console.error("PeerConnection не существует");
         return;
     }
     
     try {
-        console.log("Получен ответ на звонок:", callData);
-        
+        // Скрываем модальное окно исходящего звонка
         if (outgoingCallModal) {
             outgoingCallModal.classList.remove('active');
         }
         
-        if (!callState.peerConnection) {
-            console.error("PeerConnection не существует");
-            return;
-        }
-        
+        // Устанавливаем remote description
         if (callData.answer) {
             const answerDescription = new RTCSessionDescription(callData.answer);
             await callState.peerConnection.setRemoteDescription(answerDescription);
             console.log("✅ Remote description установлен");
         }
         
+        // Отправляем все накопленные ICE кандидаты
         if (callState.iceCandidates && callState.iceCandidates.length > 0) {
+            console.log(`Отправка ${callState.iceCandidates.length} накопленных ICE кандидатов`);
             for (const candidate of callState.iceCandidates) {
                 const cleanCandidate = {
                     candidate: candidate.candidate || '',
@@ -1168,13 +1018,16 @@ async function handleCallAnswer(callData) {
             callState.iceCandidates = [];
         }
         
+        // Показываем активный звонок
         showActiveCall();
+        
+        // Останавливаем звук звонка
         stopRingtone();
         
-        console.log("Звонок успешно соединен");
+        console.log("✅ Звонок успешно соединен");
         
     } catch (error) {
-        console.error('Ошибка обработки ответа:', error);
+        console.error('❌ Ошибка обработки ответа:', error);
     }
 }
 
@@ -1904,18 +1757,6 @@ async function checkAudioDevices() {
 function cleanupCall() {
     console.log("🧹 Очистка звонка");
     
-    // Очищаем AudioContext
-    if (sourceNode) {
-        sourceNode.disconnect();
-        sourceNode = null;
-    }
-    
-    if (audioContext) {
-        audioContext.close();
-        audioContext = null;
-    }
-    
-    // Останавливаем треки
     if (callState.localStream) {
         callState.localStream.getTracks().forEach(track => {
             console.log(`Остановка трека: ${track.kind}`);
@@ -1933,7 +1774,6 @@ function cleanupCall() {
     if (remoteVideo) {
         remoteVideo.srcObject = null;
         remoteVideo.classList.remove('active');
-        remoteVideo.volume = 1.0;
     }
     if (localVideo) {
         localVideo.srcObject = null;
