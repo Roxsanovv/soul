@@ -5057,3 +5057,25 @@ body {
 .call-modal .offline-message i {
     font-size: 16px;
 }
+
+/* Стили для кнопки динамика */
+.call-control-btn#toggleSpeakerBtn i.fa-volume-up {
+    color: #8b5cf6;
+}
+
+.call-control-btn#toggleSpeakerBtn i.fa-volume-off {
+    color: #94a3b8;
+}
+
+.call-control-btn#toggleSpeakerBtn.muted i {
+    color: #ef4444;
+}
+
+/* Анимация переключения */
+.call-control-btn#toggleSpeakerBtn i {
+    transition: all 0.3s ease;
+}
+
+.call-control-btn#toggleSpeakerBtn:hover i {
+    transform: scale(1.1);
+}
