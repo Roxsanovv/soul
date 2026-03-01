@@ -1216,6 +1216,31 @@ function showActiveCall() {
     
     if (activeCallContainer) activeCallContainer.style.display = 'flex';
     
+    // Настраиваем аудиовыход
+    setupAudioOutput();
+    
+    updateCallButtons();
+}
+
+function setupAudioOutput() {
+    if (!remoteVideo) return;
+    
+    // По умолчанию на мобильных используем разговорный динамик
+    if (isMobile) {
+        callState.isSpeakerOn = false; // Обычный динамик
+        remoteVideo.volume = 0.3; // Уменьшаем громкость для разговорного динамика
+        
+        // Пробуем переключить на разговорный динамик если поддерживается
+        if (remoteVideo.setSinkId) {
+            remoteVideo.setSinkId('none').catch(() => {
+                console.log("Не удалось переключить на разговорный динамик");
+            });
+        }
+    } else {
+        callState.isSpeakerOn = true; // На ПК используем обычные колонки
+        remoteVideo.volume = 1.0;
+    }
+    
     updateCallButtons();
 }
 
@@ -1349,8 +1374,28 @@ function toggleSpeaker() {
     updateCallButtons();
 }
 
+function detectAudioOutput() {
+    if (!remoteVideo) return;
+    
+    // Проверяем поддержку setSinkId
+    if (typeof remoteVideo.setSinkId === 'function') {
+        console.log("✅ Поддерживается переключение аудиовыходов");
+        
+        // Пробуем получить список доступных устройств
+        navigator.mediaDevices.enumerateDevices()
+            .then(devices => {
+                const audioOutputs = devices.filter(device => device.kind === 'audiooutput');
+                console.log("Доступные аудиовыходы:", audioOutputs.map(d => ({ label: d.label, deviceId: d.deviceId })));
+            })
+            .catch(err => console.log("Не удалось получить список устройств:", err));
+    } else {
+        console.log("⚠️ Переключение аудиовыходов не поддерживается");
+    }
+}
+
 // Обновление иконок кнопок
 function updateCallButtons() {
+    // Микрофон
     const micIcons = document.querySelectorAll('#toggleMicBtn i, #toggleMicLargeBtn i');
     micIcons.forEach(icon => {
         icon.className = callState.isMuted ? 'fas fa-microphone-slash' : 'fas fa-microphone';
@@ -1366,6 +1411,7 @@ function updateCallButtons() {
         }
     });
     
+    // Камера
     const cameraIcons = document.querySelectorAll('#toggleCameraBtn i, #toggleCameraLargeBtn i');
     cameraIcons.forEach(icon => {
         icon.className = callState.isVideoOff ? 'fas fa-video-slash' : 'fas fa-video';
@@ -1381,11 +1427,31 @@ function updateCallButtons() {
         }
     });
     
+    // Динамик - исправленная иконка
     if (toggleSpeakerBtn) {
         const speakerIcon = toggleSpeakerBtn.querySelector('i');
         if (speakerIcon) {
-            speakerIcon.className = callState.isSpeakerOn ? 'fas fa-volume-up' : 'fas fa-volume-mute';
+            // Меняем иконку в зависимости от режима
+            if (callState.isSpeakerOn) {
+                speakerIcon.className = 'fas fa-volume-up'; // Громкая связь
+                toggleSpeakerBtn.title = 'Переключить на разговорный динамик';
+            } else {
+                speakerIcon.className = 'fas fa-volume-off'; // Обычный динамик
+                toggleSpeakerBtn.title = 'Переключить на громкую связь';
+            }
         }
+        
+        // Обновляем текст под иконкой
+        const span = toggleSpeakerBtn.querySelector('span');
+        if (span) {
+            span.textContent = callState.isSpeakerOn ? 'Громкая связь' : 'Динамик';
+        }
+    }
+    
+    // Обновляем иконки для большой кнопки динамика если есть
+    const speakerLargeIcon = document.querySelector('#toggleSpeakerLargeBtn i');
+    if (speakerLargeIcon) {
+        speakerLargeIcon.className = callState.isSpeakerOn ? 'fas fa-volume-up' : 'fas fa-volume-off';
     }
 }
 
@@ -1474,6 +1540,56 @@ function startCallTimer() {
         if (minimizedTimer) minimizedTimer.textContent = timeString;
         
     }, 1000);
+}
+
+// ================================================
+// ИСПРАВЛЕННОЕ УПРАВЛЕНИЕ ДИНАМИКОМ
+// ================================================
+async function toggleSpeaker() {
+    if (!remoteVideo) return;
+    
+    callState.isSpeakerOn = !callState.isSpeakerOn;
+    
+    try {
+        if (isMobile) {
+            // На мобильных устройствах
+            if (callState.isSpeakerOn) {
+                // Включаем громкую связь (основной динамик)
+                await remoteVideo.setSinkId?.('default');
+                console.log("🔊 Включена громкая связь (основной динамик)");
+            } else {
+                // Включаем обычный разговорный динамик
+                // Используем 'none' или 'earpiece' если доступно
+                if (remoteVideo.setSinkId) {
+                    try {
+                        // Пробуем переключить на разговорный динамик
+                        await remoteVideo.setSinkId('none');
+                        console.log("🔉 Включен разговорный динамик");
+                    } catch (e) {
+                        console.log("Разговорный динамик не поддерживается, используем обычный режим");
+                        // Если не поддерживается, просто уменьшаем громкость
+                        remoteVideo.volume = 0.5;
+                    }
+                } else {
+                    // Если setSinkId не поддерживается, регулируем громкость
+                    remoteVideo.volume = callState.isSpeakerOn ? 1.0 : 0.3;
+                }
+            }
+        } else {
+            // На ПК просто регулируем громкость
+            remoteVideo.volume = callState.isSpeakerOn ? 1.0 : 0.3;
+        }
+        
+        // Обновляем иконку
+        updateCallButtons();
+        
+    } catch (error) {
+        console.error("Ошибка переключения динамика:", error);
+        
+        // Fallback - регулируем громкость
+        remoteVideo.volume = callState.isSpeakerOn ? 1.0 : 0.3;
+        updateCallButtons();
+    }
 }
 
 function cleanupCall() {
