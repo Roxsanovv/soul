@@ -650,193 +650,6 @@ body {
 }
 
 /* ================================================ */
-/* МОБИЛЬНЫЙ ЗАГОЛОВОК */
-/* ================================================ */
-.mobile-header {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 60px;
-    background: rgba(15, 23, 42, 0.95);
-    backdrop-filter: blur(20px);
-    border-bottom: 1px solid var(--border-color);
-    display: flex;
-    align-items: center;
-    padding: 0 15px;
-    z-index: 1000;
-}
-
-.mobile-menu-btn, .mobile-profile-btn {
-    width: 44px;
-    height: 44px;
-    border: none;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    color: white;
-    font-size: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-}
-
-.mobile-title {
-    flex: 1;
-    text-align: center;
-    font-size: 20px;
-    font-weight: 700;
-    color: white;
-    letter-spacing: -0.5px;
-}
-
-/* ================================================ */
-/* МОБИЛЬНАЯ БОКОВАЯ ПАНЕЛЬ */
-/* ================================================ */
-.mobile-sidebar-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(5px);
-    z-index: 1999;
-    opacity: 0;
-    visibility: hidden;
-    transition: var(--transition);
-}
-
-.mobile-sidebar-overlay.active {
-    opacity: 1;
-    visibility: visible;
-}
-
-.mobile-sidebar {
-    position: fixed;
-    top: 0;
-    left: -100%;
-    width: 85%;
-    max-width: 300px;
-    height: 100%;
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-    border-right: 1px solid var(--border-color);
-    z-index: 2000;
-    transition: var(--transition);
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-}
-
-.mobile-sidebar.active {
-    left: 0;
-}
-
-.mobile-sidebar-header {
-    padding: 20px 15px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    border-bottom: 1px solid var(--border-color);
-}
-
-.mobile-sidebar-close {
-    width: 44px;
-    height: 44px;
-    border: none;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    color: white;
-    font-size: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-}
-
-.mobile-sidebar-tabs {
-    padding: 15px;
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-}
-
-.mobile-sidebar-tab {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 15px;
-    border-radius: var(--radius-md);
-    color: #94a3b8;
-    font-weight: 600;
-    cursor: pointer;
-    transition: var(--transition);
-}
-
-.mobile-sidebar-tab:hover {
-    background: rgba(255, 255, 255, 0.05);
-    color: white;
-}
-
-.mobile-sidebar-tab.active {
-    background: rgba(139, 92, 246, 0.2);
-    color: white;
-}
-
-.mobile-sidebar-tab i {
-    width: 20px;
-    font-size: 18px;
-}
-
-/* ================================================ */
-/* ГЛАВНЫЙ ЭКРАН */
-/* ================================================ */
-.main-content {
-    min-height: 100vh;
-    width: 100%;
-}
-
-.home-screen {
-    min-height: calc(100vh - 60px);
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-}
-
-.home-content {
-    text-align: center;
-    padding: 40px 20px;
-    flex: 1;
-}
-
-.welcome-icon {
-    font-size: 80px;
-    background: linear-gradient(135deg, #8b5cf6, #ec4899);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    margin-bottom: 30px;
-}
-
-.welcome-text {
-    max-width: 600px;
-    margin: 0 auto 40px;
-}
-
-.welcome-text h2 {
-    font-size: 32px;
-    font-weight: 800;
-    color: white;
-    margin-bottom: 15px;
-    letter-spacing: -0.5px;
-}
-
-.welcome-text p {
-    font-size: 16px;
-    color: #94a3b8;
-    line-height: 1.6;
-}
-
-/* ================================================ */
 /* USER ID КОНТЕЙНЕР */
 /* ================================================ */
 .user-id-container {
@@ -901,67 +714,6 @@ body {
     background: rgba(139, 92, 246, 0.3);
     color: #c4b5fd;
     transform: scale(1.05);
-}
-
-.home-actions {
-    display: flex;
-    gap: 15px;
-    margin-top: 30px;
-    justify-content: center;
-}
-
-.home-actions .action-btn {
-    min-width: 160px;
-}
-
-.home-tabs {
-    display: flex;
-    background: rgba(15, 23, 42, 0.8);
-    border-radius: var(--radius-lg);
-    padding: 8px;
-    margin-bottom: 20px;
-}
-
-.home-tab {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 15px;
-    border-radius: var(--radius-md);
-    color: #94a3b8;
-    font-weight: 600;
-    cursor: pointer;
-    transition: var(--transition);
-}
-
-.home-tab:hover {
-    background: rgba(255, 255, 255, 0.05);
-    color: white;
-}
-
-.home-tab.active {
-    background: rgba(139, 92, 246, 0.2);
-    color: white;
-}
-
-.home-tab i {
-    font-size: 18px;
-}
-
-.home-tab-content {
-    flex: 1;
-    min-height: 300px;
-}
-
-.home-tab-pane {
-    display: none;
-    height: 100%;
-}
-
-.home-tab-pane.active {
-    display: block;
 }
 
 /* ================================================ */
@@ -1458,6 +1210,51 @@ body {
 }
 
 /* ================================================ */
+/* ФАЙЛЫ В СООБЩЕНИЯХ */
+/* ================================================ */
+.message-file {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 10px 15px;
+    margin-top: 5px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid rgba(139, 92, 246, 0.2);
+}
+
+.message-file:hover {
+    background: rgba(139, 92, 246, 0.15);
+    border-color: rgba(139, 92, 246, 0.4);
+}
+
+.message-file i {
+    font-size: 32px;
+    color: #60a5fa;
+}
+
+.message-file-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.message-file-name {
+    font-weight: 600;
+    font-size: 13px;
+    color: white;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.message-file-size {
+    font-size: 11px;
+    color: #94a3b8;
+}
+
+/* ================================================ */
 /* РЕАКЦИИ */
 /* ================================================ */
 .reactions-container {
@@ -1658,7 +1455,7 @@ body {
 }
 
 /* ================================================ */
-/* ПРЕВЬЮ ФОТО И ОТВЕТА */
+/* ПРЕВЬЮ ФОТО, ФАЙЛОВ И ОТВЕТА */
 /* ================================================ */
 .preview-container {
     width: 100%;
@@ -1668,7 +1465,8 @@ body {
     box-sizing: border-box;
 }
 
-.photo-preview-container {
+.photo-preview-container,
+.file-preview-container {
     margin-bottom: 8px;
     padding: 12px;
     background: rgba(30, 41, 59, 0.95);
@@ -1685,7 +1483,7 @@ body {
     to { opacity: 1; transform: translateY(0); }
 }
 
-.photo-preview {
+.photo-preview, .file-preview {
     display: flex;
     align-items: center;
     gap: 15px;
@@ -1700,18 +1498,24 @@ body {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
-.photo-preview-info {
+.file-preview i {
+    font-size: 40px;
+    color: #60a5fa;
+}
+
+.photo-preview-info, .file-preview-info {
     flex: 1;
     min-width: 0;
 }
 
-.photo-preview-info span {
+.photo-preview-info span, .file-preview-info span {
     display: block;
     font-size: 14px;
     color: #e2e8f0;
 }
 
-.photo-preview-info span:first-child {
+.photo-preview-info span:first-child,
+.file-preview-info span:first-child {
     font-weight: 600;
     color: white;
     margin-bottom: 6px;
@@ -1721,7 +1525,8 @@ body {
     text-overflow: ellipsis;
 }
 
-.photo-preview-info span:last-child {
+.photo-preview-info span:last-child,
+.file-preview-info span:last-child {
     color: #94a3b8;
     font-size: 13px;
     display: flex;
@@ -1729,7 +1534,7 @@ body {
     gap: 5px;
 }
 
-.photo-preview-remove {
+.photo-preview-remove, .file-preview-remove {
     width: 36px;
     height: 36px;
     border-radius: 50%;
@@ -1744,13 +1549,13 @@ body {
     flex-shrink: 0;
 }
 
-.photo-preview-remove:hover {
+.photo-preview-remove:hover, .file-preview-remove:hover {
     background: rgba(239, 68, 68, 0.25);
     transform: rotate(90deg) scale(1.1);
     color: #ef4444;
 }
 
-.photo-progress {
+.photo-progress, .file-progress {
     margin-top: 8px;
     height: 3px;
     background: rgba(255, 255, 255, 0.1);
@@ -1759,14 +1564,14 @@ body {
     position: relative;
 }
 
-.photo-progress-bar {
+.photo-progress-bar, .file-progress-bar {
     height: 100%;
     background: linear-gradient(90deg, #8b5cf6, #7c3aed);
     width: 0%;
     transition: width 0.3s ease;
 }
 
-.photo-progress-text {
+.photo-progress-text, .file-progress-text {
     position: absolute;
     right: 0;
     top: -18px;
@@ -2014,29 +1819,6 @@ body {
 .search-box:focus {
     border-color: #8b5cf6;
     background: rgba(255, 255, 255, 0.12);
-}
-
-.search-container {
-    position: relative;
-    margin: 15px;
-}
-
-.search-container.mobile {
-    margin: 15px;
-}
-
-.search-box {
-    width: 100%;
-    padding: 14px 14px 14px 45px;
-}
-
-.search-icon {
-    position: absolute;
-    left: 15px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #94a3b8;
-    font-size: 16px;
 }
 
 .chat-type-selector {
@@ -2575,12 +2357,6 @@ body {
     width: 15px;
     height: 15px;
     display: inline-block;
-    animation: none !important;
-    filter: none !important;
-    text-shadow: none !important;
-    transition: none !important;
-    box-shadow: none !important;
-    opacity: 1 !important;
 }
 
 .verified-icon.admin { color: #c084fc !important; }
@@ -2748,7 +2524,7 @@ body {
 }
 
 /* ================================================ */
-/* ПК ВЕРСИЯ (min-width: 769px) - ИСПРАВЛЕНО */
+/* ПК ВЕРСИЯ (min-width: 769px) */
 /* ================================================ */
 @media (min-width: 769px) {
     .container {
@@ -2757,7 +2533,7 @@ body {
         overflow: hidden;
     }
 
-    /* Скрываем мобильные элементы */
+    .mobile-container,
     .mobile-header,
     .mobile-sidebar-overlay,
     .mobile-sidebar,
@@ -2767,7 +2543,6 @@ body {
         display: none !important;
     }
 
-    /* Боковая панель */
     .desktop-sidebar {
         display: flex !important;
         width: 300px;
@@ -2779,7 +2554,6 @@ body {
         position: relative;
     }
 
-    /* Основная область */
     .main-content {
         flex: 1;
         display: flex;
@@ -2790,7 +2564,6 @@ body {
         position: relative;
     }
 
-    /* Пустой экран */
     .desktop-empty-screen {
         align-items: center;
         justify-content: center;
@@ -2798,7 +2571,6 @@ body {
         height: 100%;
     }
 
-    /* Экран чата */
     .chat-screen.desktop {
         display: none;
         width: 100%;
@@ -2810,9 +2582,6 @@ body {
         display: flex !important;
     }
 
-    /* ================================================ */
-    /* ЗАГОЛОВОК ЧАТА - ВВЕРХУ */
-    /* ================================================ */
     .chat-header.desktop {
         height: 70px !important;
         min-height: 70px !important;
@@ -2875,9 +2644,6 @@ body {
         text-overflow: ellipsis;
     }
 
-    /* ================================================ */
-    /* СООБЩЕНИЯ - ПОСЕРЕДИНЕ */
-    /* ================================================ */
     .messages-container {
         flex: 1 !important;
         overflow-y: auto !important;
@@ -2893,9 +2659,6 @@ body {
         min-height: 0 !important;
     }
 
-    /* ================================================ */
-    /* ПОЛЕ ВВОДА - ВНИЗУ */
-    /* ================================================ */
     .chat-input-container.desktop {
         height: 80px !important;
         min-height: 80px !important;
@@ -2913,9 +2676,6 @@ body {
         margin: 0 !important;
     }
 
-    /* ================================================ */
-    /* ОСТАЛЬНЫЕ СТИЛИ БОКОВОЙ ПАНЕЛИ */
-    /* ================================================ */
     .desktop-user-info {
         padding: 20px;
         border-bottom: 1px solid var(--border-color);
@@ -3133,10 +2893,9 @@ body {
 }
 
 /* ================================================ */
-/* НОВЫЙ МОБИЛЬНЫЙ ИНТЕРФЕЙС - ИСПРАВЛЕНО */
+/* НОВЫЙ МОБИЛЬНЫЙ ИНТЕРФЕЙС */
 /* ================================================ */
 @media (max-width: 768px) {
-    /* Скрываем старые мобильные элементы */
     .mobile-header,
     .mobile-sidebar-overlay,
     .mobile-sidebar,
@@ -3156,7 +2915,6 @@ body {
         display: none !important;
     }
 
-    /* Новый мобильный контейнер - на всю ширину */
     .mobile-container {
         display: flex !important;
         flex-direction: column;
@@ -3173,7 +2931,6 @@ body {
         overflow: hidden !important;
     }
 
-    /* Нижняя навигация - на всю ширину */
     .mobile-bottom-nav {
         position: fixed !important;
         bottom: 0 !important;
@@ -3224,13 +2981,12 @@ body {
         color: #8b5cf6;
     }
 
-    /* Контентная область - на всю ширину */
     .mobile-content {
         position: absolute !important;
         top: 0 !important;
         left: 0 !important;
         right: 0 !important;
-        bottom: 70px !important; /* Высота навигации */
+        bottom: 70px !important;
         overflow-y: auto !important;
         padding: 16px !important;
         width: 100% !important;
@@ -3248,7 +3004,6 @@ body {
         display: block !important;
     }
 
-    /* Заголовки вкладок */
     .mobile-chats-header,
     .mobile-contacts-header,
     .mobile-settings-header {
@@ -3284,7 +3039,6 @@ body {
         font-weight: 600;
     }
 
-    /* Поиск - на всю ширину */
     .mobile-search-bar {
         position: relative;
         width: 100% !important;
@@ -3323,7 +3077,6 @@ body {
         color: #64748b;
     }
 
-    /* Списки чатов и контактов - на всю ширину */
     .mobile-chats-list,
     .mobile-contacts-list {
         display: flex;
@@ -3333,7 +3086,6 @@ body {
         padding-bottom: 20px;
     }
 
-    /* Элемент чата - на всю ширину */
     .mobile-chat-item {
         display: flex;
         align-items: center;
@@ -3406,7 +3158,6 @@ body {
         white-space: nowrap;
     }
 
-    /* Элемент контакта - на всю ширину */
     .mobile-contact-item {
         display: flex;
         align-items: center;
@@ -3471,7 +3222,6 @@ body {
         color: #64748b;
     }
 
-    /* Профиль - на всю ширину */
     .mobile-profile {
         padding: 20px 0;
         width: 100%;
@@ -3620,7 +3370,6 @@ body {
         box-sizing: border-box;
     }
 
-    /* Настройки - на всю ширину */
     .mobile-settings {
         width: 100%;
         padding-bottom: 20px;
@@ -3673,7 +3422,6 @@ body {
         margin-left: 8px;
     }
 
-    /* Switch toggle */
     .switch {
         position: relative;
         display: inline-block;
@@ -3721,7 +3469,6 @@ body {
         transform: translateX(26px);
     }
 
-    /* Кнопка выхода */
     .mobile-logout-btn {
         width: 100%;
         padding: 16px;
@@ -3740,7 +3487,6 @@ body {
         box-sizing: border-box;
     }
 
-    /* Плавающая кнопка создания */
     .mobile-create-fab {
         position: fixed !important;
         bottom: 90px !important;
@@ -3770,7 +3516,6 @@ body {
         transform: scale(0.95);
     }
 
-    /* Модальное окно создания - на всю ширину */
     .mobile-create-modal {
         position: fixed;
         top: 0;
@@ -3797,11 +3542,6 @@ body {
         padding: 20px;
         animation: slideUp 0.3s ease;
         box-sizing: border-box;
-    }
-
-    @keyframes slideUp {
-        from { transform: translateY(100%); }
-        to { transform: translateY(0); }
     }
 
     .mobile-create-modal-header {
@@ -3836,67 +3576,193 @@ body {
         flex-shrink: 0;
     }
 
-    .mobile-create-option {
+    .mobile-chat-type-selector {
         display: flex;
-        align-items: center;
-        padding: 16px;
+        gap: 8px;
+        margin-bottom: 20px;
         background: rgba(255, 255, 255, 0.05);
+        padding: 8px;
         border-radius: 16px;
-        margin-bottom: 10px;
+        width: 100%;
+    }
+
+    .mobile-chat-type-option {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        padding: 12px 8px;
+        border-radius: 12px;
+        background: transparent;
         cursor: pointer;
         transition: var(--transition);
-        border: 1px solid transparent;
-        width: 100%;
-        box-sizing: border-box;
+        color: #94a3b8;
     }
 
-    .mobile-create-option:hover {
-        background: rgba(139, 92, 246, 0.15);
-        border-color: rgba(139, 92, 246, 0.3);
+    .mobile-chat-type-option i {
+        font-size: 20px;
     }
 
-    .mobile-create-option .option-icon {
-        width: 50px;
-        height: 50px;
-        border-radius: 16px;
+    .mobile-chat-type-option span {
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .mobile-chat-type-option:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+    }
+
+    .mobile-chat-type-option.active {
         background: rgba(139, 92, 246, 0.2);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-right: 15px;
-        flex-shrink: 0;
-    }
-
-    .mobile-create-option .option-icon i {
-        font-size: 24px;
         color: #8b5cf6;
     }
 
-    .mobile-create-option .option-info {
+    .mobile-chat-type-option.active i {
+        color: #8b5cf6;
+    }
+
+    .mobile-create-form {
+        display: none;
+        animation: fadeIn 0.3s ease;
+    }
+
+    .mobile-create-form.active {
+        display: block;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .mobile-form-group {
+        margin-bottom: 16px;
+        width: 100%;
+    }
+
+    .mobile-form-group label {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #94a3b8;
+    }
+
+    .mobile-form-group input,
+    .mobile-form-group textarea {
+        width: 100%;
+        padding: 14px;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 12px;
+        font-size: 15px;
+        color: white;
+        outline: none;
+        box-sizing: border-box;
+    }
+
+    .mobile-form-group input:focus,
+    .mobile-form-group textarea:focus {
+        border-color: #8b5cf6;
+        background: rgba(255, 255, 255, 0.12);
+    }
+
+    .mobile-form-group input::placeholder,
+    .mobile-form-group textarea::placeholder {
+        color: #64748b;
+    }
+
+    .mobile-create-submit {
+        width: 100%;
+        padding: 16px;
+        background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+        border: none;
+        border-radius: 12px;
+        color: white;
+        font-weight: 600;
+        font-size: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        cursor: pointer;
+        transition: var(--transition);
+        margin-top: 10px;
+    }
+
+    .mobile-create-submit:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
+    }
+
+    .mobile-create-submit:active {
+        transform: translateY(0);
+    }
+
+    .mobile-create-submit:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+    }
+
+    .mobile-search-results {
+        max-height: 200px;
+        overflow-y: auto;
+        margin-top: 10px;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .mobile-search-result-item {
+        display: flex;
+        align-items: center;
+        padding: 12px;
+        cursor: pointer;
+        transition: var(--transition);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .mobile-search-result-item:last-child {
+        border-bottom: none;
+    }
+
+    .mobile-search-result-item:hover {
+        background: rgba(139, 92, 246, 0.15);
+    }
+
+    .mobile-search-result-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        color: white;
+        margin-right: 12px;
+    }
+
+    .mobile-search-result-info {
         flex: 1;
     }
 
-    .mobile-create-option .option-info h4 {
-        font-size: 16px;
+    .mobile-search-result-name {
         font-weight: 600;
         color: white;
-        margin-bottom: 4px;
-        margin: 0 0 4px 0;
+        margin-bottom: 2px;
     }
 
-    .mobile-create-option .option-info p {
-        font-size: 13px;
+    .mobile-search-result-id {
+        font-size: 11px;
         color: #94a3b8;
-        margin: 0;
+        font-family: monospace;
     }
 
-    .mobile-create-option i.fa-chevron-right {
-        color: #64748b;
-        font-size: 14px;
-        margin-left: 10px;
-    }
-
-    /* Пустые состояния */
     .mobile-empty-state {
         text-align: center;
         padding: 60px 20px;
@@ -3925,7 +3791,6 @@ body {
         margin: 0;
     }
 
-    /* Экран чата на мобильных */
     .chat-screen.mobile {
         position: fixed !important;
         top: 0 !important;
@@ -3984,7 +3849,7 @@ body {
 }
 
 /* ================================================ */
-/* ДЛЯ ОЧЕНЬ МАЛЕНЬКИХ ЭКРАНОВ (max-width: 360px) */
+/* ДЛЯ ОЧЕНЬ МАЛЕНЬКИХ ЭКРАНОВ */
 /* ================================================ */
 @media (max-width: 360px) {
     .mobile-sidebar {
@@ -4038,7 +3903,7 @@ body {
 }
 
 /* ================================================ */
-/* ЛАНДШАФТНЫЙ РЕЖИМ (max-width: 768px and orientation: landscape) */
+/* ЛАНДШАФТНЫЙ РЕЖИМ */
 /* ================================================ */
 @media (max-width: 768px) and (orientation: landscape) {
     .mobile-header {
@@ -4171,8 +4036,9 @@ body {
     }
 }
 
-
-/* Кнопка прокрутки вниз */
+/* ================================================ */
+/* КНОПКА ПРОКРУТКИ ВНИЗ */
+/* ================================================ */
 .scroll-to-bottom-btn {
     position: fixed;
     bottom: 100px;
@@ -4226,193 +4092,4 @@ body {
         bottom: 100px;
         right: 30px;
     }
-}
-
-
-/* Стили для прямого модального окна создания */
-.mobile-chat-type-selector {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 20px;
-    background: rgba(255, 255, 255, 0.05);
-    padding: 8px;
-    border-radius: 16px;
-    width: 100%;
-}
-
-.mobile-chat-type-option {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    padding: 12px 8px;
-    border-radius: 12px;
-    background: transparent;
-    cursor: pointer;
-    transition: var(--transition);
-    color: #94a3b8;
-}
-
-.mobile-chat-type-option i {
-    font-size: 20px;
-}
-
-.mobile-chat-type-option span {
-    font-size: 12px;
-    font-weight: 600;
-}
-
-.mobile-chat-type-option:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
-}
-
-.mobile-chat-type-option.active {
-    background: rgba(139, 92, 246, 0.2);
-    color: #8b5cf6;
-}
-
-.mobile-chat-type-option.active i {
-    color: #8b5cf6;
-}
-
-.mobile-create-form {
-    display: none;
-    animation: fadeIn 0.3s ease;
-}
-
-.mobile-create-form.active {
-    display: block;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-.mobile-form-group {
-    margin-bottom: 16px;
-    width: 100%;
-}
-
-.mobile-form-group label {
-    display: block;
-    margin-bottom: 6px;
-    font-size: 13px;
-    font-weight: 600;
-    color: #94a3b8;
-}
-
-.mobile-form-group input,
-.mobile-form-group textarea {
-    width: 100%;
-    padding: 14px;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 12px;
-    font-size: 15px;
-    color: white;
-    outline: none;
-    box-sizing: border-box;
-}
-
-.mobile-form-group input:focus,
-.mobile-form-group textarea:focus {
-    border-color: #8b5cf6;
-    background: rgba(255, 255, 255, 0.12);
-}
-
-.mobile-form-group input::placeholder,
-.mobile-form-group textarea::placeholder {
-    color: #64748b;
-}
-
-.mobile-create-submit {
-    width: 100%;
-    padding: 16px;
-    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
-    border: none;
-    border-radius: 12px;
-    color: white;
-    font-weight: 600;
-    font-size: 15px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    cursor: pointer;
-    transition: var(--transition);
-    margin-top: 10px;
-}
-
-.mobile-create-submit:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
-}
-
-.mobile-create-submit:active {
-    transform: translateY(0);
-}
-
-.mobile-create-submit:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
-}
-
-.mobile-search-results {
-    max-height: 200px;
-    overflow-y: auto;
-    margin-top: 10px;
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.mobile-search-result-item {
-    display: flex;
-    align-items: center;
-    padding: 12px;
-    cursor: pointer;
-    transition: var(--transition);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.mobile-search-result-item:last-child {
-    border-bottom: none;
-}
-
-.mobile-search-result-item:hover {
-    background: rgba(139, 92, 246, 0.15);
-}
-
-.mobile-search-result-avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
-    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
-    color: white;
-    margin-right: 12px;
-}
-
-.mobile-search-result-info {
-    flex: 1;
-}
-
-.mobile-search-result-name {
-    font-weight: 600;
-    color: white;
-    margin-bottom: 2px;
-}
-
-.mobile-search-result-id {
-    font-size: 11px;
-    color: #94a3b8;
-    font-family: monospace;
 }
