@@ -113,30 +113,22 @@
             </div>
             
             <div class="desktop-sidebar-content">
-                <div class="desktop-chats-list" id="desktopChatsList">
-                    <!-- Чаты для ПК будут добавляться через JS -->
-                </div>
-                
-                <div class="desktop-contacts-list" id="desktopContactsList" style="display: none;">
-                    <!-- Контакты для ПК будут добавляться через JS -->
-                </div>
+                <div class="desktop-chats-list" id="desktopChatsList"></div>
+                <div class="desktop-contacts-list" id="desktopContactsList" style="display: none;"></div>
             </div>
             
             <div class="desktop-sidebar-actions">
                 <button class="desktop-action-btn" id="desktopCreateChatBtn">
-                    <i class="fas fa-plus-circle"></i>
-                    Создать чат
+                    <i class="fas fa-plus-circle"></i> Создать чат
                 </button>
                 <button class="desktop-action-btn secondary" id="desktopAddContactBtn">
-                    <i class="fas fa-user-plus"></i>
-                    Добавить
+                    <i class="fas fa-user-plus"></i> Добавить
                 </button>
             </div>
         </div>
 
         <!-- НОВЫЙ МОБИЛЬНЫЙ ИНТЕРФЕЙС -->
         <div class="mobile-container" id="mobileContainer">
-            <!-- Нижнее меню (фиксированное) -->
             <div class="mobile-bottom-nav">
                 <div class="mobile-nav-item active" data-tab="chats">
                     <i class="fas fa-comment"></i>
@@ -156,9 +148,7 @@
                 </div>
             </div>
 
-            <!-- Контентные экраны -->
             <div class="mobile-content">
-                <!-- Экран чатов -->
                 <div class="mobile-tab-content active" id="mobileChatsTab">
                     <div class="mobile-chats-header">
                         <div class="mobile-chats-title">
@@ -173,7 +163,6 @@
                     <div class="mobile-chats-list" id="mobileChatsList"></div>
                 </div>
 
-                <!-- Экран контактов -->
                 <div class="mobile-tab-content" id="mobileContactsTab">
                     <div class="mobile-contacts-header">
                         <div class="mobile-contacts-title">
@@ -188,7 +177,6 @@
                     <div class="mobile-contacts-list" id="mobileContactsList"></div>
                 </div>
 
-                <!-- Экран профиля -->
                 <div class="mobile-tab-content" id="mobileProfileTab">
                     <div class="mobile-profile">
                         <div class="mobile-profile-header">
@@ -239,7 +227,6 @@
                     </div>
                 </div>
 
-                <!-- Экран настроек -->
                 <div class="mobile-tab-content" id="mobileSettingsTab">
                     <div class="mobile-settings">
                         <div class="mobile-settings-header">
@@ -306,12 +293,10 @@
                 </div>
             </div>
 
-            <!-- Кнопка создания чата (плавающая) -->
             <button class="mobile-create-fab" id="mobileCreateFAB">
                 <i class="fas fa-plus"></i>
             </button>
 
-            <!-- Модальное окно создания чата/группы -->
             <div class="mobile-create-modal" id="mobileCreateModal">
                 <div class="mobile-create-modal-content">
                     <div class="mobile-create-modal-header">
@@ -381,7 +366,6 @@
 
         <!-- Основная область -->
         <div class="main-content" id="mainContent">
-            <!-- Пустой экран для ПК -->
             <div class="desktop-empty-screen" id="desktopEmptyScreen" style="display: none;">
                 <div class="desktop-empty-content">
                     <div class="desktop-empty-icon">
@@ -391,20 +375,16 @@
                     <p class="desktop-empty-text">Выберите чат из списка слева или создайте новый, чтобы начать общение</p>
                     <div class="desktop-empty-actions">
                         <button class="desktop-action-btn" id="desktopEmptyCreateChatBtn">
-                            <i class="fas fa-plus-circle"></i>
-                            Создать чат
+                            <i class="fas fa-plus-circle"></i> Создать чат
                         </button>
                         <button class="desktop-action-btn secondary" id="desktopEmptyAddContactBtn">
-                            <i class="fas fa-user-plus"></i>
-                            Добавить контакт
+                            <i class="fas fa-user-plus"></i> Добавить контакт
                         </button>
                     </div>
                 </div>
             </div>
             
-            <!-- Экран чата -->
             <div class="chat-screen" id="chatScreen" style="display: none;">
-                <!-- Мобильный заголовок чата -->
                 <div class="chat-header mobile" id="chatHeaderMobile">
                     <button class="back-to-home-btn" id="backToHomeBtn">
                         <i class="fas fa-arrow-left"></i>
@@ -420,7 +400,6 @@
                     </div>
                 </div>
                 
-                <!-- Заголовок чата для ПК -->
                 <div class="chat-header desktop" id="chatHeaderDesktop" style="display: none;">
                     <div class="desktop-chat-header">
                         <div class="desktop-chat-avatar" id="desktopChatAvatar">#</div>
@@ -433,7 +412,6 @@
                 
                 <div class="messages-container" id="messagesContainer"></div>
                 
-                <!-- Поле ввода -->
                 <div class="chat-input-container" id="chatInputContainer">
                     <div class="preview-container">
                         <div class="reply-preview-container" id="replyPreviewContainer" style="display: none;"></div>
@@ -453,7 +431,6 @@
                                 <span class="photo-progress-text" id="photoProgressText">0%</span>
                             </div>
                         </div>
-                        <!-- Превью для файлов -->
                         <div class="file-preview-container" id="filePreviewContainer" style="display: none;">
                             <div class="file-preview">
                                 <i class="fas fa-file-alt"></i>
@@ -508,7 +485,7 @@
         </div>
     </div>
 
-    <!-- Модальные окна (остальные) -->
+    <!-- Другие модальные окна -->
     <div class="modal-overlay" id="createChatModal">
         <div class="modal">
             <div class="modal-header">
@@ -520,12 +497,10 @@
             <div class="modal-body">
                 <div class="chat-type-selector">
                     <div class="chat-type-option active" data-type="group">
-                        <i class="fas fa-users"></i>
-                        Групповой чат
+                        <i class="fas fa-users"></i> Групповой чат
                     </div>
                     <div class="chat-type-option" data-type="private">
-                        <i class="fas fa-user"></i>
-                        Личный чат
+                        <i class="fas fa-user"></i> Личный чат
                     </div>
                 </div>
                 <div class="form-group">
@@ -640,20 +615,16 @@
                     <label>Статус</label>
                     <div class="status-selector">
                         <div class="status-option online active" data-status="online">
-                            <i class="fas fa-circle"></i>
-                            <span>Online</span>
+                            <i class="fas fa-circle"></i> <span>Online</span>
                         </div>
                         <div class="status-option away" data-status="away">
-                            <i class="fas fa-clock"></i>
-                            <span>Away</span>
+                            <i class="fas fa-clock"></i> <span>Away</span>
                         </div>
                         <div class="status-option dnd" data-status="dnd">
-                            <i class="fas fa-minus-circle"></i>
-                            <span>DND</span>
+                            <i class="fas fa-minus-circle"></i> <span>DND</span>
                         </div>
                         <div class="status-option invisible" data-status="invisible">
-                            <i class="fas fa-eye-slash"></i>
-                            <span>Invisible</span>
+                            <i class="fas fa-eye-slash"></i> <span>Invisible</span>
                         </div>
                     </div>
                 </div>
