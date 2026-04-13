@@ -87,78 +87,7 @@
 
     <!-- Основной интерфейс -->
     <div class="container" id="mainContainer" style="display: none;">
-        <!-- Мобильный заголовок (скрыт, используется новое меню) -->
-        <div class="mobile-header" id="mobileHeader" style="display: none;">
-            <button class="mobile-menu-btn" id="mobileMenuBtn">
-                <i class="fas fa-bars"></i>
-            </button>
-            <div class="mobile-title" id="mobileTitle">Soul</div>
-            <button class="mobile-profile-btn" id="mobileProfileBtn">
-                <i class="fas fa-user"></i>
-            </button>
-        </div>
-
-        <!-- Боковая панель для мобильных (скрыта) -->
-        <div class="mobile-sidebar-overlay" id="mobileSidebarOverlay"></div>
-        <div class="mobile-sidebar" id="mobileSidebar">
-            <div class="mobile-sidebar-header">
-                <div class="logo">
-                    <div class="logo-icon"><img src="img/s.png" width="50px"></div>
-                </div>
-                <button class="mobile-sidebar-close" id="mobileSidebarClose">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            
-            <div class="user-id-container mobile">
-                <span class="user-id-label">Ваш ID:</span>
-                <div class="user-id-value" id="mobileUserId">user_123456</div>
-                <button class="copy-id-btn" id="copyMobileIdBtn" title="Скопировать ID">
-                    <i class="fas fa-copy"></i>
-                </button>
-            </div>
-            
-            <div class="mobile-sidebar-tabs">
-                <div class="mobile-sidebar-tab active" data-tab="chats">
-                    <i class="fas fa-comments"></i> Чаты
-                </div>
-                <div class="mobile-sidebar-tab" data-tab="contacts">
-                    <i class="fas fa-user-friends"></i> Контакты
-                </div>
-                <div class="mobile-sidebar-tab" data-tab="profile">
-                    <i class="fas fa-user"></i> Профиль
-                </div>
-                <div class="mobile-sidebar-tab" id="mobileLogoutBtn">
-                    <i class="fas fa-sign-out-alt"></i> Выйти
-                </div>
-            </div>
-            
-            <div class="search-container mobile">
-                <i class="fas fa-search search-icon"></i>
-                <input type="text" class="search-box" id="mobileSearchInput" placeholder="Поиск чатов, контактов или ID...">
-            </div>
-            
-            <div class="chats-container active" id="mobileChatsContainer">
-                <!-- Чаты будут добавляться динамически -->
-            </div>
-            
-            <div class="contacts-container" id="mobileContactsContainer">
-                <!-- Контакты будут добавляться динамически -->
-            </div>
-            
-            <div class="mobile-sidebar-footer">
-                <button class="action-btn" id="mobileCreateChatBtn">
-                    <i class="fas fa-plus-circle"></i>
-                    Создать чат
-                </button>
-                <button class="action-btn secondary" id="mobileAddContactBtn">
-                    <i class="fas fa-user-plus"></i>
-                    Добавить контакт
-                </button>
-            </div>
-        </div>
-
-        <!-- Боковая панель для ПК (скрыта на мобильных) -->
+        <!-- Боковая панель для ПК -->
         <div class="desktop-sidebar" id="desktopSidebar" style="display: none;">            
             <div class="desktop-user-info" id="desktopUserInfo">
                 <div class="desktop-user-avatar" id="desktopUserAvatar">И</div>
@@ -229,7 +158,7 @@
 
             <!-- Контентные экраны -->
             <div class="mobile-content">
-                <!-- Экран чатов (главный) -->
+                <!-- Экран чатов -->
                 <div class="mobile-tab-content active" id="mobileChatsTab">
                     <div class="mobile-chats-header">
                         <div class="mobile-chats-title">
@@ -241,9 +170,7 @@
                             <input type="text" placeholder="Поиск по чатам..." id="mobileSearchChats">
                         </div>
                     </div>
-                    <div class="mobile-chats-list" id="mobileChatsList">
-                        <!-- Список чатов будет здесь -->
-                    </div>
+                    <div class="mobile-chats-list" id="mobileChatsList"></div>
                 </div>
 
                 <!-- Экран контактов -->
@@ -258,18 +185,14 @@
                             <input type="text" placeholder="Поиск контактов..." id="mobileSearchContacts">
                         </div>
                     </div>
-                    <div class="mobile-contacts-list" id="mobileContactsList">
-                        <!-- Список контактов будет здесь -->
-                    </div>
+                    <div class="mobile-contacts-list" id="mobileContactsList"></div>
                 </div>
 
                 <!-- Экран профиля -->
                 <div class="mobile-tab-content" id="mobileProfileTab">
                     <div class="mobile-profile">
                         <div class="mobile-profile-header">
-                            <div class="mobile-profile-avatar-large" id="mobileProfileAvatar">
-                                И
-                            </div>
+                            <div class="mobile-profile-avatar-large" id="mobileProfileAvatar">И</div>
                             <div class="mobile-profile-info">
                                 <div class="mobile-profile-name" id="mobileProfileName">Имя пользователя</div>
                                 <div class="mobile-profile-status" id="mobileProfileStatus">
@@ -398,7 +321,6 @@
                         </button>
                     </div>
                     <div class="mobile-create-modal-body">
-                        <!-- Выбор типа чата -->
                         <div class="mobile-chat-type-selector">
                             <div class="mobile-chat-type-option active" data-type="group">
                                 <i class="fas fa-users"></i>
@@ -414,7 +336,6 @@
                             </div>
                         </div>
                     
-                        <!-- Форма создания группы -->
                         <div class="mobile-create-form active" id="mobileGroupForm">
                             <div class="mobile-form-group">
                                 <label>Название группы</label>
@@ -429,7 +350,6 @@
                             </button>
                         </div>
                     
-                        <!-- Форма создания личного чата -->
                         <div class="mobile-create-form" id="mobilePrivateForm">
                             <div class="mobile-form-group">
                                 <label>ID пользователя</label>
@@ -441,7 +361,6 @@
                             </button>
                         </div>
                     
-                        <!-- Форма создания канала -->
                         <div class="mobile-create-form" id="mobileChannelForm">
                             <div class="mobile-form-group">
                                 <label>Название канала</label>
@@ -460,75 +379,9 @@
             </div>
         </div>
 
-        <!-- Основная область (для ПК) -->
+        <!-- Основная область -->
         <div class="main-content" id="mainContent">
-            <!-- Главный экран с ID (только для мобильных) -->
-            <div class="home-screen" id="homeScreen">
-                <div class="home-content">
-                    <div class="welcome-icon">
-                        <img src="img/s.png" width="100px"> 
-                    </div>
-                    <div class="welcome-text">
-                        <h2>Soul Messenger</h2>
-                        <p>Премиум мессенджер нового поколения с современным дизайном и уникальными возможностями для общения</p>
-                    </div>
-                    
-                    <div class="user-id-container home">
-                        <span class="user-id-label">Ваш ID:</span>
-                        <div class="user-id-value" id="homeUserId">user_123456</div>
-                        <button class="copy-id-btn" id="copyHomeIdBtn" title="Скопировать ID">
-                            <i class="fas fa-copy"></i>
-                        </button>
-                    </div>
-                    
-                    <div class="home-actions">
-                        <button class="action-btn" id="homeCreateChatBtn">
-                            <i class="fas fa-plus-circle"></i>
-                            Создать чат
-                        </button>
-                        <button class="action-btn secondary" id="homeAddContactBtn">
-                            <i class="fas fa-user-plus"></i>
-                            Добавить контакт
-                        </button>
-                    </div>
-                </div>
-                
-                <div class="home-tabs">
-                    <div class="home-tab active" data-tab="chats">
-                        <i class="fas fa-comments"></i>
-                        <span>Чаты</span>
-                    </div>
-                    <div class="home-tab" data-tab="contacts">
-                        <i class="fas fa-user-friends"></i>
-                        <span>Контакты</span>
-                    </div>
-                </div>
-                
-                <div class="home-tab-content">
-                    <div class="home-tab-pane active" id="homeChatsPane">
-                        <!-- Список чатов на главном экране -->
-                        <div class="chats-list" id="homeChatsList"></div>
-                    </div>
-                    <div class="home-tab-pane" id="homeContactsPane">
-                        <!-- Поиск контактов -->
-                        <div class="search-container" style="margin-bottom: 15px; padding: 0 10px;">
-                            <div class="search-input-wrapper">
-                                <input type="text" id="homeContactsSearch" placeholder="Поиск контактов...">
-                                <div class="search-loading" id="homeContactsSearchLoading">
-                                    <div class="search-spinner"></div>
-                                </div>
-                            </div>
-                            <div class="search-results-container" id="homeContactsSearchResults">
-                                <!-- Результаты поиска -->
-                            </div>
-                        </div>
-                        <!-- Список контактов на главном экране -->
-                        <div class="contacts-list" id="homeContactsList"></div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Пустой экран для ПК (когда чат не выбран) -->
+            <!-- Пустой экран для ПК -->
             <div class="desktop-empty-screen" id="desktopEmptyScreen" style="display: none;">
                 <div class="desktop-empty-content">
                     <div class="desktop-empty-icon">
@@ -570,9 +423,7 @@
                 <!-- Заголовок чата для ПК -->
                 <div class="chat-header desktop" id="chatHeaderDesktop" style="display: none;">
                     <div class="desktop-chat-header">
-                        <div class="desktop-chat-avatar" id="desktopChatAvatar">
-                            #
-                        </div>
+                        <div class="desktop-chat-avatar" id="desktopChatAvatar">#</div>
                         <div class="desktop-chat-header-info">
                             <h2 class="desktop-chat-header-name" id="desktopChatHeaderName">Название чата</h2>
                             <p class="desktop-chat-header-description" id="desktopChatHeaderDescription">Описание чата</p>
@@ -580,18 +431,12 @@
                     </div>
                 </div>
                 
-                <div class="messages-container" id="messagesContainer">
-                    <!-- Сообщения будут добавляться через JS -->
-                </div>
+                <div class="messages-container" id="messagesContainer"></div>
                 
                 <!-- Поле ввода -->
                 <div class="chat-input-container" id="chatInputContainer">
-                    <!-- Контейнер для превью (над полем ввода) -->
                     <div class="preview-container">
-                        <!-- Превью ответа -->
                         <div class="reply-preview-container" id="replyPreviewContainer" style="display: none;"></div>
-                        
-                        <!-- Превью фото -->
                         <div class="photo-preview-container" id="photoPreviewContainer" style="display: none;">
                             <div class="photo-preview">
                                 <img id="photoPreview" src="" alt="Preview">
@@ -608,13 +453,29 @@
                                 <span class="photo-progress-text" id="photoProgressText">0%</span>
                             </div>
                         </div>
+                        <!-- Превью для файлов -->
+                        <div class="file-preview-container" id="filePreviewContainer" style="display: none;">
+                            <div class="file-preview">
+                                <i class="fas fa-file-alt"></i>
+                                <div class="file-preview-info">
+                                    <span id="filePreviewName"></span>
+                                    <span id="filePreviewSize"></span>
+                                </div>
+                                <button class="file-preview-remove" id="filePreviewRemove">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            <div class="file-progress" id="fileProgress" style="display: none;">
+                                <div class="file-progress-bar" id="fileProgressBar"></div>
+                                <span class="file-progress-text" id="fileProgressText">0%</span>
+                            </div>
+                        </div>
                     </div>
                     
-                    <!-- Область ввода (фиксированная высота) -->
                     <div class="chat-input-wrapper">
                         <div class="input-area">
-                            <button class="attach-btn" id="attachPhotoBtn" title="Прикрепить фото">
-                                <i class="fas fa-image"></i>
+                            <button class="attach-btn" id="attachBtn" title="Прикрепить">
+                                <i class="fas fa-paperclip"></i>
                             </button>
                             <textarea class="message-input" id="messageInput" placeholder="Напишите сообщение..." rows="1"></textarea>
                             <button class="send-btn" id="sendMessageBtn">
@@ -627,7 +488,27 @@
         </div>
     </div>
 
-    <!-- Модальные окна -->
+    <!-- Модальное окно выбора типа вложения -->
+    <div class="modal-overlay" id="attachTypeModal">
+        <div class="modal" style="max-width: 300px;">
+            <div class="modal-header">
+                <h3>Прикрепить</h3>
+                <button class="modal-close" id="closeAttachTypeModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" style="display: flex; flex-direction: column; gap: 10px;">
+                <button id="attachPhotoOptionBtn" class="btn btn-primary" style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+                    <i class="fas fa-image"></i> Фото
+                </button>
+                <button id="attachFileOptionBtn" class="btn btn-secondary" style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+                    <i class="fas fa-paperclip"></i> Файл
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальные окна (остальные) -->
     <div class="modal-overlay" id="createChatModal">
         <div class="modal">
             <div class="modal-header">
@@ -647,17 +528,14 @@
                         Личный чат
                     </div>
                 </div>
-                
                 <div class="form-group">
                     <label for="chatName">Название чата</label>
                     <input type="text" id="chatName" placeholder="Введите название">
                 </div>
-                
                 <div class="form-group" id="chatDescriptionGroup">
                     <label for="chatDescription">Описание чата</label>
                     <textarea id="chatDescription" rows="3" placeholder="Введите описание (необязательно)"></textarea>
                 </div>
-                
                 <div class="form-group" id="privateChatUser" style="display: none;">
                     <label for="privateUserId">ID пользователя</label>
                     <input type="text" id="privateUserId" placeholder="Введите ID пользователя для личного чата">
@@ -689,18 +567,8 @@
                                 <div class="search-spinner"></div>
                             </div>
                         </div>
-                        <div class="search-results-container" id="contactSearchResults">
-                            <!-- Результаты будут добавляться динамически -->
-                        </div>
+                        <div class="search-results-container" id="contactSearchResults"></div>
                     </div>
-                </div>
-
-                <div id="contactSearchHelp" style="margin-top: 20px; padding: 16px; background: rgba(59, 130, 246, 0.1); border-radius: 12px; border-left: 4px solid #3b82f6;">
-                    <h4 style="margin-bottom: 8px; color: #93c5fd;">Как найти пользователя?</h4>
-                    <p style="color: #cbd5e1; font-size: 14px; line-height: 1.5;">
-                        Вы можете искать пользователей по имени или их уникальному ID. 
-                        При вводе будут показываться подсказки с доступными пользователями.
-                    </p>
                 </div>
             </div>
             <div class="modal-footer">
@@ -719,15 +587,11 @@
                 </button>
             </div>
             <div class="modal-body">
-                <div class="profile-avatar-large" id="profileAvatarLarge">
-                    И
-                </div>
-                
+                <div class="profile-avatar-large" id="profileAvatarLarge">И</div>
                 <div class="profile-info">
                     <div class="profile-name" id="profileName">Иван</div>
                     <div class="profile-status online" id="profileStatus">online</div>
                 </div>
-                
                 <div class="user-id-container">
                     <span class="user-id-label">Ваш ID:</span>
                     <div class="user-id-value" id="profileUserId">user_123456</div>
@@ -735,22 +599,20 @@
                         <i class="fas fa-copy"></i>
                     </button>
                 </div>
-                
                 <div class="profile-details">
                     <div class="profile-detail">
                         <span class="detail-label">Контакты:</span>
-                        <span class="detail-value" id="profileContactsCount">5</span>
+                        <span class="detail-value" id="profileContactsCount">0</span>
                     </div>
                     <div class="profile-detail">
                         <span class="detail-label">Чатов:</span>
-                        <span class="detail-value" id="profileChatsCount">8</span>
+                        <span class="detail-value" id="profileChatsCount">0</span>
                     </div>
                     <div class="profile-detail">
                         <span class="detail-label">На Soul с:</span>
                         <span class="detail-value" id="profileJoinDate">01.01.2023</span>
                     </div>
                 </div>
-                
                 <button class="edit-profile-btn" id="editProfileBtn">
                     <i class="fas fa-edit"></i> Редактировать профиль
                 </button>
@@ -774,7 +636,6 @@
                     <label for="editProfileName">Имя</label>
                     <input type="text" id="editProfileName" placeholder="Введите ваше имя">
                 </div>
-                
                 <div class="form-group">
                     <label>Статус</label>
                     <div class="status-selector">
@@ -804,7 +665,6 @@
         </div>
     </div>
 
-    <!-- Модальное окно для просмотра фото -->
     <div class="modal-overlay photo-modal" id="photoViewModal">
         <div class="modal" style="background: transparent; border: none;">
             <button class="photo-modal-close" id="closePhotoModal">
@@ -814,9 +674,7 @@
         </div>
     </div>
 
-    <!-- Контекстное меню для сообщений -->
     <div class="message-context-menu" id="messageContextMenu">
-        <!-- Реакции (сверху) -->
         <div class="reactions-container">
             <div class="reaction-option" data-reaction="👍">👍</div>
             <div class="reaction-option" data-reaction="👎">👎</div>
@@ -836,7 +694,6 @@
         </div>
     </div>
 
-    <!-- Модальное окно подтверждения выхода из чата -->
     <div class="modal-overlay" id="confirmLeaveChatModal">
         <div class="modal">
             <div class="modal-header">
@@ -847,23 +704,15 @@
                     <i class="fas fa-door-open"></i>
                 </div>
                 <h4>Вы уверены, что хотите покинуть чат?</h4>
-                <p class="confirmation-message">
-                    После выхода вы больше не сможете отправлять сообщения в этот чат и видеть его историю.
-                    Это действие нельзя отменить.
-                </p>
+                <p class="confirmation-message">Это действие нельзя отменить.</p>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" id="cancelLeaveBtn">
-                    <i class="fas fa-times"></i> Отмена
-                </button>
-                <button class="btn btn-danger" id="confirmLeaveBtn">
-                    <i class="fas fa-sign-out-alt"></i> Покинуть чат
-                </button>
+                <button class="btn btn-secondary" id="cancelLeaveBtn">Отмена</button>
+                <button class="btn btn-danger" id="confirmLeaveBtn">Покинуть чат</button>
             </div>
         </div>
     </div>
     
-    <!-- Модальное окно подтверждения удаления сообщения -->
     <div class="modal-overlay" id="confirmDeleteMessageModal">
         <div class="modal">
             <div class="modal-header">
@@ -874,40 +723,28 @@
                     <i class="fas fa-trash-alt"></i>
                 </div>
                 <h4>Вы уверены, что хотите удалить это сообщение?</h4>
-                <p class="confirmation-message">
-                    Сообщение будет удалено безвозвратно. Это действие нельзя отменить.
-                </p>
-                <div class="message-preview" id="messagePreview">
-                    <!-- Здесь будет предпросмотр удаляемого сообщения -->
-                </div>
+                <div class="message-preview" id="messagePreview"></div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" id="cancelDeleteBtn">
-                    <i class="fas fa-times"></i> Отмена
-                </button>
-                <button class="btn btn-danger" id="confirmDeleteBtn">
-                    <i class="fas fa-trash"></i> Удалить
-                </button>
+                <button class="btn btn-secondary" id="cancelDeleteBtn">Отмена</button>
+                <button class="btn btn-danger" id="confirmDeleteBtn">Удалить</button>
             </div>
         </div>
     </div>
 
-    <!-- Админ-панель для управления галочками (видна только админам) -->
     <div class="admin-panel-btn" id="adminPanelBtn" style="display: none;">
         <i class="fas fa-crown"></i>
     </div>
     
-    <!-- Модальное окно админ-панели -->
     <div class="modal-overlay" id="adminPanelModal">
         <div class="modal admin-modal">
             <div class="modal-header">
-                <h3><i class="fas fa-crown" style="color: #fbbf24;"></i> Админ-панель управления галочками</h3>
+                <h3><i class="fas fa-crown"></i> Админ-панель</h3>
                 <button class="modal-close" id="closeAdminPanel">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
             <div class="modal-body">
-                <!-- Форма добавления галочки -->
                 <div class="admin-section">
                     <h4><i class="fas fa-plus-circle"></i> Выдать галочку</h4>
                     <div class="form-group">
@@ -917,33 +754,17 @@
                     <div class="form-group">
                         <label for="badgeType">Тип галочки</label>
                         <select id="badgeType" class="badge-select">
-                            <option value="admin">👑 Админ (фиолетовая)</option>
-                            <option value="premium">⭐ Премиум (синяя)</option>
-                            <option value="partner">🤝 Партнер (бирюзовая)</option>
-                            <option value="celebrity">🌟 Знаменитость (розовая)</option>
+                            <option value="admin">👑 Админ</option>
+                            <option value="premium">⭐ Премиум</option>
+                            <option value="partner">🤝 Партнер</option>
+                            <option value="celebrity">🌟 Знаменитость</option>
                         </select>
                     </div>
-                    <button class="btn btn-primary" id="giveBadgeBtn">
-                        <i class="fas fa-check-circle"></i> Выдать галочку
-                    </button>
+                    <button class="btn btn-primary" id="giveBadgeBtn">Выдать галочку</button>
                 </div>
-            
-                <!-- Список всех верифицированных пользователей -->
                 <div class="admin-section">
                     <h4><i class="fas fa-list"></i> Верифицированные пользователи</h4>
-                    <div class="verified-users-list" id="verifiedUsersList">
-                        <!-- Сюда будут загружаться пользователи -->
-                        <div class="loading-spinner"></div>
-                    </div>
-                </div>
-            
-                <!-- Поиск пользователей -->
-                <div class="admin-section">
-                    <h4><i class="fas fa-search"></i> Поиск пользователей</h4>
-                    <div class="form-group">
-                        <input type="text" id="adminUserSearch" placeholder="Введите имя или ID пользователя">
-                    </div>
-                    <div class="search-results-container" id="adminSearchResults"></div>
+                    <div class="verified-users-list" id="verifiedUsersList"></div>
                 </div>
             </div>
         </div>
