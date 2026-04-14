@@ -37,7 +37,7 @@ let messageListeners = {};
 let connectionCheckInterval = null;
 
 // ================================================
-// DOM ЭЛЕМЕНТЫ
+// ДОМ ЭЛЕМЕНТЫ
 // ================================================
 const authContainer = document.getElementById('authContainer');
 const mainContainer = document.getElementById('mainContainer');
@@ -198,6 +198,7 @@ const homeUserId = document.getElementById('homeUserId');
 const copyHomeIdBtn = document.getElementById('copyHomeIdBtn');
 const homeCreateChatBtn = document.getElementById('homeCreateChatBtn');
 const homeAddContactBtn = document.getElementById('homeAddContactBtn');
+const homeScreen = document.getElementById('homeScreen');
 
 // ================================================
 // ИНИЦИАЛИЗАЦИЯ
@@ -247,15 +248,45 @@ async function initializeApp() {
 // ================================================
 function setupAttachModal() {
     if (!attachBtn) return;
-    attachBtn.addEventListener('click', () => showAttachTypeModal());
-    if (closeAttachTypeModalBtn) closeAttachTypeModalBtn.addEventListener('click', () => closeAttachTypeModal());
-    if (attachPhotoOptionBtn) attachPhotoOptionBtn.addEventListener('click', () => { closeAttachTypeModal(); triggerPhotoUpload(); });
-    if (attachFileOptionBtn) attachFileOptionBtn.addEventListener('click', () => { closeAttachTypeModal(); triggerFileUpload(); });
-    if (attachTypeModal) attachTypeModal.addEventListener('click', (e) => { if (e.target === attachTypeModal) closeAttachTypeModal(); });
+    
+    attachBtn.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        showAttachTypeModal();
+    };
+    
+    if (closeAttachTypeModalBtn) {
+        closeAttachTypeModalBtn.onclick = () => closeAttachTypeModal();
+    }
+    
+    if (attachPhotoOptionBtn) {
+        attachPhotoOptionBtn.onclick = () => {
+            closeAttachTypeModal();
+            triggerPhotoUpload();
+        };
+    }
+    
+    if (attachFileOptionBtn) {
+        attachFileOptionBtn.onclick = () => {
+            closeAttachTypeModal();
+            triggerFileUpload();
+        };
+    }
+    
+    if (attachTypeModal) {
+        attachTypeModal.onclick = (e) => {
+            if (e.target === attachTypeModal) closeAttachTypeModal();
+        };
+    }
 }
 
-function showAttachTypeModal() { if (attachTypeModal) attachTypeModal.classList.add('active'); }
-function closeAttachTypeModal() { if (attachTypeModal) attachTypeModal.classList.remove('active'); }
+function showAttachTypeModal() { 
+    if (attachTypeModal) attachTypeModal.classList.add('active'); 
+}
+
+function closeAttachTypeModal() { 
+    if (attachTypeModal) attachTypeModal.classList.remove('active'); 
+}
 
 function triggerPhotoUpload() {
     const fileInput = document.createElement('input');
@@ -263,14 +294,19 @@ function triggerPhotoUpload() {
     fileInput.accept = 'image/*';
     fileInput.style.display = 'none';
     document.body.appendChild(fileInput);
-    fileInput.addEventListener('change', async (e) => {
+    
+    fileInput.onchange = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
         const MAX_SIZE = 20 * 1024 * 1024;
-        if (file.size > MAX_SIZE) { showNotification('❌ Файл слишком большой. Максимум: 20MB'); fileInput.remove(); return; }
+        if (file.size > MAX_SIZE) { 
+            showNotification('❌ Файл слишком большой. Максимум: 20MB'); 
+            fileInput.remove(); 
+            return; 
+        }
         showPhotoPreview(file);
         fileInput.remove();
-    });
+    };
     fileInput.click();
 }
 
@@ -279,21 +315,42 @@ function triggerFileUpload() {
     fileInput.type = 'file';
     fileInput.style.display = 'none';
     document.body.appendChild(fileInput);
-    fileInput.addEventListener('change', async (e) => {
+    
+    fileInput.onchange = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
         const MAX_SIZE = 20 * 1024 * 1024;
-        if (file.size > MAX_SIZE) { showNotification('❌ Файл слишком большой. Максимум: 20MB'); fileInput.remove(); return; }
+        if (file.size > MAX_SIZE) { 
+            showNotification('❌ Файл слишком большой. Максимум: 20MB'); 
+            fileInput.remove(); 
+            return; 
+        }
         showFilePreview(file);
         fileInput.remove();
-    });
+    };
     fileInput.click();
 }
 
 function setupPhotoUpload() {
-    if (photoPreviewRemove) photoPreviewRemove.addEventListener('click', () => clearPhotoPreview());
-    if (closePhotoModal) closePhotoModal.addEventListener('click', () => { if (photoViewModal) photoViewModal.classList.remove('active'); if (fullSizePhoto) fullSizePhoto.src = ''; });
-    if (photoViewModal) photoViewModal.addEventListener('click', (e) => { if (e.target === photoViewModal) { photoViewModal.classList.remove('active'); fullSizePhoto.src = ''; } });
+    if (photoPreviewRemove) {
+        photoPreviewRemove.onclick = () => clearPhotoPreview();
+    }
+    
+    if (closePhotoModal) {
+        closePhotoModal.onclick = () => { 
+            if (photoViewModal) photoViewModal.classList.remove('active'); 
+            if (fullSizePhoto) fullSizePhoto.src = ''; 
+        };
+    }
+    
+    if (photoViewModal) {
+        photoViewModal.onclick = (e) => { 
+            if (e.target === photoViewModal) { 
+                photoViewModal.classList.remove('active'); 
+                fullSizePhoto.src = ''; 
+            } 
+        };
+    }
 }
 
 function showPhotoPreview(file) {
@@ -301,8 +358,17 @@ function showPhotoPreview(file) {
     const reader = new FileReader();
     reader.onload = (e) => { if (photoPreview) photoPreview.src = e.target.result; };
     reader.readAsDataURL(file);
-    if (photoPreviewName) { const name = file.name.length > 25 ? file.name.substring(0, 22) + '...' : file.name; photoPreviewName.textContent = name; }
-    if (photoPreviewSize) { const size = (file.size / 1024).toFixed(1); photoPreviewSize.innerHTML = `<i class="fas fa-image"></i> ${size} KB`; }
+    
+    if (photoPreviewName) { 
+        const name = file.name.length > 25 ? file.name.substring(0, 22) + '...' : file.name; 
+        photoPreviewName.textContent = name; 
+    }
+    
+    if (photoPreviewSize) { 
+        const size = (file.size / 1024).toFixed(1); 
+        photoPreviewSize.innerHTML = `<i class="fas fa-image"></i> ${size} KB`; 
+    }
+    
     if (photoPreviewContainer) photoPreviewContainer.style.display = 'block';
 }
 
@@ -315,10 +381,22 @@ function clearPhotoPreview() {
     hidePhotoProgress();
 }
 
-function showPhotoProgress(percent) { if (photoProgress) { photoProgress.style.display = 'block'; if (photoProgressBar) photoProgressBar.style.width = percent + '%'; if (photoProgressText) photoProgressText.textContent = percent + '%'; } }
-function hidePhotoProgress() { if (photoProgress) photoProgress.style.display = 'none'; if (photoProgressBar) photoProgressBar.style.width = '0%'; }
+function showPhotoProgress(percent) { 
+    if (photoProgress) { 
+        photoProgress.style.display = 'block'; 
+        if (photoProgressBar) photoProgressBar.style.width = percent + '%'; 
+        if (photoProgressText) photoProgressText.textContent = percent + '%'; 
+    } 
+}
 
-function setupFileUpload() { if (filePreviewRemove) filePreviewRemove.addEventListener('click', () => clearFilePreview()); }
+function hidePhotoProgress() { 
+    if (photoProgress) photoProgress.style.display = 'none'; 
+    if (photoProgressBar) photoProgressBar.style.width = '0%'; 
+}
+
+function setupFileUpload() { 
+    if (filePreviewRemove) filePreviewRemove.onclick = () => clearFilePreview(); 
+}
 
 function showFilePreview(file) {
     selectedFile = file;
@@ -337,15 +415,27 @@ function clearFilePreview() {
     hideFileProgress();
 }
 
-function showFileProgress(percent) { if (fileProgress) { fileProgress.style.display = 'block'; if (fileProgressBar) fileProgressBar.style.width = percent + '%'; if (fileProgressText) fileProgressText.textContent = percent + '%'; } }
-function hideFileProgress() { if (fileProgress) fileProgress.style.display = 'none'; if (fileProgressBar) fileProgressBar.style.width = '0%'; }
+function showFileProgress(percent) { 
+    if (fileProgress) { 
+        fileProgress.style.display = 'block'; 
+        if (fileProgressBar) fileProgressBar.style.width = percent + '%'; 
+        if (fileProgressText) fileProgressText.textContent = percent + '%'; 
+    } 
+}
+
+function hideFileProgress() { 
+    if (fileProgress) fileProgress.style.display = 'none'; 
+    if (fileProgressBar) fileProgressBar.style.width = '0%'; 
+}
 
 function fileToBase64WithProgress(file, onProgress) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => resolve(reader.result);
         reader.onerror = reject;
-        reader.onprogress = (e) => { if (e.lengthComputable && onProgress) onProgress(e.loaded / e.total); };
+        reader.onprogress = (e) => { 
+            if (e.lengthComputable && onProgress) onProgress(e.loaded / e.total); 
+        };
         reader.readAsDataURL(file);
     });
 }
@@ -430,9 +520,20 @@ async function registerUser() {
     }
 }
 
-function showError(message) { if (authError) { authError.textContent = message; authError.classList.add('active'); } }
-function hideError() { if (authError) authError.classList.remove('active'); }
-function showSuccess() { if (authSuccess) authSuccess.classList.add('active'); }
+function showError(message) { 
+    if (authError) { 
+        authError.textContent = message; 
+        authError.classList.add('active'); 
+    } 
+}
+
+function hideError() { 
+    if (authError) authError.classList.remove('active'); 
+}
+
+function showSuccess() { 
+    if (authSuccess) authSuccess.classList.add('active'); 
+}
 
 function getAuthErrorMessage(error) {
     const messages = { 
@@ -471,6 +572,7 @@ async function loadUserData(userId) {
         cleanupListeners();
         const userRef = database.ref(`users/${userId}`);
         const snapshot = await userRef.once('value');
+        
         if (snapshot.exists()) {
             currentUser = { uid: userId, ...snapshot.val() };
             await userRef.update({ lastActive: Date.now() });
@@ -534,6 +636,7 @@ function setupVerifiedUsersListener() {
     if (!currentUser) return;
     const verifiedRef = database.ref('verifiedUsers');
     if (verifiedUsersListener) verifiedRef.off('value', verifiedUsersListener);
+    
     verifiedUsersListener = verifiedRef.on('value', (snapshot) => { 
         verifiedUsers = snapshot.val() || {}; 
         updateAdminButtonVisibility(); 
@@ -548,7 +651,9 @@ function setupVerifiedUsersListener() {
 }
 
 function updateAdminButtonVisibility() { 
-    if (adminPanelBtn) adminPanelBtn.style.display = (currentUser && verifiedUsers && verifiedUsers[currentUser.uid] && verifiedUsers[currentUser.uid].type === 'admin') ? 'flex' : 'none'; 
+    if (adminPanelBtn) {
+        adminPanelBtn.style.display = (currentUser && verifiedUsers && verifiedUsers[currentUser.uid] && verifiedUsers[currentUser.uid].type === 'admin') ? 'flex' : 'none';
+    }
 }
 
 function getVerifiedBadge(userId) {
@@ -564,9 +669,17 @@ function getVerifiedBadge(userId) {
 }
 
 function cleanupListeners() {
-    if (contactsListener && currentUser) database.ref(`users/${currentUser.uid}/contacts`).off('value', contactsListener);
-    if (chatsListener) database.ref('chats').off('value', chatsListener);
-    Object.values(messageListeners).forEach(fn => { if (typeof fn === 'function') fn(); });
+    if (contactsListener && currentUser) {
+        database.ref(`users/${currentUser.uid}/contacts`).off('value', contactsListener);
+        contactsListener = null;
+    }
+    if (chatsListener) {
+        database.ref('chats').off('value', chatsListener);
+        chatsListener = null;
+    }
+    Object.values(messageListeners).forEach(fn => { 
+        if (typeof fn === 'function') fn(); 
+    });
     messageListeners = {};
 }
 
@@ -574,19 +687,31 @@ function setupContactsListener() {
     if (!currentUser) return;
     const contactsRef = database.ref(`users/${currentUser.uid}/contacts`);
     if (contactsListener) contactsRef.off('value', contactsListener);
-    contactsListener = contactsRef.on('value', (snapshot) => { updateContactsList(snapshot); updateContactsDisplay(); });
+    
+    contactsListener = contactsRef.on('value', (snapshot) => { 
+        updateContactsList(snapshot); 
+        updateContactsDisplay(); 
+    });
 }
 
 function setupChatsListener() {
     if (!currentUser) return;
     const chatsRef = database.ref('chats');
     if (chatsListener) chatsRef.off('value', chatsListener);
-    chatsListener = chatsRef.orderByChild(`members/${currentUser.uid}`).equalTo(true).on('value', (snapshot) => { updateChatsList(snapshot); updateChatsDisplay(); });
+    
+    chatsListener = chatsRef.orderByChild(`members/${currentUser.uid}`).equalTo(true).on('value', (snapshot) => { 
+        updateChatsList(snapshot); 
+        updateChatsDisplay(); 
+    });
 }
 
 function updateContactsList(snapshot) {
     const contactsData = snapshot.val();
-    if (!contactsData || typeof contactsData !== 'object') { contacts = []; return; }
+    if (!contactsData || typeof contactsData !== 'object') { 
+        contacts = []; 
+        return; 
+    }
+    
     contacts = Object.keys(contactsData).map(userId => {
         const contactData = contactsData[userId];
         const user = allUsers[userId];
@@ -642,6 +767,7 @@ function searchUsers(query, currentContacts = []) {
     query = query.toLowerCase().trim();
     if (!query) return [];
     const results = [];
+    
     for (const userId in allUsers) {
         if (userId === currentUser?.uid) continue;
         const user = allUsers[userId];
@@ -656,6 +782,7 @@ function searchUsers(query, currentContacts = []) {
             });
         }
     }
+    
     results.sort((a, b) => { 
         if (a.status === 'online' && b.status !== 'online') return -1; 
         if (a.status !== 'online' && b.status === 'online') return 1; 
@@ -668,11 +795,13 @@ function displaySearchResults(results, containerId, currentContacts = []) {
     const container = document.getElementById(containerId);
     if (!container) return;
     container.innerHTML = '';
+    
     if (!results.length) { 
         container.innerHTML = `<div class="no-search-results"><i class="fas fa-user-friends"></i><p>Пользователи не найдены</p></div>`; 
         container.classList.add('active'); 
         return; 
     }
+    
     results.forEach(result => {
         const div = document.createElement('div');
         div.className = 'search-result-item';
@@ -684,19 +813,23 @@ function displaySearchResults(results, containerId, currentContacts = []) {
                 <div class="search-result-status ${result.status}">${result.status}</div>
             </div>
             <button class="add-user-btn" ${result.isContact ? 'disabled' : ''}>${result.isContact ? 'В контактах ✓' : 'Добавить'}</button>`;
+        
         const btn = div.querySelector('.add-user-btn');
-        if (!result.isContact) btn.addEventListener('click', async (e) => { 
-            e.stopPropagation(); 
-            await addContact(result.customId); 
-            displaySearchResults(searchUsers(contactSearch?.value || '', currentContacts), containerId, currentContacts); 
-        });
-        div.addEventListener('click', () => { 
+        if (!result.isContact) {
+            btn.onclick = async (e) => { 
+                e.stopPropagation(); 
+                await addContact(result.customId); 
+                displaySearchResults(searchUsers(contactSearch?.value || '', currentContacts), containerId, currentContacts); 
+            };
+        }
+        
+        div.onclick = () => { 
             if (result.isContact) { 
                 openOrCreatePrivateChat(result.userId); 
                 const modal = document.getElementById('addContactModal'); 
                 if (modal) modal.classList.remove('active'); 
             } 
-        });
+        };
         container.appendChild(div);
     });
     container.classList.add('active');
@@ -717,6 +850,7 @@ async function sendMessage() {
     if (selectedFile) { await sendFile(); return; }
     const text = messageInput?.value.trim();
     if (!text || !currentChatId) return;
+    
     try {
         const wasNearBottom = isUserNearBottom();
         const newMessage = { 
@@ -726,6 +860,7 @@ async function sendMessage() {
             timestamp: Date.now(), 
             type: "text" 
         };
+        
         if (replyToMessage && replyToMessage.id) {
             try { 
                 const replyRef = database.ref(`messages/${currentChatId}/${replyToMessage.id}`); 
@@ -748,10 +883,12 @@ async function sendMessage() {
                 }; 
             }
         }
+        
         if (messageInput) messageInput.value = '';
         hideReplyPreview();
         replyToMessage = null;
         if (isMobile && messageInput) messageInput.blur();
+        
         await database.ref(`messages/${currentChatId}`).push(newMessage);
         await database.ref(`chats/${currentChatId}`).update({ 
             lastMessage: { 
@@ -762,6 +899,7 @@ async function sendMessage() {
             }, 
             updatedAt: Date.now() 
         });
+        
         if (wasNearBottom) setTimeout(() => scrollToLastMessage('smooth'), 100); 
         else showScrollToBottomButton();
     } catch (error) { 
@@ -779,6 +917,7 @@ async function sendPhoto() {
         const optimized = await optimizeImage(base64, 1024, 1024);
         showPhotoProgress(70);
         const wasNearBottom = isUserNearBottom();
+        
         const msg = { 
             text: `📸 ${selectedPhoto.name}`, 
             senderId: currentUser.uid, 
@@ -789,6 +928,7 @@ async function sendPhoto() {
             photoName: selectedPhoto.name, 
             photoSize: selectedPhoto.size 
         };
+        
         if (replyToMessage && replyToMessage.id) { 
             try { 
                 const r = await database.ref(`messages/${currentChatId}/${replyToMessage.id}`).once('value'); 
@@ -800,12 +940,14 @@ async function sendPhoto() {
                 }; 
             } catch(e) {} 
         }
+        
         await database.ref(`messages/${currentChatId}`).push(msg);
         showPhotoProgress(100);
         await database.ref(`chats/${currentChatId}`).update({ 
             lastMessage: { text: '📸 Фото', timestamp: Date.now(), senderId: currentUser.uid, type: 'photo' }, 
             updatedAt: Date.now() 
         });
+        
         clearPhotoPreview(); 
         hideReplyPreview(); 
         replyToMessage = null;
@@ -824,6 +966,7 @@ async function sendFile() {
         showFileProgress(0);
         const base64 = await fileToBase64WithProgress(selectedFile, p => showFileProgress(Math.round(p * 100)));
         const wasNearBottom = isUserNearBottom();
+        
         const msg = { 
             text: `📎 ${selectedFile.name}`, 
             senderId: currentUser.uid, 
@@ -835,6 +978,7 @@ async function sendFile() {
             fileSize: selectedFile.size, 
             fileType: selectedFile.type || 'application/octet-stream' 
         };
+        
         if (replyToMessage && replyToMessage.id) { 
             try { 
                 const r = await database.ref(`messages/${currentChatId}/${replyToMessage.id}`).once('value'); 
@@ -846,11 +990,13 @@ async function sendFile() {
                 }; 
             } catch(e) {} 
         }
+        
         await database.ref(`messages/${currentChatId}`).push(msg);
         await database.ref(`chats/${currentChatId}`).update({ 
             lastMessage: { text: `📎 Файл: ${selectedFile.name}`, timestamp: Date.now(), senderId: currentUser.uid, type: 'file' }, 
             updatedAt: Date.now() 
         });
+        
         clearFilePreview(); 
         hideReplyPreview(); 
         replyToMessage = null;
@@ -908,6 +1054,7 @@ function createMessageElement(message) {
     let senderName = message.senderName || "Пользователь";
     if (allUsers[message.senderId]) senderName = allUsers[message.senderId].displayName;
     let replyHtml = '';
+    
     if (message.replyTo) {
         let repliedName = message.replyTo.senderName || "Пользователь";
         if (message.replyTo.senderId && allUsers[message.replyTo.senderId]) repliedName = allUsers[message.replyTo.senderId].displayName;
@@ -916,8 +1063,12 @@ function createMessageElement(message) {
             <div class="reply-text">${escapeHtml(message.replyTo.text || 'Сообщение удалено')}</div>
         </div>`;
     }
+    
     let photoHtml = '', fileHtml = '';
-    if (message.type === 'photo' && message.photo) photoHtml = `<img src="${message.photo}" class="message-photo" alt="Photo" onclick="window.showFullPhoto && showFullPhoto('${message.photo}')">`;
+    if (message.type === 'photo' && message.photo) {
+        photoHtml = `<img src="${message.photo}" class="message-photo" alt="Photo" onclick="window.showFullPhoto && showFullPhoto('${message.photo}')">`;
+    }
+    
     if (message.type === 'file' && message.fileData) {
         const icon = getFileIcon(message.fileName);
         const size = (message.fileSize / 1024).toFixed(1);
@@ -930,6 +1081,7 @@ function createMessageElement(message) {
             <i class="fas fa-download"></i>
         </div>`;
     }
+    
     div.innerHTML = `<div class="message-avatar">${escapeHtml(senderName.charAt(0))}</div>
         <div class="message-content">
             <div class="message-sender">
@@ -941,14 +1093,17 @@ function createMessageElement(message) {
             ${fileHtml}
             ${message.type !== 'photo' && message.type !== 'file' ? `<div class="message-text">${escapeHtml(message.text)}</div>` : ''}
         </div>`;
+    
     div.addEventListener('dblclick', (e) => { 
         if (!e.target.closest('.message-reactions') && !e.target.closest('.reaction-badge') && !e.target.closest('.message-photo') && !e.target.closest('.message-file') && currentChatId && message.id) 
             toggleReaction(message.id, '❤️'); 
     });
+    
     div.addEventListener('contextmenu', (e) => { 
         e.preventDefault(); 
         showMessageContextMenu(e, message, isOutgoing); 
     });
+    
     const replyDiv = div.querySelector('.message-reply');
     if (replyDiv) replyDiv.addEventListener('click', () => scrollToMessage(replyDiv.dataset.replyTo));
     return div;
@@ -957,15 +1112,19 @@ function createMessageElement(message) {
 function loadMessages(chatId) {
     if (!messagesContainer) return;
     messagesContainer.innerHTML = '';
+    
     database.ref(`messages/${chatId}`).orderByChild('timestamp').once('value').then(snapshot => {
         const data = snapshot.val();
         if (data) {
-            Object.values(data).forEach((msg, i) => { 
-                const el = createMessageElement({ id: Object.keys(data)[i], ...msg }); 
-                messagesContainer.appendChild(el); 
+            const messagesArray = Object.keys(data).map(key => ({ id: key, ...data[key] }));
+            messagesArray.sort((a, b) => a.timestamp - b.timestamp);
+            messagesArray.forEach(message => {
+                messagesContainer.appendChild(createMessageElement(message));
             });
             setTimeout(() => scrollToLastMessage('auto'), 100);
-        } else messagesContainer.innerHTML = '<div class="empty-state"><i class="fas fa-comments"></i><h3>Нет сообщений</h3><p>Напишите первое сообщение!</p></div>';
+        } else {
+            messagesContainer.innerHTML = '<div class="empty-state"><i class="fas fa-comments"></i><h3>Нет сообщений</h3><p>Напишите первое сообщение!</p></div>';
+        }
     });
     listenToNewMessages(chatId);
     setupScrollListener();
@@ -973,6 +1132,7 @@ function loadMessages(chatId) {
 
 function listenToNewMessages(chatId) {
     if (messageListeners[chatId]) database.ref(`messages/${chatId}`).off('child_added');
+    
     messageListeners[chatId] = database.ref(`messages/${chatId}`).orderByChild('timestamp').startAt(Date.now()).on('child_added', snapshot => {
         const msg = { id: snapshot.key, ...snapshot.val() };
         if (!document.querySelector(`[data-message-id="${msg.id}"]`)) {
@@ -990,12 +1150,15 @@ function showMessageContextMenu(e, message, isOutgoing) {
     messageContextMenu.style.left = e.clientX + 'px';
     messageContextMenu.style.top = e.clientY + 'px';
     messageContextMenu.classList.add('active');
-    setTimeout(() => document.addEventListener('click', function closeMenu(ev) { 
-        if (!messageContextMenu.contains(ev.target)) { 
-            messageContextMenu.classList.remove('active'); 
-            document.removeEventListener('click', closeMenu); 
-        } 
-    }), 10);
+    
+    setTimeout(() => {
+        document.addEventListener('click', function closeMenu(ev) { 
+            if (!messageContextMenu.contains(ev.target)) { 
+                messageContextMenu.classList.remove('active'); 
+                document.removeEventListener('click', closeMenu); 
+            } 
+        });
+    }, 10);
 }
 
 function isUserNearBottom() {
@@ -1027,13 +1190,16 @@ function createScrollToBottomButton() {
     document.body.appendChild(btn); 
     scrollBtn = btn; 
 }
+
 function showScrollToBottomButton() { 
     if (!scrollBtn) createScrollToBottomButton(); 
     if (scrollBtn) scrollBtn.classList.add('visible'); 
 }
+
 function hideScrollToBottomButton() { 
     if (scrollBtn) scrollBtn.classList.remove('visible'); 
 }
+
 function setupScrollListener() { 
     if (!messagesContainer) return; 
     messagesContainer.onscroll = () => { 
@@ -1051,12 +1217,14 @@ function openChat(chatId) {
     currentChatId = chatId;
     replyToMessage = null;
     hideReplyPreview();
+    
     if (isMobile) { 
         if (chatScreen) { 
             chatScreen.style.display = 'flex'; 
             chatScreen.classList.add('mobile'); 
         } 
         if (desktopEmptyScreen) desktopEmptyScreen.style.display = 'none'; 
+        if (homeScreen) homeScreen.style.display = 'none';
     } else { 
         if (desktopEmptyScreen) desktopEmptyScreen.style.display = 'none'; 
         if (chatScreen) { 
@@ -1067,6 +1235,7 @@ function openChat(chatId) {
         const a = document.querySelector(`.desktop-chat-item[data-chat-id="${chatId}"]`); 
         if (a) a.classList.add('active'); 
     }
+    
     let name, desc, avatar, badge = '';
     if (chat.type === 'private') {
         const otherId = Object.keys(chat.members).find(id => id !== currentUser?.uid);
@@ -1080,6 +1249,7 @@ function openChat(chatId) {
         desc = chat.description || "Групповой чат"; 
         avatar = '<i class="fas fa-users"></i>'; 
     }
+    
     if (isMobile) { 
         if (chatHeaderName) chatHeaderName.innerHTML = `<span class="chat-header-name-with-badge">${escapeHtml(name)} ${badge}</span>`; 
         if (chatHeaderDescription) chatHeaderDescription.textContent = desc; 
@@ -1106,16 +1276,21 @@ function updateChatHeader() {
     if (!chat || chat.type !== 'private') return;
     const otherId = Object.keys(chat.members).find(id => id !== currentUser?.uid);
     const other = allUsers[otherId];
-    if (other && isMobile && chatHeaderName) chatHeaderName.innerHTML = `<span class="chat-header-name-with-badge">${escapeHtml(other.displayName)} ${getVerifiedBadge(otherId)}</span>`;
-    else if (other && desktopChatHeaderName) desktopChatHeaderName.innerHTML = `<span class="chat-header-name-with-badge">${escapeHtml(other.displayName)} ${getVerifiedBadge(otherId)}</span>`;
+    if (other && isMobile && chatHeaderName) {
+        chatHeaderName.innerHTML = `<span class="chat-header-name-with-badge">${escapeHtml(other.displayName)} ${getVerifiedBadge(otherId)}</span>`;
+    } else if (other && desktopChatHeaderName) {
+        desktopChatHeaderName.innerHTML = `<span class="chat-header-name-with-badge">${escapeHtml(other.displayName)} ${getVerifiedBadge(otherId)}</span>`;
+    }
 }
 
 function showHomeScreen() {
     currentChatId = null;
     replyToMessage = null;
     hideReplyPreview();
+    
     if (isMobile) { 
         if (chatScreen) chatScreen.style.display = 'none'; 
+        if (homeScreen) homeScreen.style.display = 'block';
     } else { 
         if (chatScreen) chatScreen.style.display = 'none'; 
         if (desktopEmptyScreen) desktopEmptyScreen.style.display = 'flex'; 
@@ -1129,6 +1304,7 @@ async function openOrCreatePrivateChat(targetUserId) {
         if (existing) { openChat(existing); return; }
         const target = allUsers[targetUserId];
         if (!target) { showNotification("Пользователь не найден"); return; }
+        
         const newChat = { 
             name: `${currentUser.displayName} и ${target.displayName}`, 
             type: 'private', 
@@ -1148,7 +1324,11 @@ async function openOrCreatePrivateChat(targetUserId) {
 async function findExistingPrivateChat(targetUserId) {
     const snap = await database.ref('chats').orderByChild('type').equalTo('private').once('value');
     const data = snap.val();
-    if (data) for (const id in data) if (data[id].members?.[currentUser.uid] && data[id].members?.[targetUserId]) return id;
+    if (data) {
+        for (const id in data) {
+            if (data[id].members?.[currentUser.uid] && data[id].members?.[targetUserId]) return id;
+        }
+    }
     return null;
 }
 
@@ -1158,13 +1338,17 @@ async function createNewChat() {
     try {
         if (selectedChatType !== 'private' && !name) { showNotification("Введите название"); return; }
         let newChat;
+        
         if (selectedChatType === 'private') {
             const customId = privateUserId?.value.trim();
             if (!customId) { showNotification("Введите ID"); return; }
             let target = null, targetId = null;
-            for (const id in allUsers) if (allUsers[id].customId === customId) { target = allUsers[id]; targetId = id; break; }
+            for (const id in allUsers) {
+                if (allUsers[id].customId === customId) { target = allUsers[id]; targetId = id; break; }
+            }
             if (!target) { showNotification("Пользователь не найден"); return; }
             if (targetId === currentUser.uid) { showNotification("Нельзя с самим собой"); return; }
+            
             const existing = await findExistingPrivateChat(targetId);
             if (existing) { 
                 if (createChatModal) createChatModal.classList.remove('active'); 
@@ -1207,10 +1391,16 @@ function resetCreateForm() {
     if (privateUserId) privateUserId.value = '';
     if (privateUserSearchResults) privateUserSearchResults.innerHTML = '';
     selectedChatType = 'group';
-    chatTypeOptions.forEach(opt => { opt.classList.remove('active'); if (opt.dataset.type === 'group') opt.classList.add('active'); });
+    chatTypeOptions.forEach(opt => { 
+        opt.classList.remove('active'); 
+        if (opt.dataset.type === 'group') opt.classList.add('active'); 
+    });
     if (chatDescriptionGroup) chatDescriptionGroup.style.display = 'block';
     if (privateChatUser) privateChatUser.style.display = 'none';
-    if (chatNameInput) { chatNameInput.disabled = false; chatNameInput.placeholder = "Введите название"; }
+    if (chatNameInput) { 
+        chatNameInput.disabled = false; 
+        chatNameInput.placeholder = "Введите название"; 
+    }
 }
 
 // ================================================
@@ -1219,10 +1409,13 @@ function resetCreateForm() {
 async function addContact(targetCustomId) {
     try {
         let targetId = null, targetUser = null;
-        for (const id in allUsers) if (allUsers[id].customId === targetCustomId) { targetUser = allUsers[id]; targetId = id; break; }
+        for (const id in allUsers) {
+            if (allUsers[id].customId === targetCustomId) { targetUser = allUsers[id]; targetId = id; break; }
+        }
         if (!targetUser) { showNotification("Пользователь не найден"); return; }
         if (targetId === currentUser.uid) { showNotification("Нельзя добавить себя"); return; }
         if (contacts.some(c => c.userId === targetId)) { showNotification("Уже в контактах"); return; }
+        
         await database.ref(`users/${currentUser.uid}/contacts/${targetId}`).set({ 
             displayName: targetUser.displayName, 
             customId: targetUser.customId, 
@@ -1245,7 +1438,8 @@ function updateHomeChats() {
     homeChatsList.innerHTML = '';
     if (!chats.length) { 
         homeChatsList.innerHTML = '<div class="empty-state"><i class="fas fa-comments"></i><h3>Чатов пока нет</h3><p>Создайте первый чат</p><button class="action-btn" id="createFirstChatBtn"><i class="fas fa-plus-circle"></i> Создать чат</button></div>'; 
-        document.getElementById('createFirstChatBtn')?.addEventListener('click', () => { if (createChatModal) createChatModal.classList.add('active'); }); 
+        const btn = document.getElementById('createFirstChatBtn');
+        if (btn) btn.onclick = () => { if (createChatModal) createChatModal.classList.add('active'); };
         return; 
     }
     chats.forEach(chat => homeChatsList.appendChild(createChatElement(chat)));
@@ -1269,6 +1463,7 @@ function createChatElement(chat) {
     div.className = 'chat-item';
     div.dataset.chatId = chat.id;
     let avatar, name;
+    
     if (chat.type === 'group') { 
         avatar = '<i class="fas fa-users"></i>'; 
         name = chat.name; 
@@ -1278,12 +1473,14 @@ function createChatElement(chat) {
         avatar = other ? other.displayName.charAt(0) : '?'; 
         name = other ? other.displayName : "Неизвестный"; 
     }
+    
     let lastMsg = "Нет сообщений", lastTime = "";
     if (chat.lastMessage) { 
         lastMsg = chat.lastMessage.type === 'photo' ? '📸 Фото' : (chat.lastMessage.type === 'file' ? '📎 Файл' : (chat.lastMessage.text || "Сообщение")); 
         if (lastMsg.length > 30) lastMsg = lastMsg.substring(0, 30) + '...'; 
         if (chat.lastMessage.timestamp) lastTime = new Date(chat.lastMessage.timestamp).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }); 
     }
+    
     div.innerHTML = `<div class="chat-avatar ${chat.type === 'group' ? 'group-avatar' : 'private-avatar'}">${avatar}</div>
         <div class="chat-info">
             <div class="chat-name">${escapeHtml(name)}</div>
@@ -1328,6 +1525,7 @@ function createDesktopChatElement(chat) {
     div.dataset.chatId = chat.id;
     if (currentChatId === chat.id) div.classList.add('active');
     let avatar, name;
+    
     if (chat.type === 'group') { 
         avatar = '<i class="fas fa-users"></i>'; 
         name = chat.name; 
@@ -1337,12 +1535,14 @@ function createDesktopChatElement(chat) {
         avatar = other ? other.displayName.charAt(0) : '?'; 
         name = other ? other.displayName : "Неизвестный"; 
     }
+    
     let lastMsg = "Нет сообщений", lastTime = "";
     if (chat.lastMessage) { 
         lastMsg = chat.lastMessage.type === 'photo' ? '📸 Фото' : (chat.lastMessage.type === 'file' ? '📎 Файл' : (chat.lastMessage.text || "Сообщение")); 
         if (lastMsg.length > 30) lastMsg = lastMsg.substring(0, 30) + '...'; 
         if (chat.lastMessage.timestamp) lastTime = new Date(chat.lastMessage.timestamp).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }); 
     }
+    
     div.innerHTML = `<div class="desktop-chat-avatar" style="background: ${chat.type === 'group' ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #3b82f6, #1d4ed8)'}">${avatar}</div>
         <div class="desktop-chat-info">
             <div class="desktop-chat-name">${escapeHtml(name)}</div>
@@ -1396,6 +1596,7 @@ function createMobileChatElement(chat) {
     div.className = 'mobile-chat-item';
     div.dataset.chatId = chat.id;
     let avatar, name;
+    
     if (chat.type === 'group') { 
         avatar = '<i class="fas fa-users"></i>'; 
         name = chat.name; 
@@ -1405,12 +1606,14 @@ function createMobileChatElement(chat) {
         avatar = other ? other.displayName.charAt(0) : '?'; 
         name = other ? other.displayName : "Неизвестный"; 
     }
+    
     let lastMsg = "Нет сообщений", lastTime = "";
     if (chat.lastMessage) { 
         lastMsg = chat.lastMessage.type === 'photo' ? '📸 Фото' : (chat.lastMessage.type === 'file' ? '📎 Файл' : (chat.lastMessage.text || "Сообщение")); 
         if (lastMsg.length > 30) lastMsg = lastMsg.substring(0, 30) + '...'; 
         if (chat.lastMessage.timestamp) lastTime = new Date(chat.lastMessage.timestamp).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }); 
     }
+    
     div.innerHTML = `<div class="mobile-chat-avatar ${chat.type === 'group' ? 'group' : 'private'}">${avatar}</div>
         <div class="mobile-chat-info">
             <div class="mobile-chat-name">${escapeHtml(name)}</div>
@@ -1675,6 +1878,7 @@ function initMobileInterface() {
     if (mobileContainer) mobileContainer.style.display = 'flex'; 
     if (desktopSidebar) desktopSidebar.style.display = 'none'; 
     if (desktopEmptyScreen) desktopEmptyScreen.style.display = 'none'; 
+    if (homeScreen) homeScreen.style.display = 'none';
     updateMobileChats(); 
     updateMobileContacts(); 
     updateMobileProfile(); 
@@ -1687,6 +1891,7 @@ function initMobileInterface() {
 function initDesktopInterface() { 
     if (desktopSidebar) desktopSidebar.style.display = 'flex'; 
     if (mobileContainer) mobileContainer.style.display = 'none'; 
+    if (homeScreen) homeScreen.style.display = 'none';
     updateDesktopUserInfo(); 
     if (currentChatId) { 
         if (desktopEmptyScreen) desktopEmptyScreen.style.display = 'none'; 
@@ -1712,19 +1917,50 @@ function initializeInterface() {
     updateMobileChats(); 
     updateMobileContacts(); 
     updateMobileProfile(); 
+    
+    if (homeTabs.length) {
+        homeTabs.forEach(tab => {
+            tab.onclick = function() {
+                const tabName = this.dataset.tab;
+                homeTabs.forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+                document.querySelectorAll('.home-tab-pane').forEach(pane => pane.classList.remove('active'));
+                const paneId = `home${tabName.charAt(0).toUpperCase() + tabName.slice(1)}Pane`;
+                const activePane = document.getElementById(paneId);
+                if (activePane) activePane.classList.add('active');
+            };
+        });
+        if (homeTabs[0]) homeTabs[0].click();
+    }
+    
+    if (desktopSidebarTabs.length) {
+        desktopSidebarTabs.forEach(tab => {
+            tab.onclick = function() {
+                const tabName = this.dataset.tab;
+                desktopSidebarTabs.forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+                if (desktopChatsList) desktopChatsList.style.display = tabName === 'chats' ? 'flex' : 'none';
+                if (desktopContactsList) desktopContactsList.style.display = tabName === 'contacts' ? 'flex' : 'none';
+            };
+        });
+        if (desktopSidebarTabs[0]) desktopSidebarTabs[0].click();
+    }
+    
     if (isMobile) initMobileInterface(); 
     else initDesktopInterface(); 
 }
 
 function setupMobileInterface() {
-    if (mobileNavItems.length) mobileNavItems.forEach(item => { 
-        item.onclick = () => { 
-            mobileNavItems.forEach(n => n.classList.remove('active')); 
-            item.classList.add('active'); 
-            mobileTabs.forEach(t => t.classList.remove('active')); 
-            document.getElementById(`mobile${item.dataset.tab.charAt(0).toUpperCase() + item.dataset.tab.slice(1)}Tab`)?.classList.add('active'); 
-        }; 
-    });
+    if (mobileNavItems.length) {
+        mobileNavItems.forEach(item => { 
+            item.onclick = () => { 
+                mobileNavItems.forEach(n => n.classList.remove('active')); 
+                item.classList.add('active'); 
+                mobileTabs.forEach(t => t.classList.remove('active')); 
+                document.getElementById(`mobile${item.dataset.tab.charAt(0).toUpperCase() + item.dataset.tab.slice(1)}Tab`)?.classList.add('active'); 
+            }; 
+        });
+    }
     
     if (mobileCreateFAB) mobileCreateFAB.onclick = () => { if (mobileCreateModal) mobileCreateModal.classList.add('active'); };
     if (mobileCloseCreateModal) mobileCloseCreateModal.onclick = () => { if (mobileCreateModal) mobileCreateModal.classList.remove('active'); };
@@ -1744,102 +1980,117 @@ function setupMobileInterface() {
     });
     
     const privateInput = document.getElementById('mobilePrivateUserId');
-    if (privateInput) privateInput.oninput = function() { 
-        clearTimeout(searchTimeouts.mobile); 
-        const q = this.value.trim(); 
-        const resDiv = document.getElementById('mobilePrivateSearchResults'); 
-        const btn = document.getElementById('mobileCreatePrivateBtn'); 
-        if (q.length < 1) { if (resDiv) resDiv.innerHTML = ''; if (btn) btn.disabled = true; return; } 
-        searchTimeouts.mobile = setTimeout(() => { 
-            const results = []; 
-            for (const id in allUsers) { 
-                if (id !== currentUser?.uid) { 
-                    const u = allUsers[id]; 
-                    if (u.displayName?.toLowerCase().includes(q.toLowerCase()) || u.customId?.toLowerCase().includes(q.toLowerCase())) results.push(u); 
+    if (privateInput) {
+        privateInput.oninput = function() { 
+            clearTimeout(searchTimeouts.mobile); 
+            const q = this.value.trim(); 
+            const resDiv = document.getElementById('mobilePrivateSearchResults'); 
+            const btn = document.getElementById('mobileCreatePrivateBtn'); 
+            if (q.length < 1) { if (resDiv) resDiv.innerHTML = ''; if (btn) btn.disabled = true; return; } 
+            searchTimeouts.mobile = setTimeout(() => { 
+                const results = []; 
+                for (const id in allUsers) { 
+                    if (id !== currentUser?.uid) { 
+                        const u = allUsers[id]; 
+                        if (u.displayName?.toLowerCase().includes(q.toLowerCase()) || u.customId?.toLowerCase().includes(q.toLowerCase())) results.push(u); 
+                    } 
                 } 
-            } 
-            if (resDiv) resDiv.innerHTML = results.slice(0,5).map(u => `<div class="mobile-search-result-item" data-custom-id="${u.customId}">
-                <div class="mobile-search-result-avatar">${escapeHtml(u.displayName.charAt(0))}</div>
-                <div class="mobile-search-result-info">
-                    <div class="mobile-search-result-name">${escapeHtml(u.displayName)}</div>
-                    <div class="mobile-search-result-id">${u.customId}</div>
-                </div>
-            </div>`).join(''); 
-            if (btn) btn.disabled = false; 
-            document.querySelectorAll('.mobile-search-result-item').forEach(el => { 
-                el.onclick = () => { 
-                    privateInput.value = el.dataset.customId; 
-                    if (resDiv) resDiv.innerHTML = ''; 
-                    if (btn) btn.disabled = false; 
-                }; 
-            }); 
-        }, 300); 
-    };
+                if (resDiv) resDiv.innerHTML = results.slice(0,5).map(u => `<div class="mobile-search-result-item" data-custom-id="${u.customId}">
+                    <div class="mobile-search-result-avatar">${escapeHtml(u.displayName.charAt(0))}</div>
+                    <div class="mobile-search-result-info">
+                        <div class="mobile-search-result-name">${escapeHtml(u.displayName)}</div>
+                        <div class="mobile-search-result-id">${u.customId}</div>
+                    </div>
+                </div>`).join(''); 
+                if (btn) btn.disabled = false; 
+                document.querySelectorAll('.mobile-search-result-item').forEach(el => { 
+                    el.onclick = () => { 
+                        privateInput.value = el.dataset.customId; 
+                        if (resDiv) resDiv.innerHTML = ''; 
+                        if (btn) btn.disabled = false; 
+                    }; 
+                }); 
+            }, 300); 
+        };
+    }
     
-    document.getElementById('mobileCreateGroupBtn')?.addEventListener('click', async () => { 
-        const name = document.getElementById('mobileGroupName')?.value.trim(); 
-        if (!name) { showNotification("Введите название"); return; } 
-        const chat = { 
-            name, 
-            description: document.getElementById('mobileGroupDescription')?.value.trim() || '', 
-            type: 'group', 
-            createdBy: currentUser.uid, 
-            createdAt: Date.now(), 
-            members: { [currentUser.uid]: true }, 
-            lastMessage: { text: "Группа создана", timestamp: Date.now(), senderId: currentUser.uid } 
-        }; 
-        const ref = await database.ref('chats').push(chat); 
-        if (mobileCreateModal) mobileCreateModal.classList.remove('active'); 
-        openChat(ref.key); 
-    });
-    
-    document.getElementById('mobileCreatePrivateBtn')?.addEventListener('click', async () => { 
-        const customId = document.getElementById('mobilePrivateUserId')?.value.trim(); 
-        if (!customId) { showNotification("Введите ID"); return; } 
-        let targetId = null; 
-        for (const id in allUsers) if (allUsers[id].customId === customId) { targetId = id; break; } 
-        if (!targetId) { showNotification("Пользователь не найден"); return; } 
-        if (targetId === currentUser.uid) { showNotification("Нельзя с собой"); return; } 
-        const existing = await findExistingPrivateChat(targetId); 
-        if (existing) { 
+    const createGroupBtn = document.getElementById('mobileCreateGroupBtn');
+    if (createGroupBtn) {
+        createGroupBtn.onclick = async () => { 
+            const name = document.getElementById('mobileGroupName')?.value.trim(); 
+            if (!name) { showNotification("Введите название"); return; } 
+            const chat = { 
+                name, 
+                description: document.getElementById('mobileGroupDescription')?.value.trim() || '', 
+                type: 'group', 
+                createdBy: currentUser.uid, 
+                createdAt: Date.now(), 
+                members: { [currentUser.uid]: true }, 
+                lastMessage: { text: "Группа создана", timestamp: Date.now(), senderId: currentUser.uid } 
+            }; 
+            const ref = await database.ref('chats').push(chat); 
             if (mobileCreateModal) mobileCreateModal.classList.remove('active'); 
-            openChat(existing); 
-            return; 
-        } 
-        const chat = { 
-            name: `${currentUser.displayName} и ${allUsers[targetId].displayName}`, 
-            type: 'private', 
-            createdBy: currentUser.uid, 
-            createdAt: Date.now(), 
-            members: { [currentUser.uid]: true, [targetId]: true }, 
-            lastMessage: { text: "Чат создан", timestamp: Date.now(), senderId: currentUser.uid } 
-        }; 
-        const ref = await database.ref('chats').push(chat); 
-        if (mobileCreateModal) mobileCreateModal.classList.remove('active'); 
-        openChat(ref.key); 
-    });
+            openChat(ref.key); 
+        };
+    }
     
-    document.getElementById('mobileCreateChannelBtn')?.addEventListener('click', () => { 
-        showNotification("Каналы будут доступны в следующем обновлении"); 
-        if (mobileCreateModal) mobileCreateModal.classList.remove('active'); 
-    });
+    const createPrivateBtn = document.getElementById('mobileCreatePrivateBtn');
+    if (createPrivateBtn) {
+        createPrivateBtn.onclick = async () => { 
+            const customId = document.getElementById('mobilePrivateUserId')?.value.trim(); 
+            if (!customId) { showNotification("Введите ID"); return; } 
+            let targetId = null; 
+            for (const id in allUsers) if (allUsers[id].customId === customId) { targetId = id; break; } 
+            if (!targetId) { showNotification("Пользователь не найден"); return; } 
+            if (targetId === currentUser.uid) { showNotification("Нельзя с собой"); return; } 
+            const existing = await findExistingPrivateChat(targetId); 
+            if (existing) { 
+                if (mobileCreateModal) mobileCreateModal.classList.remove('active'); 
+                openChat(existing); 
+                return; 
+            } 
+            const chat = { 
+                name: `${currentUser.displayName} и ${allUsers[targetId].displayName}`, 
+                type: 'private', 
+                createdBy: currentUser.uid, 
+                createdAt: Date.now(), 
+                members: { [currentUser.uid]: true, [targetId]: true }, 
+                lastMessage: { text: "Чат создан", timestamp: Date.now(), senderId: currentUser.uid } 
+            }; 
+            const ref = await database.ref('chats').push(chat); 
+            if (mobileCreateModal) mobileCreateModal.classList.remove('active'); 
+            openChat(ref.key); 
+        };
+    }
     
-    if (mobileSearchChats) mobileSearchChats.oninput = (e) => { 
-        const q = e.target.value.toLowerCase(); 
-        document.querySelectorAll('.mobile-chat-item').forEach(el => { 
-            const n = el.querySelector('.mobile-chat-name')?.textContent.toLowerCase() || ''; 
-            const m = el.querySelector('.mobile-chat-last-message')?.textContent.toLowerCase() || ''; 
-            el.style.display = (n.includes(q) || m.includes(q)) ? 'flex' : 'none'; 
-        }); 
-    };
+    const createChannelBtn = document.getElementById('mobileCreateChannelBtn');
+    if (createChannelBtn) {
+        createChannelBtn.onclick = () => { 
+            showNotification("Каналы будут доступны в следующем обновлении"); 
+            if (mobileCreateModal) mobileCreateModal.classList.remove('active'); 
+        };
+    }
     
-    if (mobileSearchContacts) mobileSearchContacts.oninput = (e) => { 
-        const q = e.target.value.toLowerCase(); 
-        document.querySelectorAll('.mobile-contact-item').forEach(el => { 
-            const n = el.querySelector('.mobile-contact-name')?.textContent.toLowerCase() || ''; 
-            el.style.display = n.includes(q) ? 'flex' : 'none'; 
-        }); 
-    };
+    if (mobileSearchChats) {
+        mobileSearchChats.oninput = (e) => { 
+            const q = e.target.value.toLowerCase(); 
+            document.querySelectorAll('.mobile-chat-item').forEach(el => { 
+                const n = el.querySelector('.mobile-chat-name')?.textContent.toLowerCase() || ''; 
+                const m = el.querySelector('.mobile-chat-last-message')?.textContent.toLowerCase() || ''; 
+                el.style.display = (n.includes(q) || m.includes(q)) ? 'flex' : 'none'; 
+            }); 
+        };
+    }
+    
+    if (mobileSearchContacts) {
+        mobileSearchContacts.oninput = (e) => { 
+            const q = e.target.value.toLowerCase(); 
+            document.querySelectorAll('.mobile-contact-item').forEach(el => { 
+                const n = el.querySelector('.mobile-contact-name')?.textContent.toLowerCase() || ''; 
+                el.style.display = n.includes(q) ? 'flex' : 'none'; 
+            }); 
+        };
+    }
     
     if (mobileCopyIdBtn) mobileCopyIdBtn.onclick = () => { 
         navigator.clipboard.writeText(mobileProfileId?.textContent || ''); 
@@ -1891,7 +2142,8 @@ function showReplyPreview(sender, text) {
         </div>
         <button class="reply-preview-close" id="cancelReplyBtn"><i class="fas fa-times"></i></button>
     </div>`; 
-    document.getElementById('cancelReplyBtn')?.addEventListener('click', hideReplyPreview); 
+    const cancelBtn = document.getElementById('cancelReplyBtn');
+    if (cancelBtn) cancelBtn.onclick = hideReplyPreview;
 }
 
 function setupHomeContactsSearch() {
@@ -1930,55 +2182,61 @@ function setSearchLoading(id, loading) {
 // ================================================
 // КОНТЕКСТНОЕ МЕНЮ ОБРАБОТЧИКИ
 // ================================================
-if (contextReply) contextReply.onclick = () => { 
-    const msgId = messageContextMenu?.dataset.messageId; 
-    if (!msgId) return; 
-    const el = document.querySelector(`[data-message-id="${msgId}"]`); 
-    if (!el) return; 
-    const text = el.querySelector('.message-text')?.textContent || ''; 
-    const sender = el.querySelector('.message-sender-name')?.textContent?.split(' ')[0] || ''; 
-    database.ref(`messages/${currentChatId}/${msgId}`).once('value').then(snap => { 
-        const d = snap.val(); 
-        replyToMessage = { 
-            id: msgId, 
-            text: d?.text || text, 
-            senderId: d?.senderId || null, 
-            senderName: d?.senderName || sender 
-        }; 
-        showReplyPreview(replyToMessage.senderName, replyToMessage.text); 
-        if (messageContextMenu) messageContextMenu.classList.remove('active'); 
-        if (messageInput) messageInput.focus(); 
-    }).catch(() => { 
-        replyToMessage = { id: msgId, text, senderId: null, senderName: sender }; 
-        showReplyPreview(sender, text); 
-        if (messageContextMenu) messageContextMenu.classList.remove('active'); 
-        if (messageInput) messageInput.focus(); 
-    }); 
-};
+if (contextReply) {
+    contextReply.onclick = () => { 
+        const msgId = messageContextMenu?.dataset.messageId; 
+        if (!msgId) return; 
+        const el = document.querySelector(`[data-message-id="${msgId}"]`); 
+        if (!el) return; 
+        const text = el.querySelector('.message-text')?.textContent || ''; 
+        const sender = el.querySelector('.message-sender-name')?.textContent?.split(' ')[0] || ''; 
+        database.ref(`messages/${currentChatId}/${msgId}`).once('value').then(snap => { 
+            const d = snap.val(); 
+            replyToMessage = { 
+                id: msgId, 
+                text: d?.text || text, 
+                senderId: d?.senderId || null, 
+                senderName: d?.senderName || sender 
+            }; 
+            showReplyPreview(replyToMessage.senderName, replyToMessage.text); 
+            if (messageContextMenu) messageContextMenu.classList.remove('active'); 
+            if (messageInput) messageInput.focus(); 
+        }).catch(() => { 
+            replyToMessage = { id: msgId, text, senderId: null, senderName: sender }; 
+            showReplyPreview(sender, text); 
+            if (messageContextMenu) messageContextMenu.classList.remove('active'); 
+            if (messageInput) messageInput.focus(); 
+        }); 
+    };
+}
 
-if (contextCopy) contextCopy.onclick = () => { 
-    const msgId = messageContextMenu?.dataset.messageId; 
-    if (msgId) { 
-        const text = document.querySelector(`[data-message-id="${msgId}"] .message-text`)?.textContent || ''; 
-        navigator.clipboard.writeText(text); 
-        showNotification("Скопировано"); 
-        if (messageContextMenu) messageContextMenu.classList.remove('active'); 
-    } 
-};
+if (contextCopy) {
+    contextCopy.onclick = () => { 
+        const msgId = messageContextMenu?.dataset.messageId; 
+        if (msgId) { 
+            const text = document.querySelector(`[data-message-id="${msgId}"] .message-text`)?.textContent || ''; 
+            navigator.clipboard.writeText(text); 
+            showNotification("Скопировано"); 
+            if (messageContextMenu) messageContextMenu.classList.remove('active'); 
+        } 
+    };
+}
 
-if (contextDelete) contextDelete.onclick = () => { 
-    const msgId = messageContextMenu?.dataset.messageId; 
-    const isOut = messageContextMenu?.dataset.isOutgoing === 'true'; 
-    if (!msgId || !currentChatId || !isOut) { 
-        if (messageContextMenu) messageContextMenu.classList.remove('active'); 
-        return; 
-    } 
-    const el = document.querySelector(`[data-message-id="${msgId}"]`); 
-    if (!el) return; 
-    const text = el.querySelector('.message-text')?.textContent || ''; 
-    const sender = el.querySelector('.message-sender-name')?.textContent?.split(' ')[0] || ''; 
-    showDeleteMessageConfirmation(msgId, currentChatId, text, sender, Date.now()); 
-};
+if (contextDelete) {
+    contextDelete.onclick = () => { 
+        const msgId = messageContextMenu?.dataset.messageId; 
+        const isOut = messageContextMenu?.dataset.isOutgoing === 'true'; 
+        if (!msgId || !currentChatId || !isOut) { 
+            if (messageContextMenu) messageContextMenu.classList.remove('active'); 
+            return; 
+        } 
+        const el = document.querySelector(`[data-message-id="${msgId}"]`); 
+        if (!el) return; 
+        const text = el.querySelector('.message-text')?.textContent || ''; 
+        const sender = el.querySelector('.message-sender-name')?.textContent?.split(' ')[0] || ''; 
+        showDeleteMessageConfirmation(msgId, currentChatId, text, sender, Date.now()); 
+    };
+}
 
 function showDeleteMessageConfirmation(msgId, chatId, text, sender, ts) { 
     if (!confirmDeleteMessageModal || !messagePreview) return; 
@@ -1990,17 +2248,19 @@ function showDeleteMessageConfirmation(msgId, chatId, text, sender, ts) {
     <div class="message-preview-text">${escapeHtml(text)}</div>`;
     confirmDeleteMessageModal.classList.add('active'); 
     if (messageContextMenu) messageContextMenu.classList.remove('active'); 
-    if (confirmDeleteBtn) confirmDeleteBtn.onclick = async () => { 
-        try { 
-            await database.ref(`messages/${chatId}/${msgId}`).remove(); 
-            showNotification("Удалено"); 
-            document.querySelector(`[data-message-id="${msgId}"]`)?.remove(); 
-            confirmDeleteMessageModal.classList.remove('active'); 
-        } catch(e) { 
-            showNotification("Ошибка"); 
-            confirmDeleteMessageModal.classList.remove('active'); 
-        } 
-    }; 
+    if (confirmDeleteBtn) {
+        confirmDeleteBtn.onclick = async () => { 
+            try { 
+                await database.ref(`messages/${chatId}/${msgId}`).remove(); 
+                showNotification("Удалено"); 
+                document.querySelector(`[data-message-id="${msgId}"]`)?.remove(); 
+                confirmDeleteMessageModal.classList.remove('active'); 
+            } catch(e) { 
+                showNotification("Ошибка"); 
+                confirmDeleteMessageModal.classList.remove('active'); 
+            } 
+        };
+    }
 }
 
 // ================================================
@@ -2071,7 +2331,15 @@ function setupEventListeners() {
     if (sendMessageBtn) sendMessageBtn.onclick = sendMessage;
     if (copyHomeIdBtn) copyHomeIdBtn.onclick = () => { if (homeUserId) navigator.clipboard.writeText(homeUserId.textContent); showNotification('ID скопирован!'); };
     
-    if (messageInput) messageInput.onkeypress = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } };
+    if (messageInput) {
+        messageInput.onkeypress = (e) => { 
+            if (e.key === 'Enter' && !e.shiftKey) { 
+                e.preventDefault(); 
+                sendMessage(); 
+            } 
+        };
+    }
+    
     if (cancelCreateBtn) cancelCreateBtn.onclick = () => { if (createChatModal) createChatModal.classList.remove('active'); resetCreateForm(); };
     
     chatTypeOptions.forEach(opt => { 
@@ -2091,71 +2359,79 @@ function setupEventListeners() {
     
     if (confirmCreateBtn) confirmCreateBtn.onclick = createNewChat;
     
-    if (cancelAddContactBtn) cancelAddContactBtn.onclick = () => { 
-        if (addContactModal) addContactModal.classList.remove('active'); 
-        if (contactSearch) contactSearch.value = ''; 
-        hideSearchResults('contactSearchResults'); 
-        if (confirmAddContactBtn) confirmAddContactBtn.disabled = true; 
-    };
-    
-    if (confirmAddContactBtn) confirmAddContactBtn.onclick = async () => { 
-        const val = contactSearch?.value.trim(); 
-        if (!val) { showNotification("Введите ID"); return; } 
-        const res = searchUsers(val, contacts); 
-        const found = res.find(r => !r.isContact); 
-        if (found) { 
-            await addContact(found.customId); 
+    if (cancelAddContactBtn) {
+        cancelAddContactBtn.onclick = () => { 
             if (addContactModal) addContactModal.classList.remove('active'); 
             if (contactSearch) contactSearch.value = ''; 
             hideSearchResults('contactSearchResults'); 
             if (confirmAddContactBtn) confirmAddContactBtn.disabled = true; 
-        } else showNotification("Выберите пользователя из списка"); 
-    };
+        };
+    }
     
-    if (privateUserId) privateUserId.oninput = () => { 
-        const q = privateUserId.value.toLowerCase().trim(); 
-        if (!privateUserSearchResults) return; 
-        if (!q) { privateUserSearchResults.style.display = 'none'; return; } 
-        const res = []; 
-        for (const id in allUsers) { 
-            if (id !== currentUser?.uid) { 
-                const u = allUsers[id]; 
-                if (u.displayName.toLowerCase().includes(q) || u.customId?.toLowerCase().includes(q)) res.push(u); 
+    if (confirmAddContactBtn) {
+        confirmAddContactBtn.onclick = async () => { 
+            const val = contactSearch?.value.trim(); 
+            if (!val) { showNotification("Введите ID"); return; } 
+            const res = searchUsers(val, contacts); 
+            const found = res.find(r => !r.isContact); 
+            if (found) { 
+                await addContact(found.customId); 
+                if (addContactModal) addContactModal.classList.remove('active'); 
+                if (contactSearch) contactSearch.value = ''; 
+                hideSearchResults('contactSearchResults'); 
+                if (confirmAddContactBtn) confirmAddContactBtn.disabled = true; 
+            } else showNotification("Выберите пользователя из списка"); 
+        };
+    }
+    
+    if (privateUserId) {
+        privateUserId.oninput = () => { 
+            const q = privateUserId.value.toLowerCase().trim(); 
+            if (!privateUserSearchResults) return; 
+            if (!q) { privateUserSearchResults.style.display = 'none'; return; } 
+            const res = []; 
+            for (const id in allUsers) { 
+                if (id !== currentUser?.uid) { 
+                    const u = allUsers[id]; 
+                    if (u.displayName.toLowerCase().includes(q) || u.customId?.toLowerCase().includes(q)) res.push(u); 
+                } 
             } 
-        } 
-        if (res.length) { 
-            privateUserSearchResults.style.display = 'block'; 
-            privateUserSearchResults.innerHTML = res.slice(0,5).map(u => `<div class="search-result-item" data-custom-id="${u.customId}">
-                <div class="search-result-avatar">${escapeHtml(u.displayName.charAt(0))}</div>
-                <div class="search-result-info">
-                    <div class="search-result-name">${escapeHtml(u.displayName)}</div>
-                    <div class="search-result-id">${u.customId}</div>
-                </div>
-            </div>`).join(''); 
-            document.querySelectorAll('#privateUserSearchResults .search-result-item').forEach(el => { 
-                el.onclick = () => { 
-                    if (privateUserId) privateUserId.value = el.dataset.customId; 
-                    if (privateUserSearchResults) privateUserSearchResults.style.display = 'none'; 
-                }; 
-            }); 
-        } else { 
-            privateUserSearchResults.innerHTML = '<div class="no-results">Не найдены</div>'; 
-            privateUserSearchResults.style.display = 'block'; 
-        } 
-    };
+            if (res.length) { 
+                privateUserSearchResults.style.display = 'block'; 
+                privateUserSearchResults.innerHTML = res.slice(0,5).map(u => `<div class="search-result-item" data-custom-id="${u.customId}">
+                    <div class="search-result-avatar">${escapeHtml(u.displayName.charAt(0))}</div>
+                    <div class="search-result-info">
+                        <div class="search-result-name">${escapeHtml(u.displayName)}</div>
+                        <div class="search-result-id">${u.customId}</div>
+                    </div>
+                </div>`).join(''); 
+                document.querySelectorAll('#privateUserSearchResults .search-result-item').forEach(el => { 
+                    el.onclick = () => { 
+                        if (privateUserId) privateUserId.value = el.dataset.customId; 
+                        if (privateUserSearchResults) privateUserSearchResults.style.display = 'none'; 
+                    }; 
+                }); 
+            } else { 
+                privateUserSearchResults.innerHTML = '<div class="no-results">Не найдены</div>'; 
+                privateUserSearchResults.style.display = 'block'; 
+            } 
+        };
+    }
     
     if (copyUserIdBtn) copyUserIdBtn.onclick = () => { if (profileUserId) navigator.clipboard.writeText(profileUserId.textContent); showNotification('ID скопирован!'); };
     if (logoutBtn) logoutBtn.onclick = logoutUser;
     
-    if (editProfileBtn) editProfileBtn.onclick = () => { 
-        if (profileModal) profileModal.classList.remove('active'); 
-        if (editProfileModal) editProfileModal.classList.add('active'); 
-        if (editProfileName) editProfileName.value = currentUser?.displayName || ''; 
-        statusOptions.forEach(opt => { 
-            opt.classList.remove('active'); 
-            if (opt.dataset.status === currentUser?.status) opt.classList.add('active'); 
-        }); 
-    };
+    if (editProfileBtn) {
+        editProfileBtn.onclick = () => { 
+            if (profileModal) profileModal.classList.remove('active'); 
+            if (editProfileModal) editProfileModal.classList.add('active'); 
+            if (editProfileName) editProfileName.value = currentUser?.displayName || ''; 
+            statusOptions.forEach(opt => { 
+                opt.classList.remove('active'); 
+                if (opt.dataset.status === currentUser?.status) opt.classList.add('active'); 
+            }); 
+        };
+    }
     
     if (cancelEditProfileBtn) cancelEditProfileBtn.onclick = () => { if (editProfileModal) editProfileModal.classList.remove('active'); if (profileModal) profileModal.classList.add('active'); };
     if (saveProfileBtn) saveProfileBtn.onclick = saveProfileChanges;
