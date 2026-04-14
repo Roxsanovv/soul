@@ -838,7 +838,6 @@ body {
     align-items: center;
     gap: 15px;
     position: sticky;
-    top: 60px;
     z-index: 100;
 }
 
