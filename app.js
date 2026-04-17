@@ -74,19 +74,20 @@ let stickerPacks = {
             { url: "img/stickers/Movie/Kermit Frog.png", name: "Kermit Frog" },
             { url: "img/stickers/Movie/Optimus Prime.png", name: "Optimus Prime" }
         ]
-    }
-    /* pack3: {
+    },
+    pack3: {
         id: "pack3",
-        name: "Movie",
-        previewImage: "img/stickers/Movie/John Wick.png",
+        name: "Marvel",
+        previewImage: "img/stickers/Marvel/Deadpool.png",
         stickers: [
-            { url: "img/stickers/Movie/Arcane Jinx Pout.png", name: "Jinx Pout" },
-            { url: "img/stickers/Movie/Chibi Pennywise.png", name: "Pennywise" },
-            { url: "img/stickers/Movie/John Wick.png", name: "John Wick" },
-            { url: "img/stickers/Movie/Kermit Frog.png", name: "Kermit Frog" },
-            { url: "img/stickers/Movie/Optimus Prime.png", name: "Optimus Prime" }
+            { url: "img/stickers/Marvel/Deadpool.png", name: "Deadpool" },
+            { url: "img/stickers/Marvel/Groot.png", name: "Groot" },
+            { url: "img/stickers/Marvel/Iron Man.png", name: "Iron Man" },
+            { url: "img/stickers/Marvel/Loki.png", name: "Loki" },
+            { url: "img/stickers/Marvel/Spiderman.png", name: "Spiderman" },
+            { url: "img/stickers/Marvel/Venom.png", name: "Vemon" }
         ]
-    } */
+    }
 };
 
 // ================================================
