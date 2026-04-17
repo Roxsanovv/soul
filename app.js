@@ -35,6 +35,59 @@ let chatsListener = null;
 let verifiedUsersListener = null;
 let messageListeners = {};
 let connectionCheckInterval = null;
+let inactivityTimer = null;
+let lastActivityTime = Date.now();
+let selectedContactsForGroup = new Set();
+let currentGroupChatId = null;
+let groupInviteLinks = {};
+
+// ================================================
+// КОНФИГУРАЦИЯ ПАКОВ СТИКЕРОВ
+// ================================================
+let currentStickerPack = null;
+let stickerPacks = {
+    // Пример пака стикеров - ЗАМЕНИТЕ НА ВАШИ
+    pack1: {
+        id: "pack1",
+        name: "Boss",
+        previewImage: "img/stickers/boss/sticker7.png", // Картинка-заставка пака
+        stickers: [
+            { url: "img/stickers/boss/sticker1.png", name: "Стикер 1" },
+            { url: "img/stickers/boss/sticker2.png", name: "Стикер 2" },
+            { url: "img/stickers/boss/sticker3.png", name: "Стикер 3" },
+            { url: "img/stickers/boss/sticker4.png", name: "Стикер 4" },
+            { url: "img/stickers/boss/sticker5.png", name: "Стикер 5" },
+            { url: "img/stickers/boss/sticker6.png", name: "Стикер 6" },
+            { url: "img/stickers/boss/sticker7.png", name: "Стикер 7" },
+            { url: "img/stickers/boss/sticker8.png", name: "Стикер 8" },
+            { url: "img/stickers/boss/sticker9.png", name: "Стикер 9" }
+        ]
+    },
+    pack2: {
+        id: "pack2",
+        name: "Movie",
+        previewImage: "img/stickers/Movie/John Wick.png",
+        stickers: [
+            { url: "img/stickers/Movie/Arcane Jinx Pout.png", name: "Jinx Pout" },
+            { url: "img/stickers/Movie/Chibi Pennywise.png", name: "Pennywise" },
+            { url: "img/stickers/Movie/John Wick.png", name: "John Wick" },
+            { url: "img/stickers/Movie/Kermit Frog.png", name: "Kermit Frog" },
+            { url: "img/stickers/Movie/Optimus Prime.png", name: "Optimus Prime" }
+        ]
+    },
+    /* pack3: {
+        id: "pack3",
+        name: "Movie",
+        previewImage: "img/stickers/Movie/John Wick.png",
+        stickers: [
+            { url: "img/stickers/Movie/Arcane Jinx Pout.png", name: "Jinx Pout" },
+            { url: "img/stickers/Movie/Chibi Pennywise.png", name: "Pennywise" },
+            { url: "img/stickers/Movie/John Wick.png", name: "John Wick" },
+            { url: "img/stickers/Movie/Kermit Frog.png", name: "Kermit Frog" },
+            { url: "img/stickers/Movie/Optimus Prime.png", name: "Optimus Prime" }
+        ]
+    } */
+};
 
 // ================================================
 // ДОМ ЭЛЕМЕНТЫ
@@ -61,12 +114,9 @@ const desktopSidebar = document.getElementById('desktopSidebar');
 const desktopUserAvatar = document.getElementById('desktopUserAvatar');
 const desktopUserName = document.getElementById('desktopUserName');
 const desktopUserStatus = document.getElementById('desktopUserStatus');
-const desktopUserInfoBtn = document.getElementById('desktopUserInfoBtn');
 const desktopSidebarTabs = document.querySelectorAll('.desktop-sidebar-tab');
 const desktopChatsList = document.getElementById('desktopChatsList');
 const desktopContactsList = document.getElementById('desktopContactsList');
-const desktopCreateChatBtn = document.getElementById('desktopCreateChatBtn');
-const desktopAddContactBtn = document.getElementById('desktopAddContactBtn');
 const desktopEmptyScreen = document.getElementById('desktopEmptyScreen');
 const desktopEmptyCreateChatBtn = document.getElementById('desktopEmptyCreateChatBtn');
 const desktopEmptyAddContactBtn = document.getElementById('desktopEmptyAddContactBtn');
@@ -74,6 +124,11 @@ const chatHeaderDesktop = document.getElementById('chatHeaderDesktop');
 const desktopChatAvatar = document.getElementById('desktopChatAvatar');
 const desktopChatHeaderName = document.getElementById('desktopChatHeaderName');
 const desktopChatHeaderDescription = document.getElementById('desktopChatHeaderDescription');
+
+const desktopCreateChatIcon = document.getElementById('desktopCreateChatIcon');
+const desktopAddContactIcon = document.getElementById('desktopAddContactIcon');
+const desktopProfileIcon = document.getElementById('desktopProfileIcon');
+const desktopSettingsIcon = document.getElementById('desktopSettingsIcon');
 
 const mobileContainer = document.querySelector('.mobile-container');
 const mobileNavItems = document.querySelectorAll('.mobile-nav-item');
@@ -110,6 +165,7 @@ const messageInput = document.getElementById('messageInput');
 const sendMessageBtn = document.getElementById('sendMessageBtn');
 const replyPreviewContainer = document.getElementById('replyPreviewContainer');
 const attachBtn = document.getElementById('attachBtn');
+const stickerBtn = document.getElementById('stickerBtn');
 
 const createChatModal = document.getElementById('createChatModal');
 const cancelCreateBtn = document.getElementById('cancelCreateBtn');
@@ -181,8 +237,6 @@ const badgeUserId = document.getElementById('badgeUserId');
 const badgeType = document.getElementById('badgeType');
 const giveBadgeBtn = document.getElementById('giveBadgeBtn');
 const verifiedUsersList = document.getElementById('verifiedUsersList');
-const adminUserSearch = document.getElementById('adminUserSearch');
-const adminSearchResults = document.getElementById('adminSearchResults');
 
 const attachTypeModal = document.getElementById('attachTypeModal');
 const closeAttachTypeModalBtn = document.getElementById('closeAttachTypeModal');
@@ -200,11 +254,34 @@ const homeCreateChatBtn = document.getElementById('homeCreateChatBtn');
 const homeAddContactBtn = document.getElementById('homeAddContactBtn');
 const homeScreen = document.getElementById('homeScreen');
 
+const stickersModal = document.getElementById('stickersModal');
+const closeStickersModal = document.getElementById('closeStickersModal');
+const stickersPacks = document.getElementById('stickersPacks');
+const stickersGrid = document.getElementById('stickersGrid');
+const stickersGridContainer = document.getElementById('stickersGridContainer');
+const backToPacksBtn = document.getElementById('backToPacksBtn');
+const currentPackName = document.getElementById('currentPackName');
+
+// Групповые модальные окна
+const addMembersModal = document.getElementById('addMembersModal');
+const closeAddMembersModal = document.getElementById('closeAddMembersModal');
+const cancelAddMembersBtn = document.getElementById('cancelAddMembersBtn');
+const confirmAddMembersBtn = document.getElementById('confirmAddMembersBtn');
+const membersSearch = document.getElementById('membersSearch');
+const contactsSelectList = document.getElementById('contactsSelectList');
+
+const inviteLinkModal = document.getElementById('inviteLinkModal');
+const closeInviteLinkModal = document.getElementById('closeInviteLinkModal');
+const closeInviteModalBtn = document.getElementById('closeInviteModalBtn');
+const inviteLinkInput = document.getElementById('inviteLinkInput');
+const copyInviteLinkBtn = document.getElementById('copyInviteLinkBtn');
+
 // ================================================
 // ИНИЦИАЛИЗАЦИЯ
 // ================================================
 document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
+    setupInactivityTracking();
 });
 
 async function initializeApp() {
@@ -217,15 +294,22 @@ async function initializeApp() {
     setupMobileInterface();
     setupReactionsHandlers();
     setupAttachModal();
+    setupStickers();
+    initGroupModals();
+    setupContextMenuBoundary();
     
     authUnsubscribe = auth.onAuthStateChanged(async (user) => {
         if (user) {
             await loadUserData(user.uid);
+            resetToOnlineStatus();
             if (authContainer) authContainer.style.display = 'none';
             if (mainContainer) mainContainer.style.display = 'flex';
-            showNotification("Добро пожаловать в Soul!");
+            showNotification("Добро пожаловать в Spectrum!");
             startConnectionMonitoring();
+            startInactivityMonitoring();
+            startHeartbeat();
             updateUserIDs();
+            handleInviteLink();
             
             if (isMobile) {
                 initMobileInterface();
@@ -239,8 +323,161 @@ async function initializeApp() {
                 clearInterval(connectionCheckInterval);
                 connectionCheckInterval = null;
             }
+            stopInactivityMonitoring();
         }
     });
+}
+
+// ================================================
+// ОТСЛЕЖИВАНИЕ НЕАКТИВНОСТИ
+// ================================================
+function setupInactivityTracking() {
+    // Отслеживаем активность пользователя
+    const events = ['mousemove', 'mousedown', 'keypress', 'scroll', 'touchstart', 'click'];
+    events.forEach(event => {
+        document.addEventListener(event, () => {
+            lastActivityTime = Date.now();
+            if (currentUser && (currentUser.status === 'offline' || currentUser.status === 'invisible') && navigator.onLine) {
+                const savedStatus = localStorage.getItem('userSelectedStatus') || 'online';
+                if (savedStatus !== 'offline' && savedStatus !== 'invisible') {
+                    setUserStatus(savedStatus);
+                }
+            }
+        });
+    });
+    
+    // Отслеживаем видимость страницы
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            if (currentUser && currentUser.status === 'online') {
+                setUserStatus('away');
+            }
+        } else {
+            if (currentUser && (currentUser.status === 'away' || currentUser.status === 'offline')) {
+                const savedStatus = localStorage.getItem('userSelectedStatus') || 'online';
+                if (savedStatus !== 'offline' && savedStatus !== 'invisible') {
+                    setUserStatus(savedStatus);
+                }
+            }
+            lastActivityTime = Date.now();
+        }
+    });
+    
+    window.addEventListener('online', () => {
+        if (currentUser) {
+            const savedStatus = localStorage.getItem('userSelectedStatus') || 'online';
+            if (savedStatus !== 'offline' && savedStatus !== 'invisible') {
+                setUserStatus(savedStatus);
+            }
+            showNotification("Соединение восстановлено");
+        }
+    });
+    
+    window.addEventListener('offline', () => {
+        if (currentUser) {
+            setUserStatus('offline');
+            showNotification("Потеряно соединение");
+        }
+    });
+}
+
+function startInactivityMonitoring() {
+    if (inactivityTimer) clearInterval(inactivityTimer);
+    inactivityTimer = setInterval(async () => {
+        if (currentUser && navigator.onLine && !document.hidden) {
+            const now = Date.now();
+            const inactiveTime = now - lastActivityTime;
+            const savedStatus = localStorage.getItem('userSelectedStatus') || 'online';
+            
+            if (inactiveTime > 30000 && currentUser.status === 'online' && savedStatus === 'online') {
+                await setUserStatus('away');
+            } 
+            else if (inactiveTime > 300000 && (currentUser.status === 'online' || currentUser.status === 'away') && savedStatus === 'online') {
+                await setUserStatus('offline');
+            }
+            else if (inactiveTime < 30000 && currentUser.status === 'away' && savedStatus === 'online') {
+                await setUserStatus('online');
+            }
+        }
+    }, 10000);
+}
+
+function stopInactivityMonitoring() {
+    if (inactivityTimer) {
+        clearInterval(inactivityTimer);
+        inactivityTimer = null;
+    }
+}
+
+async function setUserStatus(status) {
+    if (!currentUser) return;
+    try {
+        if (status !== 'away' && status !== 'offline') {
+            localStorage.setItem('userSelectedStatus', status);
+        }
+        
+        await database.ref(`users/${currentUser.uid}`).update({ 
+            status: status, 
+            lastActive: Date.now() 
+        });
+        currentUser.status = status;
+        currentUser.selectedStatus = status;
+        
+        updateUserProfileDisplay();
+        updateDesktopUserInfo();
+        updateMobileProfile();
+        updateContactsDisplay();
+        updateChatsDisplay();
+        
+        console.log(`Статус изменён на: ${status}`);
+    } catch (error) {
+        console.error("Ошибка обновления статуса:", error);
+    }
+}
+
+function startHeartbeat() {
+    setInterval(async () => {
+        if (currentUser && navigator.onLine && !document.hidden) {
+            try {
+                await database.ref(`users/${currentUser.uid}`).update({
+                    lastActive: Date.now()
+                });
+            } catch(e) {}
+        }
+    }, 30000);
+}
+
+function resetToOnlineStatus() {
+    if (currentUser) {
+        let savedStatus = localStorage.getItem('userSelectedStatus');
+        if (!savedStatus) {
+            savedStatus = 'online';
+            localStorage.setItem('userSelectedStatus', savedStatus);
+        }
+        
+        if (!document.hidden) {
+            database.ref(`users/${currentUser.uid}`).update({ 
+                status: savedStatus,
+                lastActive: Date.now()
+            });
+            currentUser.status = savedStatus;
+            currentUser.selectedStatus = savedStatus;
+        } else {
+            database.ref(`users/${currentUser.uid}`).update({ 
+                status: 'away',
+                lastActive: Date.now()
+            });
+            currentUser.status = 'away';
+            currentUser.selectedStatus = savedStatus;
+        }
+        
+        lastActivityTime = Date.now();
+        updateUserProfileDisplay();
+        updateDesktopUserInfo();
+        updateMobileProfile();
+        updateContactsDisplay();
+        updateChatsDisplay();
+    }
 }
 
 // ================================================
@@ -471,6 +708,252 @@ function getFileIcon(fileName) {
 }
 
 // ================================================
+// ФУНКЦИИ ДЛЯ СТИКЕРОВ (с поддержкой .tgs)
+// ================================================
+function setupStickers() {
+    if (stickerBtn) {
+        stickerBtn.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            openStickersModal();
+        };
+    }
+    
+    if (closeStickersModal) {
+        closeStickersModal.onclick = () => closeStickersModalFunc();
+    }
+    
+    if (stickersModal) {
+        stickersModal.onclick = (e) => {
+            if (e.target === stickersModal) {
+                closeStickersModalFunc();
+            }
+        };
+    }
+    
+    if (backToPacksBtn) {
+        backToPacksBtn.onclick = () => {
+            showStickerPacks();
+        };
+    }
+    
+    loadStickerPacks();
+}
+
+function openStickersModal() {
+    if (stickersModal) {
+        stickersModal.classList.add('active');
+        showStickerPacks();
+    }
+}
+
+function closeStickersModalFunc() {
+    if (stickersModal) {
+        stickersModal.classList.remove('active');
+        showStickerPacks();
+        currentStickerPack = null;
+    }
+}
+
+function loadStickerPacks() {
+    if (!stickersPacks) return;
+    
+    stickersPacks.innerHTML = '';
+    const packs = Object.values(stickerPacks);
+    
+    if (packs.length === 0) {
+        stickersPacks.innerHTML = `
+            <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: #94a3b8;">
+                <i class="fas fa-smile-wink" style="font-size: 48px; margin-bottom: 15px; display: block;"></i>
+                <p>Паки стикеров пока не добавлены</p>
+                <p style="font-size: 12px; margin-top: 10px;">Добавьте паки в конфигурацию stickerPacks</p>
+            </div>
+        `;
+        return;
+    }
+    
+    packs.forEach(pack => {
+        const packDiv = document.createElement('div');
+        packDiv.className = 'sticker-pack-item';
+        packDiv.setAttribute('data-pack-id', pack.id);
+        
+        const previewHtml = pack.previewImage ? 
+            `<img src="${pack.previewImage}" alt="${pack.name}" onerror="this.src='https://placehold.co/80x80/8b5cf6/white?text=${encodeURIComponent(pack.name.charAt(0))}'">` :
+            `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#8b5cf6,#7c3aed);color:white;font-size:32px;">${pack.name.charAt(0)}</div>`;
+        
+        packDiv.innerHTML = `
+            <div class="sticker-pack-preview">
+                ${previewHtml}
+            </div>
+            <div class="sticker-pack-name">${escapeHtml(pack.name)}</div>
+            <div class="sticker-pack-count">${pack.stickers.length} стикеров</div>
+        `;
+        
+        packDiv.onclick = () => {
+            openStickerPack(pack.id);
+        };
+        
+        stickersPacks.appendChild(packDiv);
+    });
+}
+
+function openStickerPack(packId) {
+    const pack = stickerPacks[packId];
+    if (!pack) return;
+    
+    currentStickerPack = packId;
+    
+    if (stickersPacks) stickersPacks.style.display = 'none';
+    if (stickersGridContainer) stickersGridContainer.style.display = 'block';
+    if (currentPackName) currentPackName.textContent = pack.name;
+    
+    if (stickersGrid) {
+        stickersGrid.innerHTML = '';
+        
+        pack.stickers.forEach((sticker, index) => {
+            const stickerDiv = document.createElement('div');
+            stickerDiv.className = 'sticker-item';
+            stickerDiv.setAttribute('data-sticker', sticker.url);
+            stickerDiv.title = sticker.name;
+            
+            if (sticker.url.endsWith('.tgs')) {
+                // Для .tgs создаем контейнер с уникальным ID
+                const tgsId = 'tgs_preview_' + packId + '_' + index;
+                stickerDiv.innerHTML = `<div id="${tgsId}" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;"></div>`;
+                stickerDiv.style.aspectRatio = '1/1';
+                stickerDiv.style.padding = '10px';
+                
+                // Загружаем анимацию после добавления в DOM
+                setTimeout(() => {
+                    const container = document.getElementById(tgsId);
+                    if (container && typeof lottie !== 'undefined') {
+                        fetch(sticker.url)
+                            .then(response => response.blob())
+                            .then(async blob => {
+                                try {
+                                    const arrayBuffer = await blob.arrayBuffer();
+                                    const uint8Array = new Uint8Array(arrayBuffer);
+                                    let animationData;
+                                    try {
+                                        const decompressed = pako.unsafeInflate(uint8Array);
+                                        const jsonString = new TextDecoder().decode(decompressed);
+                                        animationData = JSON.parse(jsonString);
+                                    } catch (e) {
+                                        const jsonString = new TextDecoder().decode(uint8Array);
+                                        animationData = JSON.parse(jsonString);
+                                    }
+                                    
+                                    container.innerHTML = '';
+                                    lottie.loadAnimation({
+                                        container: container,
+                                        renderer: 'svg',
+                                        loop: true,
+                                        autoplay: true,
+                                        animationData: animationData
+                                    });
+                                } catch (err) {
+                                    container.innerHTML = '<i class="fas fa-film" style="font-size: 32px; color: #8b5cf6;"></i>';
+                                }
+                            })
+                            .catch(() => {
+                                container.innerHTML = '<i class="fas fa-exclamation-triangle" style="font-size: 24px; color: #ef4444;"></i>';
+                            });
+                    }
+                }, 50);
+            } else {
+                const img = document.createElement('img');
+                img.src = sticker.url;
+                img.alt = sticker.name;
+                img.onerror = () => {
+                    img.src = 'https://placehold.co/100x100/8b5cf6/white?text=❓';
+                };
+                stickerDiv.appendChild(img);
+            }
+            
+            stickerDiv.onclick = () => {
+                sendSticker(sticker.url);
+                closeStickersModalFunc();
+            };
+            
+            stickersGrid.appendChild(stickerDiv);
+        });
+    }
+}
+
+function showStickerPacks() {
+    if (stickersPacks) stickersPacks.style.display = 'grid';
+    if (stickersGridContainer) stickersGridContainer.style.display = 'none';
+    currentStickerPack = null;
+    loadStickerPacks();
+}
+
+async function sendSticker(stickerUrl) {
+    if (!currentChatId || !stickerUrl) return;
+    
+    try {
+        const wasNearBottom = isUserNearBottom();
+        
+        // Определяем тип стикера
+        const isTGS = stickerUrl.endsWith('.tgs');
+        
+        const stickerMessage = {
+            text: isTGS ? '🎬 Анимированный стикер' : '🖼️ Стикер',
+            senderId: currentUser.uid,
+            senderName: currentUser.displayName || "Пользователь",
+            timestamp: Date.now(),
+            type: "sticker",
+            stickerUrl: stickerUrl,
+            isTGS: isTGS
+        };
+        
+        if (replyToMessage && replyToMessage.id) {
+            try {
+                const replyRef = database.ref(`messages/${currentChatId}/${replyToMessage.id}`);
+                const snapshot = await replyRef.once('value');
+                if (snapshot.exists()) {
+                    const replyData = snapshot.val();
+                    stickerMessage.replyTo = {
+                        id: replyToMessage.id,
+                        text: replyData.text || replyToMessage.text,
+                        senderId: replyData.senderId || replyToMessage.senderId,
+                        senderName: replyData.senderName || replyToMessage.senderName
+                    };
+                }
+            } catch(e) {}
+        }
+        
+        const messagesRef = database.ref(`messages/${currentChatId}`);
+        await messagesRef.push(stickerMessage);
+        
+        const chatRef = database.ref(`chats/${currentChatId}`);
+        await chatRef.update({
+            lastMessage: {
+                text: isTGS ? '🎬 Анимированный стикер' : '🖼️ Стикер',
+                timestamp: Date.now(),
+                senderId: currentUser.uid,
+                type: 'sticker'
+            },
+            updatedAt: Date.now()
+        });
+        
+        hideReplyPreview();
+        replyToMessage = null;
+        
+        if (wasNearBottom) {
+            setTimeout(() => scrollToLastMessage('smooth'), 100);
+        } else {
+            showScrollToBottomButton();
+        }
+        
+        closeStickersModalFunc();
+        
+    } catch (error) {
+        console.error("Ошибка при отправке стикера:", error);
+        showNotification("Не удалось отправить стикер");
+    }
+}
+
+// ================================================
 // АВТОРИЗАЦИЯ
 // ================================================
 async function loginUser() {
@@ -482,6 +965,7 @@ async function loginUser() {
         hideError(); 
         await auth.signInWithEmailAndPassword(email, password); 
         showSuccess(); 
+        localStorage.setItem('userStatus', 'online');
     } catch (error) { 
         showError(getAuthErrorMessage(error)); 
         setLoading(false); 
@@ -494,6 +978,7 @@ async function quickLogin() {
         hideError(); 
         await auth.signInAnonymously(); 
         showSuccess(); 
+        localStorage.setItem('userStatus', 'online');
     } catch (error) { 
         showError("Не удалось выполнить быстрый вход"); 
         setLoading(false); 
@@ -514,6 +999,7 @@ async function registerUser() {
         const result = await auth.createUserWithEmailAndPassword(email, password); 
         await result.user.updateProfile({ displayName: name }); 
         showSuccess(); 
+        localStorage.setItem('userStatus', 'online');
     } catch (error) { 
         showError(getAuthErrorMessage(error)); 
         setLoading(false); 
@@ -575,8 +1061,22 @@ async function loadUserData(userId) {
         
         if (snapshot.exists()) {
             currentUser = { uid: userId, ...snapshot.val() };
-            await userRef.update({ lastActive: Date.now() });
-            currentUser.status = "online";
+            
+            let savedStatus = localStorage.getItem('userStatus');
+            if (!savedStatus) {
+                savedStatus = 'online';
+                localStorage.setItem('userStatus', savedStatus);
+            }
+            
+            if (savedStatus !== currentUser.status) {
+                await userRef.update({ status: savedStatus, lastActive: Date.now() });
+                currentUser.status = savedStatus;
+                currentUser.selectedStatus = savedStatus;
+            } else {
+                await userRef.update({ lastActive: Date.now() });
+                currentUser.selectedStatus = currentUser.status;
+            }
+            
             await loadAllUsers();
             setupVerifiedUsersListener();
             const contactsSnapshot = await database.ref(`users/${userId}/contacts`).once('value');
@@ -587,11 +1087,15 @@ async function loadUserData(userId) {
             setupChatsListener();
         } else {
             const user = auth.currentUser;
+            const defaultStatus = 'online';
+            localStorage.setItem('userStatus', defaultStatus);
+            
             currentUser = { 
                 uid: userId, 
                 displayName: user.displayName || "Пользователь", 
                 email: user.email, 
-                status: "online", 
+                status: defaultStatus,
+                selectedStatus: defaultStatus,
                 customId: "user_" + Math.random().toString(36).substr(2, 9).toUpperCase(), 
                 joinDate: new Date().toLocaleDateString('ru-RU'), 
                 lastActive: Date.now(), 
@@ -806,11 +1310,21 @@ function displaySearchResults(results, containerId, currentContacts = []) {
         const div = document.createElement('div');
         div.className = 'search-result-item';
         div.dataset.userId = result.userId;
+        
+        let statusText = result.status || 'offline';
+        let statusClass = '';
+        switch(statusText) {
+            case 'online': statusClass = 'online'; statusText = 'online'; break;
+            case 'away': statusClass = 'away'; statusText = 'away'; break;
+            case 'dnd': statusClass = 'dnd'; statusText = 'dnd'; break;
+            default: statusClass = 'offline'; statusText = 'offline';
+        }
+        
         div.innerHTML = `<div class="search-result-avatar">${escapeHtml(result.displayName.charAt(0))}</div>
             <div class="search-result-info">
                 <div class="search-result-name">${escapeHtml(result.displayName)} ${getVerifiedBadge(result.userId)}</div>
                 <div class="search-result-id">${result.customId}</div>
-                <div class="search-result-status ${result.status}">${result.status}</div>
+                <div class="search-result-status ${statusClass}">${statusText}</div>
             </div>
             <button class="add-user-btn" ${result.isContact ? 'disabled' : ''}>${result.isContact ? 'В контактах ✓' : 'Добавить'}</button>`;
         
@@ -1043,13 +1557,16 @@ function setupReactionsHandlers() {
 }
 
 // ================================================
-// СОЗДАНИЕ ЭЛЕМЕНТОВ СООБЩЕНИЙ
+// СОЗДАНИЕ ЭЛЕМЕНТОВ СООБЩЕНИЙ (с поддержкой .tgs)
 // ================================================
 function createMessageElement(message) {
     const isOutgoing = message.senderId === currentUser?.uid;
     const div = document.createElement('div');
-    div.className = `message ${isOutgoing ? 'outgoing' : 'incoming'} ${isMobile ? 'mobile' : 'desktop'}`;
+    
+    const isSticker = message.type === 'sticker';
+    div.className = `message ${isOutgoing ? 'outgoing' : 'incoming'} ${isMobile ? 'mobile' : 'desktop'} ${isSticker ? 'sticker-message' : ''}`;
     div.dataset.messageId = message.id;
+    
     const time = new Date(message.timestamp).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
     let senderName = message.senderName || "Пользователь";
     if (allUsers[message.senderId]) senderName = allUsers[message.senderId].displayName;
@@ -1064,7 +1581,8 @@ function createMessageElement(message) {
         </div>`;
     }
     
-    let photoHtml = '', fileHtml = '';
+    let photoHtml = '', fileHtml = '', stickerHtml = '';
+    
     if (message.type === 'photo' && message.photo) {
         photoHtml = `<img src="${message.photo}" class="message-photo" alt="Photo" onclick="window.showFullPhoto && showFullPhoto('${message.photo}')">`;
     }
@@ -1082,26 +1600,94 @@ function createMessageElement(message) {
         </div>`;
     }
     
-    div.innerHTML = `<div class="message-avatar">${escapeHtml(senderName.charAt(0))}</div>
-        <div class="message-content">
-            <div class="message-sender">
-                <span class="message-sender-name" onclick="openUserProfileModal('${message.senderId}')">${escapeHtml(senderName)} ${getVerifiedBadge(message.senderId)}</span>
-                <span class="message-time">${time}</span>
-            </div>
-            ${replyHtml}
-            ${photoHtml}
-            ${fileHtml}
-            ${message.type !== 'photo' && message.type !== 'file' ? `<div class="message-text">${escapeHtml(message.text)}</div>` : ''}
-        </div>`;
+    // Обработка стикеров (включая .tgs)
+    if (message.type === 'sticker' && message.stickerUrl) {
+        if (message.stickerUrl.endsWith('.tgs') || message.isTGS) {
+            // Для .tgs создаем контейнер с уникальным ID
+            const stickerId = 'tgs_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+            stickerHtml = `<div id="${stickerId}" class="tgs-sticker-container" style="width:180px;height:180px;cursor:pointer;"></div>`;
+            
+            // Откладываем загрузку анимации до добавления в DOM
+            setTimeout(() => {
+                const container = document.getElementById(stickerId);
+                if (container && typeof lottie !== 'undefined') {
+                    fetch(message.stickerUrl)
+                        .then(response => response.blob())
+                        .then(async blob => {
+                            try {
+                                const arrayBuffer = await blob.arrayBuffer();
+                                const uint8Array = new Uint8Array(arrayBuffer);
+                                // Пробуем распаковать как gzip
+                                let animationData;
+                                try {
+                                    const decompressed = pako.unsafeInflate(uint8Array);
+                                    const jsonString = new TextDecoder().decode(decompressed);
+                                    animationData = JSON.parse(jsonString);
+                                } catch (e) {
+                                    // Если не распаковалось, возможно это уже JSON
+                                    const jsonString = new TextDecoder().decode(uint8Array);
+                                    animationData = JSON.parse(jsonString);
+                                }
+                                
+                                container.innerHTML = '';
+                                lottie.loadAnimation({
+                                    container: container,
+                                    renderer: 'svg',
+                                    loop: true,
+                                    autoplay: true,
+                                    animationData: animationData
+                                });
+                            } catch (err) {
+                                console.error('TGS load error:', err);
+                                container.innerHTML = '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:rgba(139,92,246,0.2);border-radius:20px;"><i class="fas fa-film" style="font-size: 48px; color: #8b5cf6;"></i></div>';
+                            }
+                        })
+                        .catch(() => {
+                            container.innerHTML = '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:rgba(239,68,68,0.2);border-radius:20px;"><i class="fas fa-exclamation-triangle" style="font-size: 32px; color: #ef4444;"></i></div>';
+                        });
+                } else if (container) {
+                    container.innerHTML = '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:rgba(139,92,246,0.2);border-radius:20px;"><i class="fas fa-spinner fa-spin" style="font-size: 32px; color: #8b5cf6;"></i></div>';
+                }
+            }, 50);
+        } else {
+            stickerHtml = `<img src="${message.stickerUrl}" class="message-sticker" alt="Sticker" onclick="window.showFullPhoto && showFullPhoto('${message.stickerUrl}')">`;
+        }
+    }
     
-    div.addEventListener('dblclick', (e) => { 
-        if (!e.target.closest('.message-reactions') && !e.target.closest('.reaction-badge') && !e.target.closest('.message-photo') && !e.target.closest('.message-file') && currentChatId && message.id) 
-            toggleReaction(message.id, '❤️'); 
+    if (isSticker) {
+        div.innerHTML = `<div class="message-avatar">${escapeHtml(senderName.charAt(0))}</div>
+            <div class="message-content">
+                <div class="message-sender">
+                    <span class="message-sender-name" onclick="openUserProfileModal('${message.senderId}')">${escapeHtml(senderName)} ${getVerifiedBadge(message.senderId)}</span>
+                    <span class="message-time">${time}</span>
+                </div>
+                ${replyHtml}
+                <div class="sticker-wrapper">${stickerHtml}</div>
+            </div>`;
+    } else {
+        div.innerHTML = `<div class="message-avatar">${escapeHtml(senderName.charAt(0))}</div>
+            <div class="message-content">
+                <div class="message-sender">
+                    <span class="message-sender-name" onclick="openUserProfileModal('${message.senderId}')">${escapeHtml(senderName)} ${getVerifiedBadge(message.senderId)}</span>
+                    <span class="message-time">${time}</span>
+                </div>
+                ${replyHtml}
+                ${photoHtml}
+                ${fileHtml}
+                ${message.type !== 'photo' && message.type !== 'file' && message.type !== 'sticker' ? `<div class="message-text">${escapeHtml(message.text)}</div>` : ''}
+            </div>`;
+    }
+    
+    // Добавляем обработчик контекстного меню
+    div.addEventListener('contextmenu', (e) => { 
+        e.preventDefault();
+        e.stopPropagation();
+        showMessageContextMenu(e, message, isOutgoing);
     });
     
-    div.addEventListener('contextmenu', (e) => { 
-        e.preventDefault(); 
-        showMessageContextMenu(e, message, isOutgoing); 
+    div.addEventListener('dblclick', (e) => { 
+        if (!e.target.closest('.message-reactions') && !e.target.closest('.reaction-badge') && !e.target.closest('.message-photo') && !e.target.closest('.message-file') && !e.target.closest('.message-sticker') && !e.target.closest('.tgs-sticker-container') && currentChatId && message.id) 
+            toggleReaction(message.id, '❤️'); 
     });
     
     const replyDiv = div.querySelector('.message-reply');
@@ -1145,19 +1731,72 @@ function listenToNewMessages(chatId) {
 
 function showMessageContextMenu(e, message, isOutgoing) {
     if (!messageContextMenu) return;
-    if (contextDelete) contextDelete.style.display = isOutgoing ? 'flex' : 'none';
+    
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Сохраняем ID сообщения и информацию
     messageContextMenu.dataset.messageId = message.id;
-    messageContextMenu.style.left = e.clientX + 'px';
-    messageContextMenu.style.top = e.clientY + 'px';
+    messageContextMenu.dataset.isOutgoing = isOutgoing;
+    messageContextMenu.dataset.senderId = message.senderId;
+    
+    // Показываем/скрываем кнопку удаления
+    const deleteItem = document.getElementById('contextDelete');
+    if (deleteItem) {
+        deleteItem.style.display = (isOutgoing || message.senderId === currentUser?.uid) ? 'flex' : 'none';
+    }
+    
+    // Позиционируем меню
+    let left = e.clientX;
+    let top = e.clientY;
+    
+    const menuWidth = 200;
+    const menuHeight = 150;
+    const windowWidth = window.innerWidth;
+    const windowHeight = window.innerHeight;
+    
+    // Корректировка по горизонтали
+    if (left + menuWidth > windowWidth - 10) {
+        left = windowWidth - menuWidth - 10;
+    }
+    if (left < 10) {
+        left = 10;
+    }
+    
+    // Корректировка по вертикали
+    if (top + menuHeight > windowHeight - 10) {
+        top = windowHeight - menuHeight - 10;
+    }
+    if (top < 10) {
+        top = 10;
+    }
+    
+    // Проверка на перекрытие с полем ввода
+    const chatInput = document.querySelector('.chat-input-container');
+    if (chatInput) {
+        const inputRect = chatInput.getBoundingClientRect();
+        if (top + menuHeight > inputRect.top - 10) {
+            top = inputRect.top - menuHeight - 10;
+        }
+    }
+    
+    messageContextMenu.style.left = left + 'px';
+    messageContextMenu.style.top = top + 'px';
+    messageContextMenu.style.display = 'block';
     messageContextMenu.classList.add('active');
     
+    // Закрытие при клике вне
+    const closeMenu = (ev) => { 
+        if (!messageContextMenu.contains(ev.target)) { 
+            messageContextMenu.style.display = 'none';
+            messageContextMenu.classList.remove('active'); 
+            document.removeEventListener('click', closeMenu);
+            document.removeEventListener('contextmenu', closeMenu);
+        } 
+    };
     setTimeout(() => {
-        document.addEventListener('click', function closeMenu(ev) { 
-            if (!messageContextMenu.contains(ev.target)) { 
-                messageContextMenu.classList.remove('active'); 
-                document.removeEventListener('click', closeMenu); 
-            } 
-        });
+        document.addEventListener('click', closeMenu);
+        document.addEventListener('contextmenu', closeMenu);
     }, 10);
 }
 
@@ -1208,6 +1847,22 @@ function setupScrollListener() {
     }; 
 }
 
+function setupContextMenuBoundary() {
+    if (messagesContainer) {
+        messagesContainer.addEventListener('scroll', () => {
+            if (messageContextMenu?.classList.contains('active')) {
+                messageContextMenu.classList.remove('active');
+            }
+        });
+    }
+    
+    window.addEventListener('resize', () => {
+        if (messageContextMenu?.classList.contains('active')) {
+            messageContextMenu.classList.remove('active');
+        }
+    });
+}
+
 // ================================================
 // ФУНКЦИИ ЧАТА
 // ================================================
@@ -1217,6 +1872,8 @@ function openChat(chatId) {
     currentChatId = chatId;
     replyToMessage = null;
     hideReplyPreview();
+    
+    console.log("Открываем чат:", chatId, "Тип:", chat.type);
     
     if (isMobile) { 
         if (chatScreen) { 
@@ -1265,21 +1922,36 @@ function openChat(chatId) {
         if (chatHeaderDesktop) chatHeaderDesktop.style.display = 'flex'; 
         if (chatHeaderMobile) chatHeaderMobile.style.display = 'none'; 
     }
+    
     loadMessages(chatId);
-    setTimeout(hideScrollToBottomButton, 500);
+    
+    if (chat.type === 'group') {
+        console.log("Это группа, добавляем кнопки управления...");
+        setTimeout(() => {
+            forceRefreshGroupUI();
+        }, 500);
+    }
+    
+    setTimeout(() => {
+        hideScrollToBottomButton();
+    }, 200);
+    
     if (messageInput) setTimeout(() => messageInput.focus(), 300);
 }
 
 function updateChatHeader() {
     if (!currentChatId) return;
     const chat = chats.find(c => c.id === currentChatId);
-    if (!chat || chat.type !== 'private') return;
-    const otherId = Object.keys(chat.members).find(id => id !== currentUser?.uid);
-    const other = allUsers[otherId];
-    if (other && isMobile && chatHeaderName) {
-        chatHeaderName.innerHTML = `<span class="chat-header-name-with-badge">${escapeHtml(other.displayName)} ${getVerifiedBadge(otherId)}</span>`;
-    } else if (other && desktopChatHeaderName) {
-        desktopChatHeaderName.innerHTML = `<span class="chat-header-name-with-badge">${escapeHtml(other.displayName)} ${getVerifiedBadge(otherId)}</span>`;
+    if (!chat) return;
+    
+    if (chat.type === 'private') {
+        const otherId = Object.keys(chat.members).find(id => id !== currentUser?.uid);
+        const other = allUsers[otherId];
+        if (other && isMobile && chatHeaderName) {
+            chatHeaderName.innerHTML = `<span class="chat-header-name-with-badge">${escapeHtml(other.displayName)} ${getVerifiedBadge(otherId)}</span>`;
+        } else if (other && desktopChatHeaderName) {
+            desktopChatHeaderName.innerHTML = `<span class="chat-header-name-with-badge">${escapeHtml(other.displayName)} ${getVerifiedBadge(otherId)}</span>`;
+        }
     }
 }
 
@@ -1372,7 +2044,7 @@ async function createNewChat() {
                 createdBy: currentUser.uid, 
                 createdAt: Date.now(), 
                 members: { [currentUser.uid]: true }, 
-                lastMessage: { text: "Чат создан", timestamp: Date.now(), senderId: currentUser.uid } 
+                lastMessage: { text: "Группа создана", timestamp: Date.now(), senderId: currentUser.uid } 
             };
         }
         const ref = await database.ref('chats').push(newChat);
@@ -1454,6 +2126,8 @@ function updateHomeContacts() {
     }
     [...contacts].sort((a, b) => { 
         if (a.status === 'online' && b.status !== 'online') return -1; 
+        if (a.status === 'away' && b.status !== 'away') return -1;
+        if (a.status === 'dnd' && b.status !== 'dnd') return -1;
         return a.displayName.localeCompare(b.displayName); 
     }).forEach(c => homeContactsList.appendChild(createContactElement(c)));
 }
@@ -1462,26 +2136,36 @@ function createChatElement(chat) {
     const div = document.createElement('div');
     div.className = 'chat-item';
     div.dataset.chatId = chat.id;
-    let avatar, name;
+    let avatar, name, statusClass = '';
     
     if (chat.type === 'group') { 
         avatar = '<i class="fas fa-users"></i>'; 
         name = chat.name; 
+        statusClass = 'status-online';
     } else { 
         const otherId = Object.keys(chat.members).find(id => id !== currentUser?.uid); 
         const other = allUsers[otherId]; 
         avatar = other ? other.displayName.charAt(0) : '?'; 
-        name = other ? other.displayName : "Неизвестный"; 
+        name = other ? other.displayName : "Неизвестный";
+        
+        if (other) {
+            switch(other.status) {
+                case 'online': statusClass = 'status-online'; break;
+                case 'away': statusClass = 'status-away'; break;
+                case 'dnd': statusClass = 'status-dnd'; break;
+                default: statusClass = 'status-offline';
+            }
+        }
     }
     
     let lastMsg = "Нет сообщений", lastTime = "";
     if (chat.lastMessage) { 
-        lastMsg = chat.lastMessage.type === 'photo' ? '📸 Фото' : (chat.lastMessage.type === 'file' ? '📎 Файл' : (chat.lastMessage.text || "Сообщение")); 
+        lastMsg = chat.lastMessage.type === 'photo' ? '📸 Фото' : (chat.lastMessage.type === 'file' ? '📎 Файл' : (chat.lastMessage.type === 'sticker' ? '🖼️ Стикер' : (chat.lastMessage.text || "Сообщение"))); 
         if (lastMsg.length > 30) lastMsg = lastMsg.substring(0, 30) + '...'; 
         if (chat.lastMessage.timestamp) lastTime = new Date(chat.lastMessage.timestamp).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }); 
     }
     
-    div.innerHTML = `<div class="chat-avatar ${chat.type === 'group' ? 'group-avatar' : 'private-avatar'}">${avatar}</div>
+    div.innerHTML = `<div class="chat-avatar ${chat.type === 'group' ? 'group-avatar' : 'private-avatar'} ${statusClass}">${avatar}</div>
         <div class="chat-info">
             <div class="chat-name">${escapeHtml(name)}</div>
             <div class="last-message">${escapeHtml(lastMsg)}</div>
@@ -1497,10 +2181,20 @@ function createContactElement(contact) {
     const div = document.createElement('div');
     div.className = 'contact-item';
     div.dataset.userId = contact.userId;
+    
+    let statusText = contact.status || 'offline';
+    let statusClass = '';
+    switch(statusText) {
+        case 'online': statusClass = 'online'; statusText = 'online'; break;
+        case 'away': statusClass = 'away'; statusText = 'away'; break;
+        case 'dnd': statusClass = 'dnd'; statusText = 'не беспокоить'; break;
+        default: statusClass = 'offline'; statusText = 'offline';
+    }
+    
     div.innerHTML = `<div class="contact-avatar">${escapeHtml(contact.displayName.charAt(0))}</div>
         <div class="contact-info">
             <div class="contact-name" onclick="event.stopPropagation(); openUserProfileModal('${contact.userId}')">${escapeHtml(contact.displayName)} ${getVerifiedBadge(contact.userId)}</div>
-            <div class="contact-status ${contact.status || 'offline'}">${contact.status || 'offline'}</div>
+            <div class="contact-status ${statusClass}">${statusText}</div>
         </div>
         <div class="chat-meta">
             <div class="chat-time">${contact.customId}</div>
@@ -1524,21 +2218,31 @@ function createDesktopChatElement(chat) {
     div.className = 'desktop-chat-item';
     div.dataset.chatId = chat.id;
     if (currentChatId === chat.id) div.classList.add('active');
-    let avatar, name;
+    let avatar, name, statusColor = '#64748b';
     
     if (chat.type === 'group') { 
         avatar = '<i class="fas fa-users"></i>'; 
         name = chat.name; 
+        statusColor = '#10b981';
     } else { 
         const otherId = Object.keys(chat.members).find(id => id !== currentUser?.uid); 
         const other = allUsers[otherId]; 
         avatar = other ? other.displayName.charAt(0) : '?'; 
-        name = other ? other.displayName : "Неизвестный"; 
+        name = other ? other.displayName : "Неизвестный";
+        
+        if (other) {
+            switch(other.status) {
+                case 'online': statusColor = '#10b981'; break;
+                case 'away': statusColor = '#f59e0b'; break;
+                case 'dnd': statusColor = '#ef4444'; break;
+                default: statusColor = '#64748b';
+            }
+        }
     }
     
     let lastMsg = "Нет сообщений", lastTime = "";
     if (chat.lastMessage) { 
-        lastMsg = chat.lastMessage.type === 'photo' ? '📸 Фото' : (chat.lastMessage.type === 'file' ? '📎 Файл' : (chat.lastMessage.text || "Сообщение")); 
+        lastMsg = chat.lastMessage.type === 'photo' ? '📸 Фото' : (chat.lastMessage.type === 'file' ? '📎 Файл' : (chat.lastMessage.type === 'sticker' ? '🖼️ Стикер' : (chat.lastMessage.text || "Сообщение"))); 
         if (lastMsg.length > 30) lastMsg = lastMsg.substring(0, 30) + '...'; 
         if (chat.lastMessage.timestamp) lastTime = new Date(chat.lastMessage.timestamp).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }); 
     }
@@ -1546,7 +2250,7 @@ function createDesktopChatElement(chat) {
     div.innerHTML = `<div class="desktop-chat-avatar" style="background: ${chat.type === 'group' ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #3b82f6, #1d4ed8)'}">${avatar}</div>
         <div class="desktop-chat-info">
             <div class="desktop-chat-name">${escapeHtml(name)}</div>
-            <div class="desktop-chat-last-message">${lastTime ? lastTime + ' • ' + lastMsg : lastMsg}</div>
+            <div class="desktop-chat-last-message" style="color: ${statusColor}">${lastTime ? lastTime + ' • ' + lastMsg : lastMsg}</div>
         </div>`;
     div.onclick = () => openChat(chat.id);
     return div;
@@ -1561,6 +2265,8 @@ function updateDesktopContacts() {
     }
     [...contacts].sort((a, b) => { 
         if (a.status === 'online' && b.status !== 'online') return -1; 
+        if (a.status === 'away' && b.status !== 'away') return -1;
+        if (a.status === 'dnd' && b.status !== 'dnd') return -1;
         return a.displayName.localeCompare(b.displayName); 
     }).forEach(c => desktopContactsList.appendChild(createDesktopContactElement(c)));
 }
@@ -1569,11 +2275,21 @@ function createDesktopContactElement(contact) {
     const div = document.createElement('div');
     div.className = 'desktop-chat-item';
     div.dataset.userId = contact.userId;
-    const color = contact.status === 'online' ? '#10b981' : contact.status === 'away' ? '#f59e0b' : contact.status === 'dnd' ? '#ef4444' : '#94a3b8';
+    
+    let statusColor = '#94a3b8';
+    let statusText = contact.status || 'offline';
+    
+    switch(statusText) {
+        case 'online': statusColor = '#10b981'; statusText = 'online'; break;
+        case 'away': statusColor = '#f59e0b'; statusText = 'away'; break;
+        case 'dnd': statusColor = '#ef4444'; statusText = 'не беспокоить'; break;
+        default: statusColor = '#94a3b8'; statusText = 'offline';
+    }
+    
     div.innerHTML = `<div class="desktop-chat-avatar" style="background: linear-gradient(135deg, #f093fb, #f5576c)">${escapeHtml(contact.displayName.charAt(0))}</div>
         <div class="desktop-chat-info">
             <div class="desktop-chat-name">${escapeHtml(contact.displayName)} ${getVerifiedBadge(contact.userId)}</div>
-            <div class="desktop-chat-last-message" style="color: ${color}">${contact.status || 'offline'} • ${contact.customId}</div>
+            <div class="desktop-chat-last-message" style="color: ${statusColor}">${statusText} • ${contact.customId}</div>
         </div>`;
     div.onclick = () => openOrCreatePrivateChat(contact.userId);
     return div;
@@ -1595,26 +2311,36 @@ function createMobileChatElement(chat) {
     const div = document.createElement('div');
     div.className = 'mobile-chat-item';
     div.dataset.chatId = chat.id;
-    let avatar, name;
+    let avatar, name, statusClass = '';
     
     if (chat.type === 'group') { 
         avatar = '<i class="fas fa-users"></i>'; 
         name = chat.name; 
+        statusClass = 'status-online';
     } else { 
         const otherId = Object.keys(chat.members).find(id => id !== currentUser?.uid); 
         const other = allUsers[otherId]; 
         avatar = other ? other.displayName.charAt(0) : '?'; 
-        name = other ? other.displayName : "Неизвестный"; 
+        name = other ? other.displayName : "Неизвестный";
+        
+        if (other) {
+            switch(other.status) {
+                case 'online': statusClass = 'status-online'; break;
+                case 'away': statusClass = 'status-away'; break;
+                case 'dnd': statusClass = 'status-dnd'; break;
+                default: statusClass = 'status-offline';
+            }
+        }
     }
     
     let lastMsg = "Нет сообщений", lastTime = "";
     if (chat.lastMessage) { 
-        lastMsg = chat.lastMessage.type === 'photo' ? '📸 Фото' : (chat.lastMessage.type === 'file' ? '📎 Файл' : (chat.lastMessage.text || "Сообщение")); 
+        lastMsg = chat.lastMessage.type === 'photo' ? '📸 Фото' : (chat.lastMessage.type === 'file' ? '📎 Файл' : (chat.lastMessage.type === 'sticker' ? '🖼️ Стикер' : (chat.lastMessage.text || "Сообщение"))); 
         if (lastMsg.length > 30) lastMsg = lastMsg.substring(0, 30) + '...'; 
         if (chat.lastMessage.timestamp) lastTime = new Date(chat.lastMessage.timestamp).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }); 
     }
     
-    div.innerHTML = `<div class="mobile-chat-avatar ${chat.type === 'group' ? 'group' : 'private'}">${avatar}</div>
+    div.innerHTML = `<div class="mobile-chat-avatar ${chat.type === 'group' ? 'group' : 'private'} ${statusClass}">${avatar}</div>
         <div class="mobile-chat-info">
             <div class="mobile-chat-name">${escapeHtml(name)}</div>
             <div class="mobile-chat-last-message">${escapeHtml(lastMsg)}</div>
@@ -1640,10 +2366,20 @@ function createMobileContactElement(contact) {
     const div = document.createElement('div');
     div.className = 'mobile-contact-item';
     div.dataset.userId = contact.userId;
+    
+    let statusText = contact.status || 'offline';
+    let statusClass = '';
+    switch(statusText) {
+        case 'online': statusClass = 'online'; statusText = 'online'; break;
+        case 'away': statusClass = 'away'; statusText = 'away'; break;
+        case 'dnd': statusClass = 'dnd'; statusText = 'не беспокоить'; break;
+        default: statusClass = 'offline'; statusText = 'offline';
+    }
+    
     div.innerHTML = `<div class="mobile-contact-avatar">${escapeHtml(contact.displayName.charAt(0))}</div>
         <div class="mobile-contact-info">
             <div class="mobile-contact-name">${escapeHtml(contact.displayName)} ${getVerifiedBadge(contact.userId)}</div>
-            <div class="mobile-contact-status ${contact.status || 'offline'}"><i class="fas fa-circle"></i> ${contact.status || 'offline'}</div>
+            <div class="mobile-contact-status ${statusClass}"><i class="fas fa-circle"></i> ${statusText}</div>
         </div>`;
     div.onclick = () => openOrCreatePrivateChat(contact.userId);
     return div;
@@ -1658,9 +2394,39 @@ function updateMobileProfile() {
     if (mobileProfileChats) mobileProfileChats.textContent = chats.length;
     if (mobileProfileJoinDate) mobileProfileJoinDate.textContent = currentUser.joinDate;
     if (mobileProfileStatus) { 
-        const s = currentUser.status === 'offline' ? 'offline' : 'online'; 
-        mobileProfileStatus.innerHTML = `<i class="fas fa-circle"></i> ${s}`; 
-        mobileProfileStatus.style.color = s === 'online' ? '#10b981' : '#64748b'; 
+        let statusText = '';
+        let statusColor = '#10b981';
+        let statusIcon = 'fa-circle';
+        
+        switch(currentUser.status) {
+            case 'online':
+                statusText = 'online';
+                statusColor = '#10b981';
+                statusIcon = 'fa-circle';
+                break;
+            case 'away':
+                statusText = 'away';
+                statusColor = '#f59e0b';
+                statusIcon = 'fa-clock';
+                break;
+            case 'dnd':
+                statusText = 'не беспокоить';
+                statusColor = '#ef4444';
+                statusIcon = 'fa-minus-circle';
+                break;
+            case 'invisible':
+                statusText = 'невидимка';
+                statusColor = '#64748b';
+                statusIcon = 'fa-eye-slash';
+                break;
+            default:
+                statusText = 'offline';
+                statusColor = '#64748b';
+                statusIcon = 'fa-circle';
+        }
+        
+        mobileProfileStatus.innerHTML = `<i class="fas ${statusIcon}"></i> ${statusText}`;
+        mobileProfileStatus.style.color = statusColor;
     }
 }
 
@@ -1675,9 +2441,20 @@ function openProfileModal() {
     if (avatar) avatar.textContent = currentUser.displayName.charAt(0);
     const ps = document.getElementById('profileStatus');
     if (ps) { 
-        const s = currentUser.status === 'offline' ? 'offline' : 'online'; 
-        ps.textContent = s; 
-        ps.className = `profile-status ${s}`; 
+        const userStatus = currentUser.selectedStatus || currentUser.status;
+        let statusText = 'online';
+        let statusClass = 'online';
+        
+        switch(userStatus) {
+            case 'online': statusText = 'online'; statusClass = 'online'; break;
+            case 'away': statusText = 'away'; statusClass = 'away'; break;
+            case 'dnd': statusText = 'не беспокоить'; statusClass = 'dnd'; break;
+            case 'invisible': statusText = 'невидимка'; statusClass = 'invisible'; break;
+            default: statusText = 'offline'; statusClass = 'offline';
+        }
+        
+        ps.textContent = statusText;
+        ps.className = `profile-status ${statusClass}`;
     }
     const jd = document.getElementById('profileJoinDate');
     if (jd) jd.textContent = currentUser.joinDate;
@@ -1691,6 +2468,16 @@ window.openUserProfileModal = function(userId) {
     const user = allUsers[userId];
     const modal = document.createElement('div');
     modal.className = 'modal-overlay active';
+    
+    let statusText = user.status || 'offline';
+    let statusClass = 'offline';
+    switch(statusText) {
+        case 'online': statusText = 'online'; statusClass = 'online'; break;
+        case 'away': statusText = 'away'; statusClass = 'away'; break;
+        case 'dnd': statusText = 'не беспокоить'; statusClass = 'dnd'; break;
+        default: statusText = 'offline'; statusClass = 'offline';
+    }
+    
     modal.innerHTML = `<div class="modal">
         <div class="modal-header">
             <h3>Профиль</h3>
@@ -1700,7 +2487,7 @@ window.openUserProfileModal = function(userId) {
             <div class="profile-avatar-large">${escapeHtml(user.displayName.charAt(0))}</div>
             <div class="profile-info">
                 <div class="profile-name-with-badge" style="justify-content:center;">${escapeHtml(user.displayName)} ${getVerifiedBadge(userId)}</div>
-                <div class="profile-status ${user.status || 'offline'}">${user.status || 'offline'}</div>
+                <div class="profile-status ${statusClass}">${statusText}</div>
             </div>
             <div class="user-id-container">
                 <span class="user-id-label">ID:</span>
@@ -1718,21 +2505,37 @@ window.openUserProfileModal = function(userId) {
 async function saveProfileChanges() {
     try {
         const newName = editProfileName?.value.trim();
-        const active = document.querySelector('.status-option.active');
-        const newStatus = active ? active.dataset.status : 'online';
+        const activeStatus = document.querySelector('.status-option.active');
+        let newStatus = activeStatus ? activeStatus.dataset.status : 'online';
+        
         if (!newName) { showNotification("Введите имя"); return; }
-        await database.ref(`users/${currentUser.uid}`).update({ displayName: newName, status: newStatus, lastActive: Date.now() });
+        
+        localStorage.setItem('userSelectedStatus', newStatus);
+        
+        await database.ref(`users/${currentUser.uid}`).update({ 
+            displayName: newName, 
+            status: newStatus, 
+            lastActive: Date.now() 
+        });
+        
         currentUser.displayName = newName;
         currentUser.status = newStatus;
+        currentUser.selectedStatus = newStatus;
+        
         if (allUsers[currentUser.uid]) { 
             allUsers[currentUser.uid].displayName = newName; 
             allUsers[currentUser.uid].status = newStatus; 
         }
+        
         if (editProfileModal) editProfileModal.classList.remove('active');
         showNotification("Профиль обновлен!");
         updateUserProfileDisplay();
         updateUserIDs();
         updateMobileProfile();
+        updateDesktopUserInfo();
+        updateContactsDisplay();
+        updateChatsDisplay();
+        
     } catch (error) { 
         console.error(error); 
         showNotification("Ошибка обновления"); 
@@ -1747,9 +2550,19 @@ function updateUserProfileDisplay() {
     if (avatar) avatar.textContent = currentUser.displayName.charAt(0);
     const ps = document.getElementById('profileStatus');
     if (ps) { 
-        const s = currentUser.status === 'offline' ? 'offline' : 'online'; 
-        ps.textContent = s; 
-        ps.className = `profile-status ${s}`; 
+        const userStatus = currentUser.selectedStatus || currentUser.status;
+        let statusText = 'online';
+        let statusClass = 'online';
+        
+        switch(userStatus) {
+            case 'online': statusText = 'online'; statusClass = 'online'; break;
+            case 'away': statusText = 'away'; statusClass = 'away'; break;
+            case 'dnd': statusText = 'не беспокоить'; statusClass = 'dnd'; break;
+            default: statusText = 'offline'; statusClass = 'offline';
+        }
+        
+        ps.textContent = statusText;
+        ps.className = `profile-status ${statusClass}`;
     }
     const jd = document.getElementById('profileJoinDate');
     if (jd) jd.textContent = currentUser.joinDate;
@@ -1765,12 +2578,49 @@ function updateUserIDs() {
 
 function updateDesktopUserInfo() {
     if (!currentUser) return;
-    if (desktopUserAvatar) desktopUserAvatar.textContent = currentUser.displayName.charAt(0);
+    if (desktopUserAvatar) {
+        desktopUserAvatar.textContent = currentUser.displayName.charAt(0);
+        desktopUserAvatar.classList.remove('status-online', 'status-away', 'status-dnd', 'status-offline');
+        const statusClass = currentUser.status === 'online' ? 'status-online' : 
+                           currentUser.status === 'away' ? 'status-away' : 
+                           currentUser.status === 'dnd' ? 'status-dnd' : 'status-offline';
+        desktopUserAvatar.classList.add(statusClass);
+    }
     if (desktopUserName) desktopUserName.textContent = currentUser.displayName;
     if (desktopUserStatus) { 
-        const s = currentUser.status === 'offline' ? 'offline' : 'online'; 
-        desktopUserStatus.innerHTML = `<i class="fas fa-circle"></i><span>${s}</span>`; 
-        desktopUserStatus.style.color = s === 'online' ? '#10b981' : '#64748b'; 
+        let statusIcon = 'fa-circle';
+        let statusColor = '#10b981';
+        let statusText = 'online';
+        
+        switch(currentUser.status) {
+            case 'online':
+                statusIcon = 'fa-circle';
+                statusColor = '#10b981';
+                statusText = 'online';
+                break;
+            case 'away':
+                statusIcon = 'fa-clock';
+                statusColor = '#f59e0b';
+                statusText = 'away';
+                break;
+            case 'dnd':
+                statusIcon = 'fa-minus-circle';
+                statusColor = '#ef4444';
+                statusText = 'не беспокоить';
+                break;
+            case 'invisible':
+                statusIcon = 'fa-eye-slash';
+                statusColor = '#64748b';
+                statusText = 'невидимка';
+                break;
+            default:
+                statusIcon = 'fa-circle';
+                statusColor = '#64748b';
+                statusText = 'offline';
+        }
+        
+        desktopUserStatus.innerHTML = `<i class="fas ${statusIcon}"></i><span>${statusText}</span>`;
+        desktopUserStatus.style.color = statusColor;
     }
 }
 
@@ -1797,24 +2647,6 @@ function setupAdminPanel() {
     adminPanelBtn.onclick = () => { adminPanelModal?.classList.add('active'); loadVerifiedUsersList(); };
     if (closeAdminPanel) closeAdminPanel.onclick = () => adminPanelModal?.classList.remove('active');
     if (giveBadgeBtn) giveBadgeBtn.onclick = () => { const uid = badgeUserId?.value.trim(); const type = badgeType?.value; if (uid) giveVerifiedBadge(uid, type); else showNotification("Введите ID"); };
-    if (adminUserSearch) adminUserSearch.oninput = () => { 
-        const q = adminUserSearch.value.toLowerCase().trim(); 
-        if (q.length < 2) { if (adminSearchResults) adminSearchResults.innerHTML = ''; return; } 
-        const res = []; 
-        for (const id in allUsers) { 
-            const u = allUsers[id]; 
-            if (u.displayName?.toLowerCase().includes(q) || u.customId?.toLowerCase().includes(q)) 
-                res.push({ userId: id, displayName: u.displayName, customId: u.customId, hasBadge: !!verifiedUsers[id] }); 
-        } 
-        if (adminSearchResults) adminSearchResults.innerHTML = res.slice(0,5).map(u => `<div class="search-result-item" onclick="selectUserForBadge('${u.userId}','${u.displayName}')">
-            <div class="search-result-avatar">${escapeHtml(u.displayName.charAt(0))}</div>
-            <div class="search-result-info">
-                <div class="search-result-name">${escapeHtml(u.displayName)}</div>
-                <div class="search-result-id">${u.customId}</div>
-            </div>
-            <span style="color:#64748b">${u.hasBadge ? 'Есть галочка' : 'Нет галочки'}</span>
-        </div>`).join(''); 
-    };
 }
 
 async function loadVerifiedUsersList() {
@@ -1855,13 +2687,6 @@ window.removeVerifiedBadge = async function(userId) {
         showNotification("✅ Удалено"); 
         loadVerifiedUsersList(); 
     } catch(e) { showNotification("❌ Ошибка"); } 
-};
-
-window.selectUserForBadge = function(userId, name) { 
-    if (badgeUserId) badgeUserId.value = userId; 
-    if (adminUserSearch) adminUserSearch.value = ''; 
-    if (adminSearchResults) adminSearchResults.innerHTML = ''; 
-    showNotification(`Выбран: ${name}`); 
 };
 
 // ================================================
@@ -1909,6 +2734,9 @@ function initDesktopInterface() {
 
 function initializeInterface() { 
     if (!currentUser) return; 
+    
+    console.log("Инициализация интерфейса для пользователя:", currentUser.displayName);
+    
     updateUserProfileDisplay(); 
     updateHomeChats(); 
     updateHomeContacts(); 
@@ -1946,8 +2774,41 @@ function initializeInterface() {
         if (desktopSidebarTabs[0]) desktopSidebarTabs[0].click();
     }
     
-    if (isMobile) initMobileInterface(); 
-    else initDesktopInterface(); 
+    if (isMobile) {
+        initMobileInterface();
+    } else {
+        initDesktopInterface();
+    }
+    
+    if (currentChatId) {
+        const currentChat = chats.find(c => c.id === currentChatId);
+        if (currentChat && currentChat.type === 'group') {
+            console.log("Обновляем групповые кнопки для текущего чата:", currentChatId);
+            setTimeout(() => {
+                forceRefreshGroupUI();
+            }, 500);
+        }
+    }
+    
+    window.debugGroupButtons = function() {
+        console.log("=== ОТЛАДКА ГРУППОВЫХ КНОПОК ===");
+        console.log("currentChatId:", currentChatId);
+        if (currentChatId) {
+            const chat = chats.find(c => c.id === currentChatId);
+            console.log("Текущий чат:", chat);
+            if (chat) {
+                console.log("Тип чата:", chat.type);
+                console.log("Создатель:", chat.createdBy);
+                console.log("Текущий пользователь:", currentUser?.uid);
+                console.log("Является создателем?", chat.createdBy === currentUser?.uid);
+            }
+        }
+        console.log("Элемент .chat-actions:", document.querySelector('.chat-actions'));
+        console.log("Элемент .group-actions:", document.querySelector('.group-actions'));
+        console.log("================================");
+    };
+    
+    console.log("Инициализация интерфейса завершена");
 }
 
 function setupMobileInterface() {
@@ -2103,7 +2964,9 @@ function setupMobileInterface() {
             if (editProfileName) editProfileName.value = currentUser?.displayName || ''; 
             statusOptions.forEach(opt => { 
                 opt.classList.remove('active'); 
-                if (opt.dataset.status === currentUser?.status) opt.classList.add('active'); 
+                if (opt.dataset.status === (currentUser?.selectedStatus || currentUser?.status)) {
+                    opt.classList.add('active');
+                }
             }); 
         } 
     };
@@ -2188,7 +3051,21 @@ if (contextReply) {
         if (!msgId) return; 
         const el = document.querySelector(`[data-message-id="${msgId}"]`); 
         if (!el) return; 
-        const text = el.querySelector('.message-text')?.textContent || ''; 
+        let text = '';
+        const textElement = el.querySelector('.message-text');
+        if (textElement) {
+            text = textElement.textContent;
+        } else {
+            const photoElement = el.querySelector('.message-photo');
+            const fileElement = el.querySelector('.message-file');
+            const stickerElement = el.querySelector('.message-sticker');
+            
+            if (photoElement) text = '📸 Фото';
+            else if (fileElement) text = '📎 Файл';
+            else if (stickerElement) text = '🖼️ Стикер';
+            else text = 'Сообщение';
+        }
+        
         const sender = el.querySelector('.message-sender-name')?.textContent?.split(' ')[0] || ''; 
         database.ref(`messages/${currentChatId}/${msgId}`).once('value').then(snap => { 
             const d = snap.val(); 
@@ -2225,40 +3102,742 @@ if (contextCopy) {
 if (contextDelete) {
     contextDelete.onclick = () => { 
         const msgId = messageContextMenu?.dataset.messageId; 
-        const isOut = messageContextMenu?.dataset.isOutgoing === 'true'; 
-        if (!msgId || !currentChatId || !isOut) { 
+        const isOutgoing = messageContextMenu?.dataset.isOutgoing === 'true';
+        const senderId = messageContextMenu?.dataset.senderId;
+        
+        if (!msgId || !currentChatId) { 
             if (messageContextMenu) messageContextMenu.classList.remove('active'); 
             return; 
-        } 
-        const el = document.querySelector(`[data-message-id="${msgId}"]`); 
-        if (!el) return; 
-        const text = el.querySelector('.message-text')?.textContent || ''; 
-        const sender = el.querySelector('.message-sender-name')?.textContent?.split(' ')[0] || ''; 
-        showDeleteMessageConfirmation(msgId, currentChatId, text, sender, Date.now()); 
+        }
+        
+        if (!isOutgoing && senderId !== currentUser?.uid) {
+            showNotification("Вы можете удалять только свои сообщения");
+            if (messageContextMenu) messageContextMenu.classList.remove('active');
+            return;
+        }
+        
+        const messageElement = document.querySelector(`.message[data-message-id="${msgId}"]`);
+        if (!messageElement) return;
+        
+        let messageText = '';
+        const textElement = messageElement.querySelector('.message-text');
+        if (textElement) {
+            messageText = textElement.textContent;
+        } else {
+            const photoElement = messageElement.querySelector('.message-photo');
+            const fileElement = messageElement.querySelector('.message-file');
+            const stickerElement = messageElement.querySelector('.message-sticker');
+            
+            if (photoElement) messageText = '📸 Фото';
+            else if (fileElement) messageText = '📎 Файл';
+            else if (stickerElement) messageText = '🖼️ Стикер';
+            else messageText = 'Сообщение';
+        }
+        
+        const senderName = messageElement.querySelector('.message-sender-name')?.textContent?.trim() || 'Пользователь';
+        
+        showDeleteMessageConfirmation(msgId, currentChatId, messageText, senderName, Date.now());
+        if (messageContextMenu) messageContextMenu.classList.remove('active');
     };
 }
 
 function showDeleteMessageConfirmation(msgId, chatId, text, sender, ts) { 
     if (!confirmDeleteMessageModal || !messagePreview) return; 
-    messagePreview.innerHTML = `<div class="message-preview-header">
-        <div class="message-preview-avatar">${sender?.charAt(0) || '?'}</div>
-        <div class="message-preview-sender">${sender || "Вы"}</div>
-        <div class="message-preview-time">${new Date(ts).toLocaleTimeString()}</div>
-    </div>
-    <div class="message-preview-text">${escapeHtml(text)}</div>`;
-    confirmDeleteMessageModal.classList.add('active'); 
-    if (messageContextMenu) messageContextMenu.classList.remove('active'); 
+    
+    messagePreview.innerHTML = `
+        <div class="message-preview-header">
+            <div class="message-preview-avatar">${escapeHtml(sender?.charAt(0) || '?')}</div>
+            <div class="message-preview-sender">${escapeHtml(sender || "Пользователь")}</div>
+            <div class="message-preview-time">${new Date(ts).toLocaleTimeString()}</div>
+        </div>
+        <div class="message-preview-text">${escapeHtml(text.length > 100 ? text.substring(0, 100) + '...' : text)}</div>
+    `;
+    
+    confirmDeleteMessageModal.classList.add('active');
+    confirmDeleteMessageModal.dataset.messageId = msgId;
+    confirmDeleteMessageModal.dataset.chatId = chatId;
+    
     if (confirmDeleteBtn) {
-        confirmDeleteBtn.onclick = async () => { 
+        const newConfirmBtn = confirmDeleteBtn.cloneNode(true);
+        confirmDeleteBtn.parentNode.replaceChild(newConfirmBtn, confirmDeleteBtn);
+        window.confirmDeleteBtn = newConfirmBtn;
+        
+        newConfirmBtn.onclick = async () => { 
+            const messageId = confirmDeleteMessageModal.dataset.messageId;
+            const chatId = confirmDeleteMessageModal.dataset.chatId;
+            
+            if (!messageId || !chatId) {
+                showNotification("Ошибка: сообщение не найдено");
+                confirmDeleteMessageModal.classList.remove('active');
+                return;
+            }
+            
             try { 
-                await database.ref(`messages/${chatId}/${msgId}`).remove(); 
-                showNotification("Удалено"); 
-                document.querySelector(`[data-message-id="${msgId}"]`)?.remove(); 
-                confirmDeleteMessageModal.classList.remove('active'); 
+                await database.ref(`messages/${chatId}/${messageId}`).remove();
+                showNotification("✅ Сообщение удалено");
+                
+                const messageElement = document.querySelector(`.message[data-message-id="${messageId}"]`);
+                if (messageElement) {
+                    messageElement.remove();
+                }
+                
+                const messagesRef = database.ref(`messages/${chatId}`);
+                const snapshot = await messagesRef.once('value');
+                if (!snapshot.exists()) {
+                    if (messagesContainer) {
+                        messagesContainer.innerHTML = '';
+                        const emptyDiv = document.createElement('div');
+                        emptyDiv.className = 'empty-state';
+                        emptyDiv.innerHTML = '<i class="fas fa-comments"></i><h3>Нет сообщений</h3><p>Напишите первое сообщение!</p>';
+                        messagesContainer.appendChild(emptyDiv);
+                    }
+                }
+                
+                confirmDeleteMessageModal.classList.remove('active');
+                
             } catch(e) { 
-                showNotification("Ошибка"); 
-                confirmDeleteMessageModal.classList.remove('active'); 
+                console.error("Ошибка удаления:", e);
+                showNotification("❌ Не удалось удалить сообщение"); 
+                confirmDeleteMessageModal.classList.remove('active');
             } 
+        };
+    }
+    
+    if (cancelDeleteBtn) {
+        const newCancelBtn = cancelDeleteBtn.cloneNode(true);
+        cancelDeleteBtn.parentNode.replaceChild(newCancelBtn, cancelDeleteBtn);
+        newCancelBtn.onclick = () => {
+            confirmDeleteMessageModal.classList.remove('active');
+        };
+    }
+}
+
+// ================================================
+// ФУНКЦИИ ГРУПП
+// ================================================
+function addGroupActionButtons() {
+    console.log("=== addGroupActionButtons вызвана ===");
+    
+    let chatActions = null;
+    
+    const desktopChatHeader = document.querySelector('.chat-header.desktop .desktop-chat-header');
+    if (desktopChatHeader) {
+        let desktopActions = desktopChatHeader.querySelector('.desktop-chat-actions');
+        if (!desktopActions) {
+            desktopActions = document.createElement('div');
+            desktopActions.className = 'desktop-chat-actions';
+            desktopActions.style.marginLeft = 'auto';
+            desktopActions.style.display = 'flex';
+            desktopActions.style.gap = '8px';
+            desktopChatHeader.appendChild(desktopActions);
+        }
+        chatActions = desktopActions;
+    }
+    
+    if (!chatActions) {
+        chatActions = document.querySelector('.chat-actions');
+    }
+    if (!chatActions) {
+        chatActions = document.querySelector('.chat-header .chat-actions');
+    }
+    if (!chatActions) {
+        chatActions = document.querySelector('#chatHeaderMobile .chat-actions');
+    }
+    
+    console.log("chatActions найден?", chatActions);
+    
+    if (!chatActions) {
+        const chatHeader = document.querySelector('.chat-header.desktop') || document.querySelector('.chat-header.mobile') || document.querySelector('.chat-header');
+        if (chatHeader) {
+            chatActions = document.createElement('div');
+            chatActions.className = 'chat-actions';
+            chatHeader.appendChild(chatActions);
+        }
+    }
+    
+    if (!chatActions) {
+        console.log("НЕ удалось найти или создать chatActions");
+        return;
+    }
+    
+    const oldBtns = document.querySelector('.group-actions');
+    if (oldBtns) oldBtns.remove();
+    
+    const currentChat = chats.find(c => c.id === currentChatId);
+    if (!currentChat) {
+        console.log("Текущий чат не найден, currentChatId:", currentChatId);
+        return;
+    }
+    
+    if (currentChat.type !== 'group') {
+        console.log("Чат не является группой, тип:", currentChat.type);
+        return;
+    }
+    
+    const isCreator = currentChat.createdBy === currentUser?.uid;
+    console.log("Создатель группы:", currentChat.createdBy);
+    console.log("Текущий пользователь:", currentUser?.uid);
+    console.log("isCreator:", isCreator);
+    
+    const groupActions = document.createElement('div');
+    groupActions.className = 'group-actions';
+    groupActions.style.display = 'flex';
+    groupActions.style.gap = '8px';
+    groupActions.style.marginLeft = 'auto';
+    
+    const btnStyle = 'width:40px;height:40px;border-radius:12px;background:rgba(139,92,246,0.15);border:1px solid rgba(139,92,246,0.3);color:#c084fc;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s ease;';
+    
+    let buttonsHtml = `
+        <button class="group-action-btn" id="groupMembersBtn" title="Участники" style="${btnStyle}" onmouseover="this.style.background='rgba(139,92,246,0.3)';this.style.transform='translateY(-2px)'" onmouseout="this.style.background='rgba(139,92,246,0.15)';this.style.transform='none'">
+            <i class="fas fa-users"></i>
+        </button>
+    `;
+    
+    if (isCreator) {
+        buttonsHtml = `
+            <button class="group-action-btn" id="groupAddMembersBtn" title="Добавить участников" style="${btnStyle}" onmouseover="this.style.background='rgba(139,92,246,0.3)';this.style.transform='translateY(-2px)'" onmouseout="this.style.background='rgba(139,92,246,0.15)';this.style.transform='none'">
+                <i class="fas fa-user-plus"></i>
+            </button>
+            <button class="group-action-btn" id="groupInviteLinkBtn" title="Ссылка-приглашение" style="${btnStyle}" onmouseover="this.style.background='rgba(139,92,246,0.3)';this.style.transform='translateY(-2px)'" onmouseout="this.style.background='rgba(139,92,246,0.15)';this.style.transform='none'">
+                <i class="fas fa-link"></i>
+            </button>
+            <button class="group-action-btn" id="groupMembersBtn" title="Участники" style="${btnStyle}" onmouseover="this.style.background='rgba(139,92,246,0.3)';this.style.transform='translateY(-2px)'" onmouseout="this.style.background='rgba(139,92,246,0.15)';this.style.transform='none'">
+                <i class="fas fa-users"></i>
+            </button>
+        `;
+    }
+    
+    groupActions.innerHTML = buttonsHtml;
+    chatActions.appendChild(groupActions);
+    
+    const membersBtn = document.getElementById('groupMembersBtn');
+    if (membersBtn) {
+        membersBtn.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log("Кнопка Участники нажата");
+            showGroupMembers(currentChatId);
+        };
+    }
+    
+    if (isCreator) {
+        const addBtn = document.getElementById('groupAddMembersBtn');
+        if (addBtn) {
+            addBtn.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log("Кнопка Добавить участников нажата");
+                openAddMembersModal(currentChatId);
+            };
+        }
+        
+        const inviteBtn = document.getElementById('groupInviteLinkBtn');
+        if (inviteBtn) {
+            inviteBtn.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log("Кнопка Ссылка-приглашение нажата");
+                openInviteLinkModal(currentChatId);
+            };
+        }
+    }
+    
+    console.log("Кнопки группы успешно добавлены");
+}
+
+function addGroupMembersPreview() {
+    console.log("=== addGroupMembersPreview вызвана ===");
+    
+    let chatHeaderInfo = null;
+    let isDesktop = false;
+    
+    const desktopHeaderInfo = document.querySelector('.chat-header.desktop .desktop-chat-header-info');
+    if (desktopHeaderInfo) {
+        chatHeaderInfo = desktopHeaderInfo;
+        isDesktop = true;
+    }
+    
+    if (!chatHeaderInfo) {
+        chatHeaderInfo = document.querySelector('.chat-header-info');
+    }
+    if (!chatHeaderInfo) {
+        chatHeaderInfo = document.querySelector('#chatHeaderMobile .chat-header-info');
+    }
+    if (!chatHeaderInfo) {
+        chatHeaderInfo = document.querySelector('#chatHeaderDesktop .chat-header-info');
+    }
+    
+    console.log("chatHeaderInfo найден?", chatHeaderInfo, "isDesktop:", isDesktop);
+    
+    if (!chatHeaderInfo) {
+        console.log("chatHeaderInfo не найден");
+        return;
+    }
+    
+    const oldPreview = document.getElementById('groupMembersPreview');
+    if (oldPreview) oldPreview.remove();
+    
+    const currentChat = chats.find(c => c.id === currentChatId);
+    if (!currentChat || currentChat.type !== 'group') {
+        console.log("Не группа или чат не найден");
+        return;
+    }
+    
+    const memberIds = Object.keys(currentChat.members || {});
+    const memberCount = memberIds.length;
+    
+    console.log("Участников в группе:", memberCount);
+    
+    function getMemberWord(count) {
+        if (count % 10 === 1 && count % 100 !== 11) return "участник";
+        if (count % 10 >= 2 && count % 10 <= 4 && (count % 100 < 10 || count % 100 >= 20)) return "участника";
+        return "участников";
+    }
+    
+    const membersPreview = document.createElement('div');
+    membersPreview.className = 'group-members-preview';
+    membersPreview.id = 'groupMembersPreview';
+    membersPreview.style.cssText = `
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin-left: 12px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        padding: 4px 10px;
+        border-radius: 20px;
+        background: rgba(139, 92, 246, 0.1);
+        flex-shrink: 0;
+    `;
+    
+    membersPreview.innerHTML = `
+        <div class="members-count-indicator" onclick="showGroupMembers('${currentChatId}')" 
+             style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
+            <i class="fas fa-users" style="font-size: ${isDesktop ? '13px' : '12px'}; color: #8b5cf6;"></i>
+            <span style="font-size: ${isDesktop ? '13px' : '12px'}; color: #a78bfa; font-weight: 500;">${memberCount} ${getMemberWord(memberCount)}</span>
+            <i class="fas fa-chevron-right" style="font-size: 10px; color: #64748b;"></i>
+        </div>
+    `;
+    
+    membersPreview.onmouseenter = () => {
+        membersPreview.style.background = 'rgba(139, 92, 246, 0.2)';
+        membersPreview.style.transform = 'translateY(-1px)';
+    };
+    membersPreview.onmouseleave = () => {
+        membersPreview.style.background = 'rgba(139, 92, 246, 0.1)';
+        membersPreview.style.transform = 'translateY(0)';
+    };
+    
+    if (isDesktop) {
+        const nameElement = chatHeaderInfo.querySelector('.desktop-chat-header-name');
+        if (nameElement) {
+            let titleRow = nameElement.parentNode;
+            if (!titleRow.classList.contains('group-title-row')) {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'group-title-row';
+                wrapper.style.display = 'flex';
+                wrapper.style.alignItems = 'center';
+                wrapper.style.flexWrap = 'wrap';
+                wrapper.style.gap = '8px';
+                wrapper.style.width = '100%';
+                nameElement.parentNode.insertBefore(wrapper, nameElement);
+                wrapper.appendChild(nameElement);
+                titleRow = wrapper;
+            }
+            titleRow.appendChild(membersPreview);
+        } else {
+            chatHeaderInfo.appendChild(membersPreview);
+        }
+    } else {
+        const nameElement = chatHeaderInfo.querySelector('h2');
+        if (nameElement) {
+            let titleRow = nameElement.parentNode;
+            if (!titleRow.classList.contains('group-title-row')) {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'group-title-row';
+                wrapper.style.display = 'flex';
+                wrapper.style.alignItems = 'center';
+                wrapper.style.justifyContent = 'space-between';
+                wrapper.style.width = '100%';
+                nameElement.parentNode.insertBefore(wrapper, nameElement);
+                wrapper.appendChild(nameElement);
+                titleRow = wrapper;
+            }
+            titleRow.appendChild(membersPreview);
+        } else {
+            chatHeaderInfo.appendChild(membersPreview);
+        }
+    }
+    
+    console.log("Индикатор количества участников добавлен справа от названия");
+}
+
+function forceRefreshGroupUI() {
+    console.log("=== ПРИНУДИТЕЛЬНОЕ ОБНОВЛЕНИЕ ГРУППОВОГО ИНТЕРФЕЙСА ===");
+    
+    if (!currentChatId) {
+        console.log("Нет открытого чата");
+        return;
+    }
+    
+    const chat = chats.find(c => c.id === currentChatId);
+    if (!chat) {
+        console.log("Чат не найден");
+        return;
+    }
+    
+    if (chat.type !== 'group') {
+        console.log("Чат не является группой");
+        return;
+    }
+    
+    const oldGroupActions = document.querySelector('.group-actions');
+    if (oldGroupActions) oldGroupActions.remove();
+    
+    const oldMembersPreview = document.getElementById('groupMembersPreview');
+    if (oldMembersPreview) oldMembersPreview.remove();
+    
+    setTimeout(() => {
+        addGroupActionButtons();
+        addGroupMembersPreview();
+    }, 100);
+    
+    console.log("Принудительное обновление выполнено");
+}
+
+window.forceRefreshGroupUI = forceRefreshGroupUI;
+
+function openAddMembersModal(chatId) {
+    currentGroupChatId = chatId;
+    selectedContactsForGroup.clear();
+    loadContactsForSelection();
+    if (addMembersModal) addMembersModal.classList.add('active');
+}
+
+function loadContactsForSelection() {
+    if (!contactsSelectList) return;
+    
+    const currentChat = chats.find(c => c.id === currentGroupChatId);
+    const existingMemberIds = currentChat ? Object.keys(currentChat.members || {}) : [];
+    
+    const availableContacts = contacts.filter(c => !existingMemberIds.includes(c.userId));
+    
+    if (availableContacts.length === 0) {
+        contactsSelectList.innerHTML = '<div class="empty-state"><i class="fas fa-user-friends"></i><h3>Нет доступных контактов</h3><p>Все ваши контакты уже в группе</p></div>';
+        return;
+    }
+    
+    contactsSelectList.innerHTML = availableContacts.map(contact => `
+        <div class="contact-select-item" data-user-id="${contact.userId}" data-custom-id="${contact.customId}">
+            <div class="contact-select-avatar">${escapeHtml(contact.displayName.charAt(0))}</div>
+            <div class="contact-select-info">
+                <div class="contact-select-name">${escapeHtml(contact.displayName)} ${getVerifiedBadge(contact.userId)}</div>
+                <div class="contact-select-id">${contact.customId}</div>
+            </div>
+            <div class="contact-select-checkbox">
+                <i class="fas fa-check"></i>
+            </div>
+        </div>
+    `).join('');
+    
+    document.querySelectorAll('.contact-select-item').forEach(el => {
+        el.onclick = () => {
+            const userId = el.dataset.userId;
+            if (selectedContactsForGroup.has(userId)) {
+                selectedContactsForGroup.delete(userId);
+                el.classList.remove('selected');
+            } else {
+                selectedContactsForGroup.add(userId);
+                el.classList.add('selected');
+            }
+        };
+    });
+}
+
+async function addMembersToGroup() {
+    if (!currentGroupChatId || selectedContactsForGroup.size === 0) {
+        showNotification("Выберите хотя бы одного участника");
+        return;
+    }
+    
+    try {
+        const chatRef = database.ref(`chats/${currentGroupChatId}`);
+        const snapshot = await chatRef.once('value');
+        const chat = snapshot.val();
+        
+        if (!chat) {
+            showNotification("Чат не найден");
+            return;
+        }
+        
+        const updates = {};
+        const newMembers = [];
+        
+        for (const userId of selectedContactsForGroup) {
+            updates[`members/${userId}`] = true;
+            newMembers.push(userId);
+        }
+        
+        await chatRef.update(updates);
+        
+        const memberNames = newMembers.map(id => allUsers[id]?.displayName || id).join(', ');
+        const systemMessage = {
+            text: `👋 ${currentUser.displayName} добавил(а) участников: ${memberNames}`,
+            senderId: 'system',
+            senderName: 'Spectrum',
+            timestamp: Date.now(),
+            type: 'system'
+        };
+        
+        await database.ref(`messages/${currentGroupChatId}`).push(systemMessage);
+        
+        showNotification(`✅ Добавлено ${selectedContactsForGroup.size} участников`);
+        
+        if (addMembersModal) addMembersModal.classList.remove('active');
+        selectedContactsForGroup.clear();
+        
+        updateChatsDisplay();
+        if (currentChatId === currentGroupChatId) {
+            updateChatHeader();
+            addGroupMembersPreview();
+            addGroupActionButtons();
+        }
+        
+    } catch (error) {
+        console.error(error);
+        showNotification("Ошибка при добавлении участников");
+    }
+}
+
+function showGroupMembers(chatId) {
+    const chat = chats.find(c => c.id === chatId);
+    if (!chat || chat.type !== 'group') return;
+    
+    const memberIds = Object.keys(chat.members || {});
+    const isCreator = chat.createdBy === currentUser?.uid;
+    
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay active members-list-modal';
+    
+    let membersHtml = '';
+    for (const memberId of memberIds) {
+        const member = allUsers[memberId];
+        if (!member) continue;
+        
+        const isCurrentCreator = chat.createdBy === memberId;
+        const roleText = isCurrentCreator ? 'Создатель' : 'Участник';
+        
+        membersHtml += `
+            <div class="member-item" data-user-id="${memberId}">
+                <div class="member-avatar">${escapeHtml(member.displayName.charAt(0))}</div>
+                <div class="member-info">
+                    <div class="member-name">
+                        ${escapeHtml(member.displayName)} ${getVerifiedBadge(memberId)}
+                        <span class="member-role">${roleText}</span>
+                    </div>
+                    <div class="member-status">${member.customId || memberId.substring(0, 8)}</div>
+                </div>
+                ${isCreator && !isCurrentCreator && memberId !== currentUser?.uid ? `
+                    <button class="member-remove-btn" onclick="removeMemberFromGroup('${chatId}', '${memberId}')" title="Исключить">
+                        <i class="fas fa-user-minus"></i>
+                    </button>
+                ` : ''}
+            </div>
+        `;
+    }
+    
+    modal.innerHTML = `
+        <div class="modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-users"></i> Участники группы (${memberIds.length})</h3>
+                <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="members-list">
+                    ${membersHtml || '<div class="empty-state">Нет участников</div>'}
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+}
+
+window.removeMemberFromGroup = async function(chatId, userId) {
+    if (!confirm(`Вы уверены, что хотите исключить ${allUsers[userId]?.displayName || userId} из группы?`)) return;
+    
+    try {
+        await database.ref(`chats/${chatId}/members/${userId}`).remove();
+        
+        const systemMessage = {
+            text: `🚫 ${currentUser.displayName} исключил(а) ${allUsers[userId]?.displayName || 'участника'} из группы`,
+            senderId: 'system',
+            senderName: 'Система',
+            timestamp: Date.now(),
+            type: 'system'
+        };
+        
+        await database.ref(`messages/${chatId}`).push(systemMessage);
+        showNotification("Участник исключен");
+        
+        document.querySelector('.members-list-modal')?.remove();
+        updateChatsDisplay();
+        if (currentChatId === chatId) {
+            updateChatHeader();
+            addGroupMembersPreview();
+            addGroupActionButtons();
+        }
+        
+    } catch (error) {
+        console.error(error);
+        showNotification("Ошибка при исключении");
+    }
+};
+
+async function generateInviteLink(chatId) {
+    const chat = chats.find(c => c.id === chatId);
+    if (!chat || chat.type !== 'group') return null;
+    
+    const inviteCode = btoa(`${chatId}_${Date.now()}_${Math.random()}`).replace(/[^a-zA-Z0-9]/g, '').substring(0, 32);
+    const expiresAt = Date.now() + (7 * 24 * 60 * 60 * 1000);
+    
+    const inviteData = {
+        chatId: chatId,
+        chatName: chat.name,
+        createdBy: currentUser.uid,
+        createdAt: Date.now(),
+        expiresAt: expiresAt
+    };
+    
+    await database.ref(`groupInvites/${inviteCode}`).set(inviteData);
+    groupInviteLinks[chatId] = inviteCode;
+    
+    return `${window.location.origin}${window.location.pathname}?code=${inviteCode}`;
+}
+
+async function openInviteLinkModal(chatId) {
+    let link = groupInviteLinks[chatId];
+    if (!link) {
+        showNotification("Генерация ссылки...");
+        link = await generateInviteLink(chatId);
+    }
+    
+    if (inviteLinkInput) inviteLinkInput.value = link || "Ошибка генерации";
+    if (inviteLinkModal) inviteLinkModal.classList.add('active');
+}
+
+async function handleInviteLink() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const inviteCode = urlParams.get('code');
+    
+    if (!inviteCode || !currentUser) return;
+    
+    try {
+        const inviteRef = database.ref(`groupInvites/${inviteCode}`);
+        const snapshot = await inviteRef.once('value');
+        const inviteData = snapshot.val();
+        
+        if (!inviteData) {
+            showNotification("❌ Приглашение недействительно");
+            return;
+        }
+        
+        if (inviteData.expiresAt < Date.now()) {
+            showNotification("❌ Срок действия приглашения истек");
+            await inviteRef.remove();
+            return;
+        }
+        
+        const chatId = inviteData.chatId;
+        const chatRef = database.ref(`chats/${chatId}`);
+        const chatSnapshot = await chatRef.once('value');
+        const chat = chatSnapshot.val();
+        
+        if (!chat) {
+            showNotification("❌ Группа не найдена");
+            return;
+        }
+        
+        if (chat.members && chat.members[currentUser.uid]) {
+            showNotification("Вы уже состоите в этой группе");
+            openChat(chatId);
+            return;
+        }
+        
+        await chatRef.update({ [`members/${currentUser.uid}`]: true });
+        
+        const systemMessage = {
+            text: `✨ ${currentUser.displayName} присоединился(ась) к группе по приглашению`,
+            senderId: 'system',
+            senderName: 'Система',
+            timestamp: Date.now(),
+            type: 'system'
+        };
+        
+        await database.ref(`messages/${chatId}`).push(systemMessage);
+        
+        showNotification(`✅ Вы присоединились к группе "${chat.name}"`);
+        openChat(chatId);
+        
+        await inviteRef.remove();
+        
+        window.history.replaceState({}, document.title, window.location.pathname);
+        
+    } catch (error) {
+        console.error(error);
+        showNotification("Ошибка при присоединении к группе");
+    }
+}
+
+function initGroupModals() {
+    if (closeAddMembersModal) {
+        closeAddMembersModal.onclick = () => addMembersModal?.classList.remove('active');
+    }
+    if (cancelAddMembersBtn) {
+        cancelAddMembersBtn.onclick = () => addMembersModal?.classList.remove('active');
+    }
+    if (confirmAddMembersBtn) {
+        confirmAddMembersBtn.onclick = addMembersToGroup;
+    }
+    
+    if (closeInviteLinkModal) {
+        closeInviteLinkModal.onclick = () => inviteLinkModal?.classList.remove('active');
+    }
+    if (closeInviteModalBtn) {
+        closeInviteModalBtn.onclick = () => inviteLinkModal?.classList.remove('active');
+    }
+    if (copyInviteLinkBtn) {
+        copyInviteLinkBtn.onclick = () => {
+            if (inviteLinkInput?.value) {
+                navigator.clipboard.writeText(inviteLinkInput.value);
+                showNotification("Ссылка скопирована!");
+            }
+        };
+    }
+    
+    if (addMembersModal) {
+        addMembersModal.onclick = (e) => {
+            if (e.target === addMembersModal) addMembersModal.classList.remove('active');
+        };
+    }
+    if (inviteLinkModal) {
+        inviteLinkModal.onclick = (e) => {
+            if (e.target === inviteLinkModal) inviteLinkModal.classList.remove('active');
+        };
+    }
+    
+    if (membersSearch) {
+        membersSearch.oninput = (e) => {
+            const query = e.target.value.toLowerCase().trim();
+            const items = document.querySelectorAll('.contact-select-item');
+            items.forEach(item => {
+                const name = item.querySelector('.contact-select-name')?.textContent.toLowerCase() || '';
+                const id = item.querySelector('.contact-select-id')?.textContent.toLowerCase() || '';
+                item.style.display = (name.includes(query) || id.includes(query)) ? 'flex' : 'none';
+            });
         };
     }
 }
@@ -2269,13 +3848,20 @@ function showDeleteMessageConfirmation(msgId, chatId, text, sender, ts) {
 async function logoutUser() {
     try { 
         cleanupListeners(); 
-        if (currentUser) await database.ref(`users/${currentUser.uid}`).update({ status: "offline", lastActive: Date.now() }); 
+        if (currentUser) {
+            localStorage.setItem('userStatus', 'offline');
+            await database.ref(`users/${currentUser.uid}`).update({ 
+                status: "offline", 
+                lastActive: Date.now() 
+            });
+        }
         await auth.signOut(); 
         currentUser = null; 
         chats = []; 
         contacts = []; 
         currentChatId = null; 
         if (connectionCheckInterval) clearInterval(connectionCheckInterval); 
+        if (inactivityTimer) clearInterval(inactivityTimer);
         showNotification("Вы вышли"); 
     } catch(e) { console.error(e); }
 }
@@ -2284,7 +3870,9 @@ function startConnectionMonitoring() {
     if (connectionCheckInterval) clearInterval(connectionCheckInterval); 
     connectionCheckInterval = setInterval(async () => { 
         if (currentUser && navigator.onLine) try { 
-            await database.ref(`users/${currentUser.uid}`).update({ lastActive: Date.now(), status: "online" }); 
+            await database.ref(`users/${currentUser.uid}`).update({ 
+                lastActive: Date.now()
+            }); 
         } catch(e) {} 
     }, 30000); 
 }
@@ -2320,16 +3908,37 @@ function setupEventListeners() {
     if (loginBtn) loginBtn.onclick = loginUser;
     if (quickLoginBtn) quickLoginBtn.onclick = quickLogin;
     if (registerBtn) registerBtn.onclick = registerUser;
-    if (desktopCreateChatBtn) desktopCreateChatBtn.onclick = () => { if (createChatModal) createChatModal.classList.add('active'); };
-    if (desktopAddContactBtn) desktopAddContactBtn.onclick = () => { if (addContactModal) addContactModal.classList.add('active'); };
     if (desktopEmptyCreateChatBtn) desktopEmptyCreateChatBtn.onclick = () => { if (createChatModal) createChatModal.classList.add('active'); };
     if (desktopEmptyAddContactBtn) desktopEmptyAddContactBtn.onclick = () => { if (addContactModal) addContactModal.classList.add('active'); };
     if (homeCreateChatBtn) homeCreateChatBtn.onclick = () => { if (createChatModal) createChatModal.classList.add('active'); };
     if (homeAddContactBtn) homeAddContactBtn.onclick = () => { if (addContactModal) addContactModal.classList.add('active'); };
-    if (desktopUserInfoBtn) desktopUserInfoBtn.onclick = openProfileModal;
     if (backToHomeBtn) backToHomeBtn.onclick = showHomeScreen;
     if (sendMessageBtn) sendMessageBtn.onclick = sendMessage;
     if (copyHomeIdBtn) copyHomeIdBtn.onclick = () => { if (homeUserId) navigator.clipboard.writeText(homeUserId.textContent); showNotification('ID скопирован!'); };
+    
+    if (desktopCreateChatIcon) {
+        desktopCreateChatIcon.onclick = () => {
+            if (createChatModal) createChatModal.classList.add('active');
+        };
+    }
+    
+    if (desktopAddContactIcon) {
+        desktopAddContactIcon.onclick = () => {
+            if (addContactModal) addContactModal.classList.add('active');
+        };
+    }
+    
+    if (desktopProfileIcon) {
+        desktopProfileIcon.onclick = () => {
+            openProfileModal();
+        };
+    }
+    
+    if (desktopSettingsIcon) {
+        desktopSettingsIcon.onclick = () => {
+            if (editProfileModal) editProfileModal.classList.add('active');
+        };
+    }
     
     if (messageInput) {
         messageInput.onkeypress = (e) => { 
@@ -2426,9 +4035,14 @@ function setupEventListeners() {
             if (profileModal) profileModal.classList.remove('active'); 
             if (editProfileModal) editProfileModal.classList.add('active'); 
             if (editProfileName) editProfileName.value = currentUser?.displayName || ''; 
+            
+            const savedStatus = currentUser?.selectedStatus || currentUser?.status || 'online';
+            
             statusOptions.forEach(opt => { 
                 opt.classList.remove('active'); 
-                if (opt.dataset.status === currentUser?.status) opt.classList.add('active'); 
+                if (opt.dataset.status === savedStatus) {
+                    opt.classList.add('active');
+                }
             }); 
         };
     }
@@ -2506,16 +4120,28 @@ window.downloadFile = (data, name) => { const a = document.createElement('a'); a
 window.showFullPhoto = (src) => { if (photoViewModal && fullSizePhoto) { fullSizePhoto.src = src; photoViewModal.classList.add('active'); } };
 
 window.addEventListener('beforeunload', async () => { 
-    if (currentUser) try { await database.ref(`users/${currentUser.uid}`).update({ status: "offline", lastActive: Date.now() }); } catch(e) {} 
+    if (currentUser) {
+        try { 
+            await database.ref(`users/${currentUser.uid}`).update({ 
+                status: "offline",
+                lastActive: Date.now()
+            });
+            console.log("Статус изменён на offline при закрытии");
+        } catch(e) {
+            console.error("Ошибка при закрытии:", e);
+        }
+    }
     if (authUnsubscribe) authUnsubscribe(); 
     cleanupListeners(); 
     if (connectionCheckInterval) clearInterval(connectionCheckInterval); 
+    if (inactivityTimer) clearInterval(inactivityTimer);
 });
 
 window.addEventListener('focus', async () => { 
     if (currentUser && navigator.onLine) try { 
-        await database.ref(`users/${currentUser.uid}`).update({ status: "online", lastActive: Date.now() }); 
-        currentUser.status = "online"; 
+        await database.ref(`users/${currentUser.uid}`).update({ 
+            lastActive: Date.now()
+        }); 
         updateUserProfileDisplay(); 
         updateDesktopUserInfo(); 
         updateMobileProfile(); 
@@ -2524,8 +4150,9 @@ window.addEventListener('focus', async () => {
 
 window.addEventListener('online', async () => { 
     if (currentUser) try { 
-        await database.ref(`users/${currentUser.uid}`).update({ status: "online", lastActive: Date.now() }); 
-        currentUser.status = "online"; 
+        await database.ref(`users/${currentUser.uid}`).update({ 
+            lastActive: Date.now()
+        }); 
         updateUserProfileDisplay(); 
         updateDesktopUserInfo(); 
         updateMobileProfile(); 
@@ -2535,11 +4162,6 @@ window.addEventListener('online', async () => {
 
 window.addEventListener('offline', async () => { 
     if (currentUser) try { 
-        await database.ref(`users/${currentUser.uid}`).update({ status: "offline", lastActive: Date.now() }); 
-        currentUser.status = "offline"; 
-        updateUserProfileDisplay(); 
-        updateDesktopUserInfo(); 
-        updateMobileProfile(); 
         showNotification("Потеряно соединение"); 
     } catch(e) {} 
 });
