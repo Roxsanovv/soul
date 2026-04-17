@@ -17,7 +17,7 @@
         <div class="auth-modal">
             <div class="auth-header">
                 <div class="logo" style="justify-content: center; margin-bottom: 30px;">
-                    <div class="logo-icon"><img src="img/s.png" width="50px"></div>
+                    <div class="logo-icon"><i class="fas fa-comment-dots" style="font-size: 40px; color: #8b5cf6;"></i></div>
                     <div class="logo-text">Soul</div>
                 </div>
                 <h2>Добро пожаловать</h2>
@@ -98,13 +98,21 @@
                         <span>online</span>
                     </div>
                 </div>
-                <button class="desktop-user-info-btn" id="desktopUserInfoBtn" title="Информация о профиле">
-                    <i class="fas fa-info-circle"></i>
-                </button>
             </div>
             
-            <div class="desktop-search-container">
-                <input type="text" class="desktop-search-box" id="desktopSearchInput" placeholder="Поиск чатов или сообщений...">
+            <div class="desktop-actions">
+                <button class="desktop-action-icon" id="desktopCreateChatIcon" title="Создать чат">
+                    <i class="fas fa-plus-circle"></i>
+                </button>
+                <button class="desktop-action-icon" id="desktopAddContactIcon" title="Добавить контакт">
+                    <i class="fas fa-user-plus"></i>
+                </button>
+                <button class="desktop-action-icon" id="desktopProfileIcon" title="Профиль">
+                    <i class="fas fa-user-circle"></i>
+                </button>
+                <button class="desktop-action-icon" id="desktopSettingsIcon" title="Настройки">
+                    <i class="fas fa-cog"></i>
+                </button>
             </div>
             
             <div class="desktop-sidebar-tabs" id="desktopSidebarTabs">
@@ -116,18 +124,9 @@
                 <div class="desktop-chats-list" id="desktopChatsList"></div>
                 <div class="desktop-contacts-list" id="desktopContactsList" style="display: none;"></div>
             </div>
-            
-            <div class="desktop-sidebar-actions">
-                <button class="desktop-action-btn" id="desktopCreateChatBtn">
-                    <i class="fas fa-plus-circle"></i> Создать чат
-                </button>
-                <button class="desktop-action-btn secondary" id="desktopAddContactBtn">
-                    <i class="fas fa-user-plus"></i> Добавить
-                </button>
-            </div>
         </div>
 
-        <!-- НОВЫЙ МОБИЛЬНЫЙ ИНТЕРФЕЙС -->
+        <!-- МОБИЛЬНЫЙ ИНТЕРФЕЙС -->
         <div class="mobile-container" id="mobileContainer">
             <div class="mobile-bottom-nav">
                 <div class="mobile-nav-item active" data-tab="chats">
@@ -366,21 +365,71 @@
 
         <!-- Основная область -->
         <div class="main-content" id="mainContent">
-            <div class="desktop-empty-screen" id="desktopEmptyScreen" style="display: none;">
-                <div class="desktop-empty-content">
-                    <div class="desktop-empty-icon">
-                        <img src="img/s.png" width="100px">
+            <div class="home-screen" id="homeScreen">
+                <div class="home-content">
+                    <div class="welcome-icon">
+                        <i class="fas fa-comment-dots" style="font-size: 80px; color: #8b5cf6;"></i>
                     </div>
-                    <h3 class="desktop-empty-title">Soul Messenger</h3>
-                    <p class="desktop-empty-text">Выберите чат из списка слева или создайте новый, чтобы начать общение</p>
-                    <div class="desktop-empty-actions">
-                        <button class="desktop-action-btn" id="desktopEmptyCreateChatBtn">
+                    <div class="welcome-text">
+                        <h2>Soul Messenger</h2>
+                        <p>Премиум мессенджер нового поколения с современным дизайном и уникальными возможностями для общения</p>
+                    </div>
+                    
+                    <div class="user-id-container home">
+                        <span class="user-id-label">Ваш ID:</span>
+                        <div class="user-id-value" id="homeUserId">user_123456</div>
+                        <button class="copy-id-btn" id="copyHomeIdBtn" title="Скопировать ID">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="home-actions">
+                        <button class="action-btn" id="homeCreateChatBtn">
                             <i class="fas fa-plus-circle"></i> Создать чат
                         </button>
-                        <button class="desktop-action-btn secondary" id="desktopEmptyAddContactBtn">
+                        <button class="action-btn secondary" id="homeAddContactBtn">
                             <i class="fas fa-user-plus"></i> Добавить контакт
                         </button>
                     </div>
+                </div>
+                
+                <div class="home-tabs">
+                    <div class="home-tab active" data-tab="chats">
+                        <i class="fas fa-comments"></i>
+                        <span>Чаты</span>
+                    </div>
+                    <div class="home-tab" data-tab="contacts">
+                        <i class="fas fa-user-friends"></i>
+                        <span>Контакты</span>
+                    </div>
+                </div>
+                
+                <div class="home-tab-content">
+                    <div class="home-tab-pane active" id="homeChatsPane">
+                        <div class="chats-list" id="homeChatsList"></div>
+                    </div>
+                    <div class="home-tab-pane" id="homeContactsPane">
+                        <div class="search-container" style="margin-bottom: 15px; padding: 0 10px;">
+                            <div class="search-input-wrapper">
+                                <input type="text" id="homeContactsSearch" placeholder="Поиск контактов...">
+                                <div class="search-loading" id="homeContactsSearchLoading">
+                                    <div class="search-spinner"></div>
+                                </div>
+                            </div>
+                            <div class="search-results-container" id="homeContactsSearchResults"></div>
+                        </div>
+                        <div class="contacts-list" id="homeContactsList"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="desktop-empty-screen" id="desktopEmptyScreen" style="display: none;">
+                <div class="desktop-empty-content">
+                    <div class="desktop-empty-icon">
+                        <i class="fas fa-comment-dots" style="font-size: 80px; color: #8b5cf6;"></i>
+                    </div>
+                    <h3 class="desktop-empty-title">Soul Messenger</h3>
+                    <p class="desktop-empty-text">Выберите чат из списка слева или создайте новый, чтобы начать общение</p>
                 </div>
             </div>
             
@@ -393,7 +442,7 @@
                         <h2 id="chatHeaderName">Название чата</h2>
                         <p id="chatHeaderDescription">Описание чата</p>
                     </div>
-                    <div class="chat-actions">
+                    <div class="chat-actions" id="chatActions">
                         <button class="chat-action-btn" id="chatInfoBtn">
                             <i class="fas fa-info-circle"></i>
                         </button>
@@ -454,6 +503,9 @@
                             <button class="attach-btn" id="attachBtn" title="Прикрепить">
                                 <i class="fas fa-paperclip"></i>
                             </button>
+                            <button class="sticker-btn" id="stickerBtn" title="Стикеры">
+                                <i class="fas fa-smile-wink"></i>
+                            </button>
                             <textarea class="message-input" id="messageInput" placeholder="Напишите сообщение..." rows="1"></textarea>
                             <button class="send-btn" id="sendMessageBtn">
                                 <i class="fas fa-paper-plane"></i>
@@ -485,7 +537,33 @@
         </div>
     </div>
 
-    <!-- Другие модальные окна -->
+    <!-- Модальное окно со стикерами -->
+    <div class="modal-overlay" id="stickersModal">
+        <div class="modal stickers-modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-smile-wink"></i> Стикеры</h3>
+                <button class="modal-close" id="closeStickersModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- Паки стикеров -->
+                <div class="stickers-packs" id="stickersPacks"></div>
+                <!-- Сетка стикеров выбранного пака -->
+                <div class="stickers-grid-container" id="stickersGridContainer" style="display: none;">
+                    <div class="sticker-pack-header">
+                        <button class="back-to-packs-btn" id="backToPacksBtn">
+                            <i class="fas fa-arrow-left"></i> Назад к пакам
+                        </button>
+                        <h4 id="currentPackName"></h4>
+                    </div>
+                    <div class="stickers-grid" id="stickersGrid"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно создания чата -->
     <div class="modal-overlay" id="createChatModal">
         <div class="modal">
             <div class="modal-header">
@@ -524,6 +602,7 @@
         </div>
     </div>
     
+    <!-- Модальное окно добавления контакта -->
     <div class="modal-overlay" id="addContactModal">
         <div class="modal">
             <div class="modal-header">
@@ -553,6 +632,64 @@
         </div>
     </div>
 
+    <!-- Модальное окно добавления участников в группу -->
+    <div class="modal-overlay" id="addMembersModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-user-plus"></i> Добавить участников</h3>
+                <button class="modal-close" id="closeAddMembersModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Выберите контакты для добавления</label>
+                    <div class="search-container">
+                        <div class="search-input-wrapper">
+                            <input type="text" id="membersSearch" placeholder="Поиск по контактам...">
+                            <div class="search-loading" id="membersSearchLoading">
+                                <div class="search-spinner"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="contacts-select-list" id="contactsSelectList"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancelAddMembersBtn">Отмена</button>
+                <button class="btn btn-primary" id="confirmAddMembersBtn">Добавить выбранных</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно со ссылкой-приглашением -->
+    <div class="modal-overlay" id="inviteLinkModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-link"></i> Ссылка-приглашение</h3>
+                <button class="modal-close" id="closeInviteLinkModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="invite-link-container">
+                    <p class="invite-link-info">Поделитесь этой ссылкой, чтобы пригласить пользователей в группу:</p>
+                    <div class="invite-link-box">
+                        <input type="text" id="inviteLinkInput" readonly>
+                        <button class="copy-invite-btn" id="copyInviteLinkBtn">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                    <p class="invite-link-note">⚠️ Ссылка действительна 7 дней</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" id="closeInviteModalBtn">Закрыть</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно профиля -->
     <div class="modal-overlay" id="profileModal">
         <div class="modal">
             <div class="modal-header">
@@ -598,6 +735,7 @@
         </div>
     </div>
     
+    <!-- Модальное окно редактирования профиля -->
     <div class="modal-overlay" id="editProfileModal">
         <div class="modal">
             <div class="modal-header">
@@ -615,16 +753,20 @@
                     <label>Статус</label>
                     <div class="status-selector">
                         <div class="status-option online active" data-status="online">
-                            <i class="fas fa-circle"></i> <span>Online</span>
+                            <i class="fas fa-circle"></i>
+                            <span>Online</span>
                         </div>
                         <div class="status-option away" data-status="away">
-                            <i class="fas fa-clock"></i> <span>Away</span>
+                            <i class="fas fa-clock"></i>
+                            <span>Away</span>
                         </div>
                         <div class="status-option dnd" data-status="dnd">
-                            <i class="fas fa-minus-circle"></i> <span>DND</span>
+                            <i class="fas fa-minus-circle"></i>
+                            <span>Не беспокоить</span>
                         </div>
                         <div class="status-option invisible" data-status="invisible">
-                            <i class="fas fa-eye-slash"></i> <span>Invisible</span>
+                            <i class="fas fa-eye-slash"></i>
+                            <span>Невидимка</span>
                         </div>
                     </div>
                 </div>
@@ -636,6 +778,7 @@
         </div>
     </div>
 
+    <!-- Модальное окно просмотра фото -->
     <div class="modal-overlay photo-modal" id="photoViewModal">
         <div class="modal" style="background: transparent; border: none;">
             <button class="photo-modal-close" id="closePhotoModal">
@@ -645,6 +788,7 @@
         </div>
     </div>
 
+    <!-- Контекстное меню сообщений -->
     <div class="message-context-menu" id="messageContextMenu">
         <div class="reactions-container">
             <div class="reaction-option" data-reaction="👍">👍</div>
@@ -665,6 +809,7 @@
         </div>
     </div>
 
+    <!-- Модальное окно подтверждения выхода из чата -->
     <div class="modal-overlay" id="confirmLeaveChatModal">
         <div class="modal">
             <div class="modal-header">
@@ -684,6 +829,7 @@
         </div>
     </div>
     
+    <!-- Модальное окно подтверждения удаления сообщения -->
     <div class="modal-overlay" id="confirmDeleteMessageModal">
         <div class="modal">
             <div class="modal-header">
@@ -703,6 +849,7 @@
         </div>
     </div>
 
+    <!-- Админ-панель -->
     <div class="admin-panel-btn" id="adminPanelBtn" style="display: none;">
         <i class="fas fa-crown"></i>
     </div>
@@ -742,5 +889,9 @@
     </div>
 
     <script src="app.js"></script>
+    <!-- Lottie Web для .tgs стикеров -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
+    <!-- Pako для распаковки .tgs файлов -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
 </body>
 </html>
