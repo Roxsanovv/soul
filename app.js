@@ -52,15 +52,15 @@ let stickerPacks = {
         name: "Boss",
         previewImage: "img/stickers/Boss/sticker7.png", // Картинка-заставка пака
         stickers: [
-            { url: "img/stickers/Boss/sticker1.png", name: "Стикер 1" },
-            { url: "img/stickers/Boss/sticker2.png", name: "Стикер 2" },
-            { url: "img/stickers/Boss/sticker3.png", name: "Стикер 3" },
-            { url: "img/stickers/Boss/sticker4.png", name: "Стикер 4" },
-            { url: "img/stickers/Boss/sticker5.png", name: "Стикер 5" },
-            { url: "img/stickers/Boss/sticker6.png", name: "Стикер 6" },
-            { url: "img/stickers/Boss/sticker7.png", name: "Стикер 7" },
-            { url: "img/stickers/Boss/sticker8.png", name: "Стикер 8" },
-            { url: "img/stickers/Boss/sticker9.png", name: "Стикер 9" }
+            { url: "img/stickers/Boss/sticker1.png", name: "Sticker 1" },
+            { url: "img/stickers/Boss/sticker2.png", name: "Sticker 2" },
+            { url: "img/stickers/Boss/sticker3.png", name: "Sticker 3" },
+            { url: "img/stickers/Boss/sticker4.png", name: "Sticker 4" },
+            { url: "img/stickers/Boss/sticker5.png", name: "Sticker 5" },
+            { url: "img/stickers/Boss/sticker6.png", name: "Sticker 6" },
+            { url: "img/stickers/Boss/sticker7.png", name: "Sticker 7" },
+            { url: "img/stickers/Boss/sticker8.png", name: "Sticker 8" },
+            { url: "img/stickers/Boss/sticker9.png", name: "Sticker 9" }
         ]
     },
     pack2: {
