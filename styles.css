@@ -208,6 +208,45 @@ body {
 }
 
 /* ================================================ */
+/* СТИЛИ ДЛЯ КНОПОК ДЕЙСТВИЙ НА ПК (4 КНОПКИ) */
+/* ================================================ */
+.desktop-actions {
+    display: flex;
+    justify-content: space-around;
+    padding: 15px 20px;
+    border-bottom: 1px solid var(--border-color);
+    background: rgba(15, 23, 42, 0.5);
+    gap: 10px;
+}
+
+.desktop-action-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: rgba(139, 92, 246, 0.15);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    color: #c084fc;
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    flex: 1;
+}
+
+.desktop-action-icon:hover {
+    background: rgba(139, 92, 246, 0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+    color: #e9d5ff;
+}
+
+.desktop-action-icon:active {
+    transform: translateY(0) scale(0.95);
+}
+
+/* ================================================ */
 /* СТИЛИ ДЛЯ УЛУЧШЕННОГО ПОИСКА С ПОДСКАЗКАМИ */
 /* ================================================ */
 .search-container {
@@ -838,6 +877,7 @@ body {
     align-items: center;
     gap: 15px;
     position: sticky;
+    top: 60px;
     z-index: 100;
 }
 
@@ -1125,6 +1165,213 @@ body {
 .message-file-size {
     font-size: 11px;
     color: #94a3b8;
+}
+
+/* ================================================ */
+/* СТИКЕРЫ - БЕЗ ФОНА */
+/* ================================================ */
+.message.sticker-message {
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+.message.sticker-message .message-content {
+    background: transparent !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+}
+
+.message.sticker-message .message-avatar {
+    opacity: 0.8;
+}
+
+.message-sticker {
+    max-width: 180px;
+    max-height: 180px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-top: 5px;
+    background: transparent;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.message-sticker:hover {
+    transform: scale(1.02);
+    box-shadow: 0 6px 20px rgba(139, 92, 246, 0.3);
+}
+
+/* ================================================ */
+/* КНОПКА СТИКЕРОВ */
+/* ================================================ */
+.sticker-btn {
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    max-width: 48px;
+    border-radius: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+    padding: 0;
+    margin: 0;
+    background: rgba(139, 92, 246, 0.15);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    color: #c084fc;
+    font-size: 20px;
+}
+
+.sticker-btn:hover {
+    background: rgba(139, 92, 246, 0.25);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+.sticker-btn:active {
+    transform: translateY(0) scale(0.95);
+}
+
+/* ================================================ */
+/* СТИЛИ ДЛЯ ПАКОВ СТИКЕРОВ */
+/* ================================================ */
+.stickers-packs {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 15px;
+    padding: 10px;
+}
+
+.sticker-pack-item {
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    padding: 15px 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+    border: 2px solid transparent;
+}
+
+.sticker-pack-item:hover {
+    background: rgba(139, 92, 246, 0.2);
+    transform: translateY(-5px);
+    border-color: rgba(139, 92, 246, 0.5);
+}
+
+.sticker-pack-preview {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 10px;
+    border-radius: 16px;
+    overflow: hidden;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+}
+
+.sticker-pack-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.sticker-pack-name {
+    font-weight: 600;
+    font-size: 14px;
+    color: white;
+    margin-bottom: 4px;
+}
+
+.sticker-pack-count {
+    font-size: 11px;
+    color: #94a3b8;
+}
+
+.sticker-pack-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.back-to-packs-btn {
+    background: rgba(139, 92, 246, 0.15);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    color: #c084fc;
+    padding: 8px 16px;
+    border-radius: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    transition: all 0.2s ease;
+}
+
+.back-to-packs-btn:hover {
+    background: rgba(139, 92, 246, 0.3);
+    transform: translateX(-3px);
+}
+
+.sticker-pack-header h4 {
+    font-size: 18px;
+    color: white;
+    margin: 0;
+}
+
+.stickers-grid-container {
+    animation: fadeIn 0.3s ease;
+}
+
+.stickers-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 15px;
+    padding: 10px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+/* ================================================ */
+/* МОДАЛЬНОЕ ОКНО СТИКЕРОВ */
+/* ================================================ */
+.stickers-modal {
+    max-width: 500px !important;
+    width: 90%;
+}
+
+.sticker-item {
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    padding: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid transparent;
+    aspect-ratio: 1 / 1;
+}
+
+.sticker-item:hover {
+    background: rgba(139, 92, 246, 0.2);
+    transform: scale(1.05);
+    border-color: rgba(139, 92, 246, 0.5);
+}
+
+.sticker-item:active {
+    transform: scale(0.95);
+}
+
+.sticker-item img {
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: 12px;
+    object-fit: contain;
 }
 
 /* ================================================ */
@@ -1845,20 +2092,33 @@ body {
 }
 
 /* ================================================ */
-/* КОНТЕКСТНОЕ МЕНЮ СООБЩЕНИЙ */
+/* КОНТЕКСТНОЕ МЕНЮ СООБЩЕНИЙ - УЛУЧШЕННОЕ */
 /* ================================================ */
 .message-context-menu {
     position: fixed;
     background: rgba(30, 41, 59, 0.98);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 10px;
+    border-radius: 12px;
     padding: 0;
-    z-index: 2000;
-    min-width: 220px;
+    z-index: 10000;
+    min-width: 200px;
+    max-width: 280px;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
     backdrop-filter: blur(20px);
     display: none;
     overflow: hidden;
+    animation: contextMenuFadeIn 0.15s ease;
+}
+
+@keyframes contextMenuFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
 }
 
 .message-context-menu.active {
@@ -1868,7 +2128,7 @@ body {
 .message-context-item {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
     padding: 12px 16px;
     cursor: pointer;
     border-radius: 0;
@@ -1876,7 +2136,7 @@ body {
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     color: #cbd5e1;
     font-size: 14px;
-    transition: var(--transition);
+    transition: all 0.15s ease;
 }
 
 .message-context-item:last-child {
@@ -1884,16 +2144,23 @@ body {
 }
 
 .message-context-item:hover {
-    background: rgba(139, 92, 246, 0.15);
+    background: rgba(139, 92, 246, 0.2);
+    color: white;
 }
 
 .message-context-item.delete {
+    color: #f87171;
+}
+
+.message-context-item.delete:hover {
+    background: rgba(239, 68, 68, 0.15);
     color: #ef4444;
 }
 
 .message-context-item i {
-    width: 16px;
+    width: 18px;
     font-size: 14px;
+    text-align: center;
 }
 
 /* ================================================ */
@@ -2226,6 +2493,356 @@ body {
 }
 
 /* ================================================ */
+/* КНОПКИ УПРАВЛЕНИЯ ГРУППОЙ В ХЕДЕРЕ */
+/* ================================================ */
+.group-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+}
+
+.group-action-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: rgba(139, 92, 246, 0.15);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    color: #c084fc;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    font-size: 18px;
+}
+
+.group-action-btn:hover {
+    background: rgba(139, 92, 246, 0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+/* ================================================ */
+/* КОЛИЧЕСТВО УЧАСТНИКОВ СПРАВА ОТ НАЗВАНИЯ */
+/* ================================================ */
+.group-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.group-members-preview {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 4px 10px;
+    border-radius: 20px;
+    background: rgba(139, 92, 246, 0.1);
+    flex-shrink: 0;
+}
+
+.group-members-preview:hover {
+    background: rgba(139, 92, 246, 0.2);
+    transform: translateY(-1px);
+}
+
+.members-count-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+}
+
+.members-count-indicator i.fa-users {
+    font-size: 13px;
+    color: #8b5cf6;
+}
+
+.members-count-indicator span {
+    font-size: 13px;
+    color: #a78bfa;
+    font-weight: 500;
+}
+
+.members-count-indicator i.fa-chevron-right {
+    font-size: 10px;
+    color: #64748b;
+}
+
+/* Для мобильной версии */
+@media (max-width: 768px) {
+    .group-title-row {
+        gap: 6px;
+    }
+    
+    .group-members-preview {
+        padding: 2px 8px;
+        margin-left: 8px;
+    }
+    
+    .members-count-indicator i.fa-users {
+        font-size: 11px;
+    }
+    
+    .members-count-indicator span {
+        font-size: 11px;
+    }
+    
+    .members-count-indicator i.fa-chevron-right {
+        font-size: 9px;
+    }
+    
+    .stickers-packs {
+        grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+        gap: 10px;
+    }
+    
+    .sticker-pack-preview {
+        width: 60px;
+        height: 60px;
+    }
+    
+    .sticker-pack-name {
+        font-size: 12px;
+    }
+    
+    .stickers-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+    }
+}
+
+/* Для десктопного хедера */
+.chat-header.desktop .desktop-chat-header-info {
+    width: 100%;
+}
+
+.desktop-chat-header-name {
+    margin-bottom: 0;
+}
+
+/* ================================================ */
+/* ВЫБОР КОНТАКТОВ ДЛЯ ДОБАВЛЕНИЯ */
+/* ================================================ */
+.contacts-select-list {
+    max-height: 400px;
+    overflow-y: auto;
+    margin-top: 15px;
+}
+
+.contact-select-item {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: var(--transition);
+    border: 1px solid transparent;
+}
+
+.contact-select-item:hover {
+    background: rgba(139, 92, 246, 0.15);
+    border-color: rgba(139, 92, 246, 0.3);
+}
+
+.contact-select-item.selected {
+    background: rgba(139, 92, 246, 0.25);
+    border-color: rgba(139, 92, 246, 0.5);
+}
+
+.contact-select-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #f093fb, #f5576c);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    color: white;
+    margin-right: 12px;
+}
+
+.contact-select-info {
+    flex: 1;
+}
+
+.contact-select-name {
+    font-weight: 600;
+    color: white;
+    margin-bottom: 2px;
+}
+
+.contact-select-id {
+    font-size: 11px;
+    color: #94a3b8;
+    font-family: monospace;
+}
+
+.contact-select-checkbox {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    border: 2px solid rgba(139, 92, 246, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+}
+
+.contact-select-item.selected .contact-select-checkbox {
+    background: #8b5cf6;
+    border-color: #8b5cf6;
+}
+
+.contact-select-item.selected .contact-select-checkbox i {
+    color: white;
+    font-size: 12px;
+}
+
+/* ================================================ */
+/* МОДАЛЬНОЕ ОКНО ССЫЛКИ-ПРИГЛАШЕНИЯ */
+/* ================================================ */
+.invite-link-container {
+    text-align: center;
+}
+
+.invite-link-info {
+    color: #94a3b8;
+    margin-bottom: 15px;
+    font-size: 14px;
+}
+
+.invite-link-box {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.invite-link-box input {
+    flex: 1;
+    padding: 14px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: 12px;
+    color: white;
+    font-size: 13px;
+    font-family: monospace;
+    outline: none;
+}
+
+.invite-link-box input:focus {
+    border-color: #8b5cf6;
+}
+
+.copy-invite-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: rgba(139, 92, 246, 0.2);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    color: #c084fc;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.copy-invite-btn:hover {
+    background: rgba(139, 92, 246, 0.3);
+    transform: scale(1.05);
+}
+
+.invite-link-note {
+    font-size: 12px;
+    color: #f59e0b;
+}
+
+/* ================================================ */
+/* МОДАЛЬНОЕ ОКНО СПИСКА УЧАСТНИКОВ */
+/* ================================================ */
+.members-list-modal .modal {
+    max-width: 400px;
+}
+
+.members-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.member-item {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    margin-bottom: 8px;
+}
+
+.member-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 16px;
+    color: white;
+    margin-right: 12px;
+}
+
+.member-info {
+    flex: 1;
+}
+
+.member-name {
+    font-weight: 600;
+    color: white;
+    margin-bottom: 2px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.member-role {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    background: rgba(139, 92, 246, 0.2);
+    color: #c084fc;
+    margin-left: 6px;
+}
+
+.member-status {
+    font-size: 12px;
+    color: #94a3b8;
+}
+
+.member-remove-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #f87171;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.member-remove-btn:hover {
+    background: rgba(239, 68, 68, 0.3);
+    transform: scale(1.05);
+}
+
+/* ================================================ */
 /* ПУСТЫЕ СОСТОЯНИЯ */
 /* ================================================ */
 .empty-state {
@@ -2378,12 +2995,6 @@ body {
         line-height: 1.5;
     }
 
-    .desktop-empty-actions {
-        display: flex;
-        gap: 15px;
-        justify-content: center;
-    }
-
     .chat-screen.desktop {
         display: none;
         width: 100%;
@@ -2431,13 +3042,16 @@ body {
     .desktop-chat-header-info {
         flex: 1;
         min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
     }
 
     .desktop-chat-header-name {
         font-size: 16px;
         font-weight: 700;
         color: white;
-        margin-bottom: 4px;
+        margin-bottom: 0;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -2535,37 +3149,40 @@ body {
         font-size: 8px;
     }
 
-    .desktop-user-info-btn {
-        width: 36px;
-        height: 36px;
-        background: rgba(139, 92, 246, 0.2);
+    .desktop-actions {
+        display: flex;
+        justify-content: space-around;
+        padding: 15px 20px;
+        border-bottom: 1px solid var(--border-color);
+        background: rgba(15, 23, 42, 0.5);
+        gap: 10px;
+    }
+
+    .desktop-action-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        background: rgba(139, 92, 246, 0.15);
         border: 1px solid rgba(139, 92, 246, 0.3);
-        border-radius: 8px;
-        color: #a78bfa;
+        color: #c084fc;
+        font-size: 20px;
         cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 16px;
-        transition: var(--transition);
-        flex-shrink: 0;
+        transition: all 0.2s ease;
+        flex: 1;
     }
 
-    .desktop-search-container {
-        padding: 20px;
-        border-bottom: 1px solid var(--border-color);
-        flex-shrink: 0;
+    .desktop-action-icon:hover {
+        background: rgba(139, 92, 246, 0.3);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+        color: #e9d5ff;
     }
 
-    .desktop-search-box {
-        width: 100%;
-        padding: 12px 16px;
-        background: rgba(255, 255, 255, 0.08);
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        border-radius: var(--radius-md);
-        color: white;
-        font-size: 14px;
-        outline: none;
+    .desktop-action-icon:active {
+        transform: translateY(0) scale(0.95);
     }
 
     .desktop-sidebar-tabs {
@@ -2605,42 +3222,6 @@ body {
         padding: 20px;
     }
 
-    .desktop-sidebar-actions {
-        padding: 20px;
-        display: flex;
-        gap: 10px;
-        border-top: 1px solid var(--border-color);
-        flex-shrink: 0;
-    }
-
-    .desktop-action-btn {
-        flex: 1;
-        padding: 14px;
-        background: rgba(139, 92, 246, 0.2);
-        border: 1px solid rgba(139, 92, 246, 0.3);
-        border-radius: var(--radius-md);
-        color: #a78bfa;
-        font-weight: 600;
-        font-size: 15px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        transition: var(--transition);
-    }
-
-    .desktop-action-btn:hover {
-        background: rgba(139, 92, 246, 0.3);
-        color: #c4b5fd;
-    }
-
-    .desktop-action-btn.secondary {
-        background: rgba(59, 130, 246, 0.2);
-        border-color: rgba(59, 130, 246, 0.3);
-        color: #60a5fa;
-    }
-
     .desktop-chats-list,
     .desktop-contacts-list {
         display: flex;
@@ -2659,6 +3240,11 @@ body {
     .input-area {
         max-width: 800px;
         margin: 0 auto;
+        height: 50px;
+    }
+
+    .sticker-btn {
+        width: 50px;
         height: 50px;
     }
 }
@@ -3578,6 +4164,29 @@ body {
         width: 100%;
         box-sizing: border-box;
     }
+
+    .sticker-btn {
+        width: 44px;
+        height: 44px;
+        font-size: 18px;
+    }
+
+    .message-sticker {
+        max-width: 120px;
+        max-height: 120px;
+    }
+}
+
+/* ================================================ */
+@media (max-width: 480px) {
+    .stickers-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+    }
+    
+    .sticker-item {
+        padding: 8px;
+    }
 }
 
 /* ================================================ */
@@ -3678,3 +4287,39 @@ body {
         transform: none;
     }
 }
+
+/* ================================================ */
+/* СТАТУСЫ ПОЛЬЗОВАТЕЛЕЙ */
+/* ================================================ */
+.status-option.online i { color: #10b981; }
+.status-option.away i { color: #f59e0b; }
+.status-option.dnd i { color: #ef4444; }
+.status-option.invisible i { color: #94a3b8; }
+
+.contact-status.online { color: #10b981; }
+.contact-status.away { color: #f59e0b; }
+.contact-status.dnd { color: #ef4444; }
+.contact-status.offline { color: #94a3b8; }
+.contact-status.invisible { color: #64748b; }
+
+.profile-status.online { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+.profile-status.away { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+.profile-status.dnd { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+.profile-status.invisible { background: rgba(100, 116, 139, 0.2); color: #94a3b8; }
+.profile-status.offline { background: rgba(100, 116, 139, 0.2); color: #94a3b8; }
+
+.desktop-chat-last-message[style*="#10b981"] { color: #10b981 !important; }
+.desktop-chat-last-message[style*="#f59e0b"] { color: #f59e0b !important; }
+.desktop-chat-last-message[style*="#ef4444"] { color: #ef4444 !important; }
+.desktop-chat-last-message[style*="#94a3b8"] { color: #94a3b8 !important; }
+
+.desktop-user-avatar.status-online::after { background: #10b981; }
+.desktop-user-avatar.status-away::after { background: #f59e0b; }
+.desktop-user-avatar.status-dnd::after { background: #ef4444; }
+.desktop-user-avatar.status-invisible::after { background: #64748b; }
+.desktop-user-avatar.status-offline::after { background: #64748b; }
+
+.mobile-profile-status.online { color: #10b981; }
+.mobile-profile-status.away { color: #f59e0b; }
+.mobile-profile-status.dnd { color: #ef4444; }
+.mobile-profile-status.invisible { color: #94a3b8; }
