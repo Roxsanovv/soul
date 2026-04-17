@@ -50,17 +50,17 @@ let stickerPacks = {
     pack1: {
         id: "pack1",
         name: "Boss",
-        previewImage: "img/stickers/Boss/sticker7.png", // Картинка-заставка пака
+        previewImage: "img/stickers/boss/sticker7.png", // Картинка-заставка пака
         stickers: [
-            { url: "img/stickers/Boss/sticker1.png", name: "Стикер 1" },
-            { url: "img/stickers/Boss/sticker2.png", name: "Стикер 2" },
-            { url: "img/stickers/Boss/sticker3.png", name: "Стикер 3" },
-            { url: "img/stickers/Boss/sticker4.png", name: "Стикер 4" },
-            { url: "img/stickers/Boss/sticker5.png", name: "Стикер 5" },
-            { url: "img/stickers/Boss/sticker6.png", name: "Стикер 6" },
-            { url: "img/stickers/Boss/sticker7.png", name: "Стикер 7" },
-            { url: "img/stickers/Boss/sticker8.png", name: "Стикер 8" },
-            { url: "img/stickers/Boss/sticker9.png", name: "Стикер 9" }
+            { url: "img/stickers/boss/sticker1.png", name: "Стикер 1" },
+            { url: "img/stickers/boss/sticker2.png", name: "Стикер 2" },
+            { url: "img/stickers/boss/sticker3.png", name: "Стикер 3" },
+            { url: "img/stickers/boss/sticker4.png", name: "Стикер 4" },
+            { url: "img/stickers/boss/sticker5.png", name: "Стикер 5" },
+            { url: "img/stickers/boss/sticker6.png", name: "Стикер 6" },
+            { url: "img/stickers/boss/sticker7.png", name: "Стикер 7" },
+            { url: "img/stickers/boss/sticker8.png", name: "Стикер 8" },
+            { url: "img/stickers/boss/sticker9.png", name: "Стикер 9" }
         ]
     },
     pack2: {
@@ -74,7 +74,7 @@ let stickerPacks = {
             { url: "img/stickers/Movie/Kermit Frog.png", name: "Kermit Frog" },
             { url: "img/stickers/Movie/Optimus Prime.png", name: "Optimus Prime" }
         ]
-    },
+    }
     /* pack3: {
         id: "pack3",
         name: "Movie",
