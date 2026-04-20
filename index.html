@@ -19,8 +19,7 @@
         <div class="auth-modal">
             <div class="auth-header">
                 <div class="logo">
-                    <img src="img/logo.png" style="width: 50;">
-                    <h1 style="color: #ffffff; font-size: 32px;">Spectrum</h1>
+                    <h1 style="color: #8b5cf6; font-size: 32px;">Spectrum</h1>
                 </div>
                 <h2 style="color: #ffffff;">Добро пожаловать</h2>
                 <p>Войдите в свой аккаунт</p>
@@ -176,7 +175,13 @@
                 <div class="mobile-tab-content" id="mobileProfileTab">
                     <div class="mobile-profile">
                         <div class="mobile-profile-header">
-                            <div class="mobile-profile-avatar-large" id="mobileProfileAvatar">И</div>
+                            <div class="mobile-profile-avatar-container">
+                                <div class="mobile-profile-avatar-large" id="mobileProfileAvatar">И</div>
+                                <button class="mobile-change-avatar-btn" id="mobileChangeAvatarBtn">
+                                    <i class="fas fa-camera"></i>
+                                </button>
+                                <input type="file" id="mobileAvatarUpload" accept="image/jpeg,image/png,image/gif,image/webp" style="display: none;">
+                            </div>
                             <div class="mobile-profile-info">
                                 <div class="mobile-profile-name" id="mobileProfileName">Имя пользователя</div>
                                 <div class="mobile-profile-status" id="mobileProfileStatus">
@@ -353,7 +358,7 @@
             <div class="desktop-empty-screen" id="desktopEmptyScreen" style="display: none;">
                 <div class="desktop-empty-content">
                     <div class="desktop-empty-icon">
-                        <img src="img/logo.png" alt="Spectrum Logo" style="width: 100px; height: 100px; object-fit: contain;">
+                        <i class="fas fa-comment-dots" style="font-size: 80px; color: #8b5cf6;"></i>
                     </div>
                     <h3 class="desktop-empty-title">Spectrum</h3>
                     <p class="desktop-empty-text">Выберите чат из списка слева или создайте новый, чтобы начать общение</p>
@@ -436,6 +441,121 @@
                             </button>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- АДМИН-ПАНЕЛЬ (ОТДЕЛЬНАЯ СТРАНИЦА) -->
+    <div class="admin-panel-page" id="adminPanelPage" style="display: none;">
+        <div class="admin-panel-header">
+            <div class="admin-panel-header-content">
+                <div class="admin-logo">
+                    <i class="fas fa-crown"></i>
+                    <h2>Панель администратора</h2>
+                </div>
+                <button class="close-admin-panel" id="closeAdminPanelPage">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="admin-stats">
+                <div class="admin-stat">
+                    <i class="fas fa-users"></i>
+                    <span id="adminTotalUsers">0</span>
+                    <label>Пользователей</label>
+                </div>
+                <div class="admin-stat">
+                    <i class="fas fa-comments"></i>
+                    <span id="adminTotalChats">0</span>
+                    <label>Чатов</label>
+                </div>
+                <div class="admin-stat">
+                    <i class="fas fa-bullhorn"></i>
+                    <span id="adminTotalChannels">0</span>
+                    <label>Каналов</label>
+                </div>
+                <div class="admin-stat">
+                    <i class="fas fa-clock"></i>
+                    <span id="adminOnlineUsers">0</span>
+                    <label>Online</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="admin-panel-tabs">
+            <button class="admin-tab active" data-tab="users">👥 Пользователи</button>
+            <button class="admin-tab" data-tab="channels">📢 Каналы</button>
+            <button class="admin-tab" data-tab="verification">✅ Верификация</button>
+            <button class="admin-tab" data-tab="reports">⚠️ Жалобы</button>
+            <button class="admin-tab" data-tab="settings">⚙️ Настройки</button>
+        </div>
+
+        <div class="admin-panel-content">
+            <!-- Вкладка: Пользователи -->
+            <div class="admin-tab-content active" id="adminUsersTab">
+                <div class="admin-search-bar">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="adminUserSearch" placeholder="Поиск пользователей...">
+                </div>
+                <div class="admin-users-list" id="adminUsersList"></div>
+            </div>
+
+            <!-- Вкладка: Каналы -->
+            <div class="admin-tab-content" id="adminChannelsTab">
+                <div class="admin-search-bar">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="adminChannelSearch" placeholder="Поиск каналов...">
+                </div>
+                <div class="admin-channels-list" id="adminChannelsList"></div>
+            </div>
+
+            <!-- Вкладка: Верификация -->
+            <div class="admin-tab-content" id="adminVerificationTab">
+                <div class="verification-requests-section">
+                    <h3 style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+                        <span><i class="fas fa-clock"></i> Ожидают верификации</span>
+                        <button class="refresh-requests-btn" id="refreshRequestsBtn">
+                            <i class="fas fa-sync-alt"></i> Обновить
+                        </button>
+                    </h3>
+                    <div id="pendingVerificationList" class="verification-requests-list"></div>
+                </div>
+                <div class="verified-channels-section">
+                    <h3><i class="fas fa-check-circle"></i> Верифицированные каналы</h3>
+                    <div id="adminVerifiedChannelsList" class="verified-channels-list"></div>
+                </div>
+                <div class="verified-users-section">
+                    <h3><i class="fas fa-user-check"></i> Верифицированные пользователи</h3>
+                    <div id="adminVerifiedUsersList" class="verified-users-list-admin"></div>
+                </div>
+            </div>
+
+            <!-- Вкладка: Жалобы -->
+            <div class="admin-tab-content" id="adminReportsTab">
+                <div class="reports-list" id="reportsList">
+                    <div class="empty-state">
+                        <i class="fas fa-check-circle"></i>
+                        <h3>Нет жалоб</h3>
+                        <p>Все жалобы обработаны</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Вкладка: Настройки -->
+            <div class="admin-tab-content" id="adminSettingsTab">
+                <div class="admin-settings-section">
+                    <h3><i class="fas fa-gavel"></i> Правила сервера</h3>
+                    <textarea id="serverRules" rows="6" placeholder="Правила сервера..."></textarea>
+                    <button class="btn btn-primary" id="saveRulesBtn">Сохранить правила</button>
+                </div>
+                <div class="admin-settings-section">
+                    <h3><i class="fas fa-ban"></i> Забаненные пользователи</h3>
+                    <div id="bannedUsersList"></div>
+                </div>
+                <div class="admin-settings-section">
+                    <h3><i class="fas fa-database"></i> Резервное копирование</h3>
+                    <button class="btn btn-secondary" id="backupDataBtn">Создать резервную копию</button>
+                    <button class="btn btn-danger" id="clearAllDataBtn">Очистить все данные</button>
                 </div>
             </div>
         </div>
@@ -567,9 +687,6 @@
                     </div>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button class="btn btn-primary" id="closeInviteModalBtn">Закрыть</button>
-            </div>
         </div>
     </div>
 
@@ -577,26 +694,59 @@
         <div class="modal">
             <div class="modal-header">
                 <h3>Мой профиль</h3>
-                <button class="modal-close" id="closeProfileModal"><i class="fas fa-times"></i></button>
+                <button class="modal-close" id="closeProfileModal">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
-            <div class="modal-body">
-                <div class="profile-avatar-large" id="profileAvatarLarge">И</div>
+            <div class="modal-body" style="text-align: center;">
+                <!-- Контейнер для аватара с кнопкой загрузки -->
+                <div class="profile-avatar-container">
+                    <div class="profile-avatar-large" id="profileAvatarLarge">И</div>
+                    <button class="change-avatar-btn" id="changeAvatarBtn" title="Сменить аватар">
+                        <i class="fas fa-camera"></i>
+                        <span>Сменить аватар</span>
+                    </button>
+                    <input type="file" id="avatarUpload" accept="image/jpeg,image/png,image/gif,image/webp" style="display: none;">
+                </div>
+                
+                <!-- Информация о пользователе -->
                 <div class="profile-info">
-                    <div class="profile-name" id="profileName">Иван</div>
+                    <div class="profile-name" id="profileName"></div>
                     <div class="profile-status online" id="profileStatus">online</div>
                 </div>
+                
+                <!-- ID пользователя -->
                 <div class="user-id-container">
                     <span class="user-id-label">Ваш ID:</span>
                     <div class="user-id-value" id="profileUserId">user_123456</div>
-                    <button class="copy-id-btn" id="copyUserIdBtn"><i class="fas fa-copy"></i></button>
+                    <button class="copy-id-btn" id="copyUserIdBtn" title="Скопировать ID">
+                        <i class="fas fa-copy"></i>
+                    </button>
                 </div>
+                
+                <!-- Детали профиля -->
                 <div class="profile-details">
-                    <div class="profile-detail"><span class="detail-label">Контакты:</span><span class="detail-value" id="profileContactsCount">0</span></div>
-                    <div class="profile-detail"><span class="detail-label">Чатов:</span><span class="detail-value" id="profileChatsCount">0</span></div>
-                    <div class="profile-detail"><span class="detail-label">На Spectrum с:</span><span class="detail-value" id="profileJoinDate">01.01.2023</span></div>
+                    <div class="profile-detail">
+                        <span class="detail-label">Контакты:</span>
+                        <span class="detail-value" id="profileContactsCount">0</span>
+                    </div>
+                    <div class="profile-detail">
+                        <span class="detail-label">Чатов:</span>
+                        <span class="detail-value" id="profileChatsCount">0</span>
+                    </div>
+                    <div class="profile-detail">
+                        <span class="detail-label">На Spectrum с:</span>
+                        <span class="detail-value" id="profileJoinDate">01.01.2023</span>
+                    </div>
                 </div>
-                <button class="edit-profile-btn" id="editProfileBtn"><i class="fas fa-edit"></i> Редактировать</button>
-                <button class="edit-profile-btn" id="logoutBtn" style="background: rgba(239,68,68,0.15); margin-top: 10px;"><i class="fas fa-sign-out-alt"></i> Выйти</button>
+                
+                <!-- Кнопки действий -->
+                <button class="edit-profile-btn" id="editProfileBtn">
+                    <i class="fas fa-edit"></i> Редактировать профиль
+                </button>
+                <button class="edit-profile-btn" id="logoutBtn" style="background: rgba(239,68,68,0.15); margin-top: 10px;">
+                    <i class="fas fa-sign-out-alt"></i> Выйти
+                </button>
             </div>
         </div>
     </div>
@@ -645,15 +795,9 @@
             <div class="reaction-option" data-reaction="😢">😢</div>
             <div class="reaction-option" data-reaction="😡">😡</div>
         </div>
-        <div class="message-context-item" id="contextReply">
-            <i class="fas fa-reply"></i> Ответить
-        </div>
-        <div class="message-context-item" id="contextCopy">
-            <i class="fas fa-copy"></i> Копировать текст
-        </div>
-        <div class="message-context-item delete" id="contextDelete">
-            <i class="fas fa-trash"></i> Удалить
-        </div>
+        <div class="message-context-item" id="contextReply"><i class="fas fa-reply"></i> Ответить</div>
+        <div class="message-context-item" id="contextCopy"><i class="fas fa-copy"></i> Копировать</div>
+        <div class="message-context-item delete" id="contextDelete"><i class="fas fa-trash"></i> Удалить</div>
     </div>
 
     <div class="modal-overlay" id="confirmDeleteMessageModal">
@@ -662,9 +806,7 @@
                 <div class="delete-icon-wrapper">
                     <i class="fas fa-trash-alt"></i>
                 </div>
-                <button class="modal-close" id="closeDeleteModalBtn">
-                    <i class="fas fa-times"></i>
-                </button>
+                <button class="modal-close" id="closeDeleteModalBtn"><i class="fas fa-times"></i></button>
             </div>
             <div class="modal-body delete-body">
                 <h3 class="delete-title">Удалить сообщение?</h3>
@@ -681,6 +823,9 @@
                 </div>
             </div>
             <div class="modal-footer delete-footer">
+                <button class="btn btn-secondary cancel-delete-btn" id="cancelDeleteBtn">
+                    <i class="fas fa-times"></i> Отмена
+                </button>
                 <button class="btn btn-danger confirm-delete-btn" id="confirmDeleteBtn">
                     <i class="fas fa-trash-alt"></i> Удалить
                 </button>
@@ -688,38 +833,8 @@
         </div>
     </div>
 
-    <div class="admin-panel-btn" id="adminPanelBtn" style="display: none;"><i class="fas fa-crown"></i></div>
-    
-    <div class="modal-overlay" id="adminPanelModal">
-        <div class="modal admin-modal">
-            <div class="modal-header">
-                <h3><i class="fas fa-crown"></i> Админ-панель</h3>
-                <button class="modal-close" id="closeAdminPanel"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="modal-body">
-                <div class="admin-section">
-                    <h4><i class="fas fa-plus-circle"></i> Выдать галочку</h4>
-                    <div class="form-group">
-                        <label for="badgeUserId">ID пользователя</label>
-                        <input type="text" id="badgeUserId" placeholder="Введите ID">
-                    </div>
-                    <div class="form-group">
-                        <label for="badgeType">Тип</label>
-                        <select id="badgeType" class="badge-select">
-                            <option value="admin">👑 Админ</option>
-                            <option value="premium">⭐ Премиум</option>
-                            <option value="partner">🤝 Партнер</option>
-                            <option value="celebrity">🌟 Знаменитость</option>
-                        </select>
-                    </div>
-                    <button class="btn btn-primary" id="giveBadgeBtn">Выдать</button>
-                </div>
-                <div class="admin-section">
-                    <h4><i class="fas fa-list"></i> Верифицированные</h4>
-                    <div class="verified-users-list" id="verifiedUsersList"></div>
-                </div>
-            </div>
-        </div>
+    <div class="admin-panel-btn" id="adminPanelBtn" style="display: none;">
+        <i class="fas fa-crown"></i>
     </div>
 
     <script src="app.js"></script>
