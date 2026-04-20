@@ -5489,3 +5489,97 @@ body {
     justify-content: center;
     margin-bottom: 20px;
 }
+
+
+/* ================================================ */
+/* МОБИЛЬНАЯ ВЕРСИЯ - АВАТАР И КНОПКИ */
+/* ================================================ */
+
+/* Контейнер аватара в мобильном профиле */
+.mobile-profile-avatar-container {
+    position: relative;
+    display: inline-block;
+    flex-shrink: 0;
+}
+
+.mobile-profile-avatar-large {
+    width: 80px;
+    height: 80px;
+    border-radius: var(--radius-xl);
+    background: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 36px;
+    font-weight: 600;
+    color: var(--text-primary);
+    overflow: hidden;
+    position: relative;
+}
+
+.mobile-profile-avatar-large img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Кнопка смены аватара в мобильной версии */
+.mobile-change-avatar-btn {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--accent-light);
+    border: 2px solid var(--primary-light);
+    color: var(--text-primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition-fast);
+    font-size: 14px;
+    z-index: 10;
+}
+
+.mobile-change-avatar-btn:active {
+    transform: scale(0.95);
+}
+
+/* Кнопка удаления аватара в мобильной версии */
+.mobile-delete-avatar-btn {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(239, 68, 68, 0.2);
+    border: 2px solid var(--primary-light);
+    color: #ef4444;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition-fast);
+    font-size: 14px;
+    z-index: 10;
+}
+
+.mobile-delete-avatar-btn:active {
+    transform: scale(0.95);
+}
+
+.mobile-delete-avatar-btn:hover {
+    background: rgba(239, 68, 68, 0.4);
+}
+
+/* Заголовок мобильного профиля */
+.mobile-profile-header {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 28px;
+    padding: 0 16px;
+}
