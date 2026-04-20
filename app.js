@@ -6460,61 +6460,86 @@ function updateAllAvatars() {
     const displayName = currentUser?.displayName || 'Пользователь';
     const verifiedBadge = getVerifiedBadge(currentUser?.uid);
     
-    // 1. Обновляем аватар в модальном окне профиля
+    // 1. Обновляем аватар в модальном окне профиля (десктоп)
     const profileAvatarLarge = document.getElementById('profileAvatarLarge');
     if (profileAvatarLarge) {
+        profileAvatarLarge.innerHTML = '';
         if (avatarUrl) {
-            profileAvatarLarge.innerHTML = `<img src="${avatarUrl}" alt="Avatar">`;
+            const img = document.createElement('img');
+            img.src = avatarUrl;
+            img.alt = 'Avatar';
+            img.style.width = '100%';
+            img.style.height = '100%';
+            img.style.objectFit = 'cover';
+            img.style.borderRadius = 'inherit';
+            profileAvatarLarge.appendChild(img);
         } else {
-            profileAvatarLarge.innerHTML = displayName.charAt(0);
+            profileAvatarLarge.textContent = displayName.charAt(0);
         }
     }
     
-    // 2. Обновляем имя с галочкой в модальном окне профиля
+    // 2. Обновляем мобильный аватар
+    const mobileProfileAvatar = document.getElementById('mobileProfileAvatar');
+    if (mobileProfileAvatar) {
+        mobileProfileAvatar.innerHTML = '';
+        if (avatarUrl) {
+            const img = document.createElement('img');
+            img.src = avatarUrl;
+            img.alt = 'Avatar';
+            img.style.width = '100%';
+            img.style.height = '100%';
+            img.style.objectFit = 'cover';
+            img.style.borderRadius = 'inherit';
+            mobileProfileAvatar.appendChild(img);
+        } else {
+            mobileProfileAvatar.textContent = displayName.charAt(0);
+        }
+    }
+    
+    // 3. Показываем/скрываем кнопки удаления
+    const deleteAvatarBtn = document.getElementById('deleteAvatarBtn');
+    if (deleteAvatarBtn) {
+        deleteAvatarBtn.style.display = avatarUrl ? 'flex' : 'none';
+    }
+    
+    const mobileDeleteAvatarBtn = document.getElementById('mobileDeleteAvatarBtn');
+    if (mobileDeleteAvatarBtn) {
+        mobileDeleteAvatarBtn.style.display = avatarUrl ? 'flex' : 'none';
+    }
+    
+    // 4. Обновляем имена с галочками
     const profileName = document.getElementById('profileName');
     if (profileName) {
         profileName.innerHTML = `${escapeHtml(displayName)} ${verifiedBadge}`;
     }
     
-    // 3. Обновляем мобильный аватар
-    const mobileProfileAvatar = document.getElementById('mobileProfileAvatar');
-    if (mobileProfileAvatar) {
-        if (avatarUrl) {
-            mobileProfileAvatar.innerHTML = `<img src="${avatarUrl}" alt="Avatar">`;
-        } else {
-            mobileProfileAvatar.innerHTML = displayName.charAt(0);
-        }
-    }
-    
-    // 4. Обновляем имя с галочкой в мобильном профиле
     const mobileProfileName = document.getElementById('mobileProfileName');
     if (mobileProfileName) {
         mobileProfileName.innerHTML = `${escapeHtml(displayName)} ${verifiedBadge}`;
     }
     
-    // 5. Обновляем аватар в десктопной боковой панели
+    // 5. Обновляем десктопную боковую панель
     const desktopUserAvatar = document.getElementById('desktopUserAvatar');
     if (desktopUserAvatar) {
+        desktopUserAvatar.style.backgroundImage = '';
+        desktopUserAvatar.textContent = '';
         if (avatarUrl) {
             desktopUserAvatar.style.backgroundImage = `url(${avatarUrl})`;
             desktopUserAvatar.style.backgroundSize = 'cover';
             desktopUserAvatar.style.backgroundPosition = 'center';
             desktopUserAvatar.style.backgroundColor = 'transparent';
-            desktopUserAvatar.textContent = '';
         } else {
-            desktopUserAvatar.style.backgroundImage = '';
-            desktopUserAvatar.style.backgroundColor = '';
             desktopUserAvatar.textContent = displayName.charAt(0);
         }
     }
     
-    // 6. Обновляем имя в десктопной боковой панели
+    // 6. Обновляем имя в десктопной панели
     const desktopUserName = document.getElementById('desktopUserName');
     if (desktopUserName) {
         desktopUserName.textContent = displayName;
     }
     
-    // 7. Обновляем статус в десктопной панели
+    // 7. Обновляем статус
     const desktopUserStatus = document.getElementById('desktopUserStatus');
     if (desktopUserStatus) {
         let statusIcon = 'fa-circle';
@@ -6532,48 +6557,97 @@ function updateAllAvatars() {
         desktopUserStatus.innerHTML = `<i class="fas ${statusIcon}" style="color: ${statusColor};"></i><span>${statusText}</span>`;
     }
     
-    // 8. Обновляем списки чатов и контактов
+    const mobileProfileStatus = document.getElementById('mobileProfileStatus');
+    if (mobileProfileStatus) {
+        let statusIcon = 'fa-circle';
+        let statusColor = '#10b981';
+        let statusText = 'online';
+        
+        switch(currentUser.status) {
+            case 'online': statusIcon = 'fa-circle'; statusColor = '#10b981'; statusText = 'online'; break;
+            case 'away': statusIcon = 'fa-clock'; statusColor = '#f59e0b'; statusText = 'away'; break;
+            case 'dnd': statusIcon = 'fa-minus-circle'; statusColor = '#ef4444'; statusText = 'не беспокоить'; break;
+            case 'invisible': statusIcon = 'fa-eye-slash'; statusColor = '#64748b'; statusText = 'невидимка'; break;
+            default: statusIcon = 'fa-circle'; statusColor = '#64748b'; statusText = 'offline';
+        }
+        
+        mobileProfileStatus.innerHTML = `<i class="fas ${statusIcon}" style="color: ${statusColor};"></i> ${statusText}`;
+    }
+    
+    // 8. Обновляем списки
     updateChatsDisplay();
     updateContactsDisplay();
 }
 
 // Инициализация загрузчика аватара
 function setupAvatarUpload() {
-    // Десктопная версия
+    // ========== ДЕСКТОПНАЯ ВЕРСИЯ ==========
     const changeAvatarBtn = document.getElementById('changeAvatarBtn');
+    const deleteAvatarBtn = document.getElementById('deleteAvatarBtn');
     const avatarUpload = document.getElementById('avatarUpload');
     
+    // Кнопка удаления аватара (десктоп)
+    if (deleteAvatarBtn) {
+        if (currentUser && currentUser.avatar) {
+            deleteAvatarBtn.style.display = 'flex';
+        } else {
+            deleteAvatarBtn.style.display = 'none';
+        }
+        
+        const newDeleteBtn = deleteAvatarBtn.cloneNode(true);
+        deleteAvatarBtn.parentNode.replaceChild(newDeleteBtn, deleteAvatarBtn);
+        
+        newDeleteBtn.onclick = async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            await deleteAvatar();
+        };
+    }
+    
+    // Кнопка смены аватара (десктоп)
     if (changeAvatarBtn && avatarUpload) {
-        // Удаляем старые обработчики
         const newBtn = changeAvatarBtn.cloneNode(true);
         changeAvatarBtn.parentNode.replaceChild(newBtn, changeAvatarBtn);
         
         newBtn.onclick = (e) => {
             e.preventDefault();
             e.stopPropagation();
-            // Сбрасываем значение перед открытием, чтобы onchange срабатывал даже при выборе того же файла
             avatarUpload.value = '';
             avatarUpload.click();
         };
         
         avatarUpload.onchange = async (e) => {
             const file = e.target.files[0];
-            
-            // ВАЖНО: Если файл не выбран (пользователь закрыл проводник), ничего не делаем
-            if (!file) {
-                console.log('Файл не выбран, отмена');
-                return;
-            }
-            
+            if (!file) return;
             await uploadAvatar(file);
-            avatarUpload.value = ''; // Очищаем после загрузки
+            avatarUpload.value = '';
         };
     }
     
-    // Мобильная версия
+    // ========== МОБИЛЬНАЯ ВЕРСИЯ ==========
     const mobileChangeAvatarBtn = document.getElementById('mobileChangeAvatarBtn');
+    const mobileDeleteAvatarBtn = document.getElementById('mobileDeleteAvatarBtn');
     const mobileAvatarUpload = document.getElementById('mobileAvatarUpload');
     
+    // Кнопка удаления аватара (мобильная)
+    if (mobileDeleteAvatarBtn) {
+        if (currentUser && currentUser.avatar) {
+            mobileDeleteAvatarBtn.style.display = 'flex';
+        } else {
+            mobileDeleteAvatarBtn.style.display = 'none';
+        }
+        
+        const newMobileDeleteBtn = mobileDeleteAvatarBtn.cloneNode(true);
+        mobileDeleteAvatarBtn.parentNode.replaceChild(newMobileDeleteBtn, mobileDeleteAvatarBtn);
+        
+        newMobileDeleteBtn.onclick = async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            await deleteAvatar();
+        };
+    }
+    
+    // Кнопка смены аватара (мобильная)
     if (mobileChangeAvatarBtn && mobileAvatarUpload) {
         const newMobileBtn = mobileChangeAvatarBtn.cloneNode(true);
         mobileChangeAvatarBtn.parentNode.replaceChild(newMobileBtn, mobileChangeAvatarBtn);
@@ -6587,13 +6661,7 @@ function setupAvatarUpload() {
         
         mobileAvatarUpload.onchange = async (e) => {
             const file = e.target.files[0];
-            
-            // ВАЖНО: Если файл не выбран (пользователь закрыл проводник), ничего не делаем
-            if (!file) {
-                console.log('Файл не выбран, отмена');
-                return;
-            }
-            
+            if (!file) return;
             await uploadAvatar(file);
             mobileAvatarUpload.value = '';
         };
