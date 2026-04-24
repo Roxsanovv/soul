@@ -2268,11 +2268,101 @@ function createMessageElement(message) {
     return div;
 }
 
+function setupContextMenuActions() {
+    // Ответить
+    const contextReply = document.getElementById('contextReply');
+    if (contextReply) {
+        contextReply.onclick = () => {
+            const menu = document.getElementById('messageContextMenu');
+            const msgId = menu?.dataset.messageId;
+            
+            if (msgId && currentChatId) {
+                const messageDiv = document.querySelector(`.message[data-message-id="${msgId}"]`);
+                if (messageDiv) {
+                    let text = '';
+                    const textDiv = messageDiv.querySelector('.message-text');
+                    if (textDiv && textDiv.textContent) {
+                        text = textDiv.textContent;
+                    } else if (messageDiv.querySelector('.message-photo')) {
+                        text = '📸 Фото';
+                    } else if (messageDiv.querySelector('.message-file')) {
+                        text = '📎 Файл';
+                    } else if (messageDiv.querySelector('.message-sticker')) {
+                        text = '🖼️ Стикер';
+                    } else {
+                        text = 'Сообщение';
+                    }
+                    
+                    let sender = 'Пользователь';
+                    const senderSpan = messageDiv.querySelector('.message-sender-name');
+                    if (senderSpan) {
+                        sender = senderSpan.textContent.split(' ')[0];
+                    }
+                    
+                    window.replyToMessageGlobal = {
+                        id: msgId,
+                        text: text,
+                        senderName: sender,
+                        senderId: messageDiv.dataset.senderId
+                    };
+                    
+                    showReplyPreview(sender, text);
+                    closeContextMenu();
+                    
+                    const input = document.getElementById('messageInput');
+                    if (input) input.focus();
+                }
+            }
+            closeContextMenu();
+        };
+    }
+    
+    // Копировать
+    const contextCopy = document.getElementById('contextCopy');
+    if (contextCopy) {
+        contextCopy.onclick = () => {
+            const menu = document.getElementById('messageContextMenu');
+            const msgId = menu?.dataset.messageId;
+            
+            if (msgId) {
+                const messageDiv = document.querySelector(`.message[data-message-id="${msgId}"]`);
+                if (messageDiv) {
+                    const textDiv = messageDiv.querySelector('.message-text');
+                    if (textDiv && textDiv.textContent) {
+                        navigator.clipboard.writeText(textDiv.textContent);
+                        showNotification('Текст скопирован');
+                    } else if (messageDiv.querySelector('.message-photo')) {
+                        showNotification('Фото нельзя скопировать');
+                    } else {
+                        showNotification('Нечего копировать');
+                    }
+                }
+            }
+            closeContextMenu();
+        };
+    }
+    
+    // Удалить
+    const contextDelete = document.getElementById('contextDelete');
+    if (contextDelete) {
+        contextDelete.onclick = () => {
+            const menu = document.getElementById('messageContextMenu');
+            const msgId = menu?.dataset.messageId;
+            
+            if (msgId) {
+                openDeleteConfirmModal(msgId);
+            }
+            closeContextMenu();
+        };
+    }
+}
+
 function closeContextMenu() {
     const menu = document.getElementById('messageContextMenu');
     if (menu) {
         menu.classList.remove('active');
         menu.style.display = 'none';
+        menu.dataset.messageId = '';
     }
     activeContextMenu = null;
     if (contextMenuTimeout) {
@@ -6026,6 +6116,8 @@ async function initializeApp() {
     initGroupModals();
     setupContextMenuBoundary();
     setupAvatarUpload();
+    initGlobalContextMenu();
+    setupContextMenuActions();
     
     authUnsubscribe = auth.onAuthStateChanged(async (user) => {
         if (user) {
