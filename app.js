@@ -2043,19 +2043,16 @@ function createMessageElement(message) {
     let verifiedBadge = '';
     
     if (isChannel) {
-        // В канале показываем название канала
         displayName = currentChat.name;
         avatarIcon = '<i class="fas fa-bullhorn"></i>';
         verifiedBadge = getChannelVerifiedBadge(currentChat.id);
     } else {
-        // В группах и личных чатах показываем имя пользователя
         let senderName = message.senderName || "Пользователь";
         if (allUsers[message.senderId]) {
             senderName = allUsers[message.senderId].displayName;
         }
         displayName = senderName;
         
-        // Показываем аватар отправителя
         const sender = allUsers[message.senderId];
         if (sender && sender.avatar) {
             avatarIcon = `<img src="${sender.avatar}" alt="Avatar" style="width: 100%; height: 100%; border-radius: inherit; object-fit: cover;">`;
@@ -2072,7 +2069,6 @@ function createMessageElement(message) {
         if (message.replyTo.senderId && allUsers[message.replyTo.senderId]) {
             repliedName = allUsers[message.replyTo.senderId].displayName;
         }
-        // Для каналов в ответе тоже показываем название канала
         if (isChannel) {
             repliedName = currentChat.name;
         }
@@ -2110,48 +2106,7 @@ function createMessageElement(message) {
     // Стикеры
     let stickerHtml = '';
     if (message.type === 'sticker' && message.stickerUrl) {
-        if (message.stickerUrl.endsWith('.tgs') || message.isTGS) {
-            const stickerId = 'tgs_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
-            stickerHtml = `<div id="${stickerId}" class="tgs-sticker-container" style="width: 160px; height: 160px; cursor: pointer;"></div>`;
-            
-            setTimeout(() => {
-                const container = document.getElementById(stickerId);
-                if (container && typeof lottie !== 'undefined') {
-                    fetch(message.stickerUrl)
-                        .then(response => response.blob())
-                        .then(async blob => {
-                            try {
-                                const arrayBuffer = await blob.arrayBuffer();
-                                const uint8Array = new Uint8Array(arrayBuffer);
-                                let animationData;
-                                try {
-                                    const decompressed = pako.unsafeInflate(uint8Array);
-                                    const jsonString = new TextDecoder().decode(decompressed);
-                                    animationData = JSON.parse(jsonString);
-                                } catch (e) {
-                                    const jsonString = new TextDecoder().decode(uint8Array);
-                                    animationData = JSON.parse(jsonString);
-                                }
-                                container.innerHTML = '';
-                                lottie.loadAnimation({
-                                    container: container,
-                                    renderer: 'svg',
-                                    loop: true,
-                                    autoplay: true,
-                                    animationData: animationData
-                                });
-                            } catch (err) {
-                                container.innerHTML = '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:rgba(139,92,246,0.2);border-radius:20px;"><i class="fas fa-film" style="font-size: 32px; color: #8b5cf6;"></i></div>';
-                            }
-                        })
-                        .catch(() => {
-                            container.innerHTML = '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:rgba(239,68,68,0.2);border-radius:20px;"><i class="fas fa-exclamation-triangle" style="font-size: 24px; color: #ef4444;"></i></div>';
-                        });
-                }
-            }, 50);
-        } else {
-            stickerHtml = `<img src="${message.stickerUrl}" class="message-sticker" alt="Sticker" onclick="window.showFullPhoto && showFullPhoto('${message.stickerUrl}')">`;
-        }
+        stickerHtml = `<img src="${message.stickerUrl}" class="message-sticker" alt="Sticker" onclick="window.showFullPhoto && showFullPhoto('${message.stickerUrl}')">`;
     }
     
     // Реакции
@@ -2177,13 +2132,13 @@ function createMessageElement(message) {
         }
     }
     
-    // Собираем HTML сообщения для стикеров
+    // Собираем HTML
     if (isSticker) {
         div.innerHTML = `
             <div class="message-avatar ${isChannel ? 'channel-avatar' : ''}" style="${!isChannel && allUsers[message.senderId]?.avatar ? 'padding: 0; overflow: hidden;' : ''}">${avatarIcon}</div>
             <div class="message-content">
                 <div class="message-sender">
-                    <span class="message-sender-name" ${!isChannel ? `onclick="openUserProfileModal('${message.senderId}')"` : ''}>
+                    <span class="message-sender-name" ${!isChannel ? `onclick="window.openUserProfileModal && openUserProfileModal('${message.senderId}')"` : ''}>
                         ${escapeHtml(displayName)} ${verifiedBadge}
                     </span>
                     <span class="message-time">${time}</span>
@@ -2194,12 +2149,11 @@ function createMessageElement(message) {
             </div>
         `;
     } else {
-        // Обычные сообщения (текст, фото, файлы)
         div.innerHTML = `
             <div class="message-avatar ${isChannel ? 'channel-avatar' : ''}" style="${!isChannel && allUsers[message.senderId]?.avatar ? 'padding: 0; overflow: hidden;' : ''}">${avatarIcon}</div>
             <div class="message-content">
                 <div class="message-sender">
-                    <span class="message-sender-name" ${!isChannel ? `onclick="openUserProfileModal('${message.senderId}')"` : ''}>
+                    <span class="message-sender-name" ${!isChannel ? `onclick="window.openUserProfileModal && openUserProfileModal('${message.senderId}')"` : ''}>
                         ${escapeHtml(displayName)} ${verifiedBadge}
                     </span>
                     <span class="message-time">${time}</span>
@@ -2213,24 +2167,61 @@ function createMessageElement(message) {
         `;
     }
     
-    // Контекстное меню (правый клик)
+    // ========== ПРАВИЛЬНЫЙ ОБРАБОТЧИК КОНТЕКСТНОГО МЕНЮ ==========
     div.addEventListener('contextmenu', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        e.stopImmediatePropagation();
-        showMessageContextMenu(e, message, isOutgoing);
+        
+        const menu = document.getElementById('messageContextMenu');
+        if (!menu) return;
+        
+        // Закрываем предыдущее меню
+        closeContextMenu();
+        
+        // Сохраняем данные сообщения
+        menu.dataset.messageId = message.id;
+        menu.dataset.messageText = message.text || '';
+        
+        // Показываем/скрываем кнопку удаления
+        const deleteItem = document.getElementById('contextDelete');
+        if (deleteItem) {
+            const isAdmin = verifiedUsers && verifiedUsers[currentUser?.uid] && verifiedUsers[currentUser?.uid].type === 'admin';
+            deleteItem.style.display = (isOutgoing || message.senderId === currentUser?.uid || isAdmin) ? 'flex' : 'none';
+        }
+        
+        // Позиционирование
+        let left = e.clientX;
+        let top = e.clientY;
+        const menuWidth = 220;
+        const menuHeight = 250;
+        const windowWidth = window.innerWidth;
+        const windowHeight = window.innerHeight;
+        
+        if (left + menuWidth > windowWidth - 10) {
+            left = windowWidth - menuWidth - 10;
+        }
+        if (left < 10) left = 10;
+        
+        if (top + menuHeight > windowHeight - 10) {
+            top = windowHeight - menuHeight - 10;
+        }
+        if (top < 10) top = 10;
+        
+        menu.style.left = left + 'px';
+        menu.style.top = top + 'px';
+        menu.style.display = 'block';
+        menu.classList.add('active');
+        
         return false;
     });
     
-    // Двойной клик для реакции ❤️
+    // Двойной клик для реакции
     div.addEventListener('dblclick', (e) => {
-        // Проверяем, что клик не по кнопкам и не по существующим реакциям
         if (e.target.closest('.reaction-badge') || 
             e.target.closest('.message-reply') ||
             e.target.closest('.message-file') ||
             e.target.closest('.message-photo') ||
-            e.target.closest('.message-sticker') ||
-            e.target.closest('.tgs-sticker-container')) {
+            e.target.closest('.message-sticker')) {
             return;
         }
         
@@ -2238,10 +2229,8 @@ function createMessageElement(message) {
         e.stopPropagation();
         
         if (currentChatId && message.id) {
-            // Быстрая реакция ❤️
             toggleReaction(message.id, '❤️');
             
-            // Визуальный эффект
             const messageContent = div.querySelector('.message-content');
             if (messageContent) {
                 messageContent.style.transform = 'scale(1.02)';
@@ -2252,7 +2241,7 @@ function createMessageElement(message) {
         }
     });
     
-    // Клик по существующим реакциям
+    // Клик по реакциям
     const reactionBadges = div.querySelectorAll('.reaction-badge');
     reactionBadges.forEach(badge => {
         badge.addEventListener('click', (e) => {
@@ -2265,7 +2254,7 @@ function createMessageElement(message) {
         });
     });
     
-    // Клик по ответу для прокрутки к оригинальному сообщению
+    // Клик по ответу
     const replyDiv = div.querySelector('.message-reply');
     if (replyDiv) {
         replyDiv.addEventListener('click', () => {
@@ -2277,70 +2266,6 @@ function createMessageElement(message) {
     }
     
     return div;
-}
-
-function showMessageContextMenu(e, message, isOutgoing) {
-    if (activeContextMenu) {
-        closeContextMenu();
-    }
-    
-    if (!messageContextMenu) return;
-    
-    e.preventDefault();
-    e.stopPropagation();
-    e.stopImmediatePropagation();
-    
-    messageContextMenu.dataset.messageId = message.id;
-    messageContextMenu.dataset.isOutgoing = isOutgoing;
-    messageContextMenu.dataset.senderId = message.senderId;
-    
-    const deleteItem = document.getElementById('contextDelete');
-    const isAdmin = verifiedUsers && verifiedUsers[currentUser?.uid] && verifiedUsers[currentUser?.uid].type === 'admin';
-    if (deleteItem) {
-        deleteItem.style.display = (isOutgoing || message.senderId === currentUser?.uid || isAdmin) ? 'flex' : 'none';
-    }
-    
-    let left = e.clientX;
-    let top = e.clientY;
-    const menuWidth = 220;
-    const menuHeight = 200;
-    const windowWidth = window.innerWidth;
-    const windowHeight = window.innerHeight;
-    
-    if (left + menuWidth > windowWidth - 10) {
-        left = windowWidth - menuWidth - 10;
-    }
-    if (left < 10) left = 10;
-    
-    if (top + menuHeight > windowHeight - 10) {
-        top = windowHeight - menuHeight - 10;
-    }
-    if (top < 10) top = 10;
-    
-    messageContextMenu.style.left = left + 'px';
-    messageContextMenu.style.top = top + 'px';
-    messageContextMenu.style.display = 'block';
-    messageContextMenu.classList.add('active');
-    activeContextMenu = messageContextMenu;
-    
-    const closeOnClickOutside = (event) => {
-        if (activeContextMenu && !activeContextMenu.contains(event.target)) {
-            closeContextMenu();
-            document.removeEventListener('click', closeOnClickOutside);
-            document.removeEventListener('contextmenu', closeOnClickOutside);
-        }
-    };
-    
-    setTimeout(() => {
-        document.addEventListener('click', closeOnClickOutside);
-        document.addEventListener('contextmenu', closeOnClickOutside);
-    }, 10);
-    
-    contextMenuTimeout = setTimeout(() => {
-        if (activeContextMenu === messageContextMenu) {
-            closeContextMenu();
-        }
-    }, 5000);
 }
 
 function closeContextMenu() {
