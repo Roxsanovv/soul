@@ -1849,7 +1849,7 @@ async function updateChatLastMessage(chatId) {
         
         let lastMessage = null;
         
-        if (messages) {
+        if (messages && Object.keys(messages).length > 0) {
             const lastKey = Object.keys(messages)[0];
             const lastMsg = messages[lastKey];
             
@@ -1874,6 +1874,7 @@ async function updateChatLastMessage(chatId) {
                 type: lastMsg.type
             };
         } else {
+            // Если сообщений нет, устанавливаем дефолтное сообщение
             lastMessage = {
                 text: "Нет сообщений",
                 timestamp: Date.now(),
@@ -1882,17 +1883,20 @@ async function updateChatLastMessage(chatId) {
             };
         }
         
+        // Обновляем в Firebase
         await database.ref(`chats/${chatId}`).update({
             lastMessage: lastMessage,
             updatedAt: lastMessage.timestamp
         });
         
+        // Обновляем локальный массив
         const chatIndex = chats.findIndex(c => c.id === chatId);
         if (chatIndex !== -1) {
             chats[chatIndex].lastMessage = lastMessage;
             chats[chatIndex].updatedAt = lastMessage.timestamp;
         }
         
+        // Обновляем отображение
         updateChatsDisplay();
         return lastMessage;
         
@@ -2341,20 +2345,158 @@ function setupContextMenuActions() {
             closeContextMenu();
         };
     }
+}
+
+function openDeleteConfirmModal(messageId) {
+    if (!messageId || !currentChatId) return;
     
-    // Удалить
-    const contextDelete = document.getElementById('contextDelete');
-    if (contextDelete) {
-        contextDelete.onclick = () => {
-            const menu = document.getElementById('messageContextMenu');
-            const msgId = menu?.dataset.messageId;
-            
-            if (msgId) {
-                openDeleteConfirmModal(msgId);
+    // Получаем сообщение для предпросмотра
+    const messageDiv = document.querySelector(`.message[data-message-id="${messageId}"]`);
+    if (!messageDiv) return;
+    
+    // Получаем текст сообщения
+    let messageText = '';
+    const textDiv = messageDiv.querySelector('.message-text');
+    if (textDiv && textDiv.textContent) {
+        messageText = textDiv.textContent;
+    } else if (messageDiv.querySelector('.message-photo')) {
+        messageText = '📸 Фото';
+    } else if (messageDiv.querySelector('.message-file')) {
+        const fileName = messageDiv.querySelector('.message-file-name')?.textContent || 'Файл';
+        messageText = `📎 ${fileName}`;
+    } else if (messageDiv.querySelector('.message-sticker')) {
+        messageText = '🖼️ Стикер';
+    } else {
+        messageText = 'Сообщение';
+    }
+    
+    // Показываем модальное окно
+    const modal = document.getElementById('confirmDeleteMessageModal');
+    if (!modal) return;
+    
+    // Обновляем текст сообщения в модалке
+    const deleteMessageText = document.getElementById('deleteMessageText');
+    if (deleteMessageText) {
+        deleteMessageText.textContent = messageText.length > 100 ? messageText.substring(0, 100) + '...' : messageText;
+    }
+    
+    // Сохраняем ID сообщения в модалке
+    modal.dataset.messageId = messageId;
+    
+    // Показываем модальное окно
+    modal.classList.add('active');
+}
+
+async function deleteMessage(messageId) {
+    if (!messageId || !currentChatId) {
+        console.error('No messageId or chatId');
+        showNotification('Ошибка: сообщение не найдено');
+        return;
+    }
+    
+    // Проверяем права
+    const messageDiv = document.querySelector(`.message[data-message-id="${messageId}"]`);
+    if (!messageDiv) {
+        showNotification('Сообщение не найдено');
+        return;
+    }
+    
+    const isOutgoing = messageDiv.dataset.senderId === currentUser?.uid;
+    const isAdmin = verifiedUsers && verifiedUsers[currentUser?.uid] && verifiedUsers[currentUser?.uid].type === 'admin';
+    
+    if (!isOutgoing && !isAdmin) {
+        showNotification('У вас нет прав на удаление этого сообщения');
+        return;
+    }
+    
+    try {
+        // Удаляем сообщение из Firebase
+        await database.ref(`messages/${currentChatId}/${messageId}`).remove();
+        
+        // Удаляем элемент из DOM
+        if (messageDiv) {
+            messageDiv.remove();
+        }
+        
+        // Проверяем, не осталось ли сообщений в чате
+        const messagesRef = database.ref(`messages/${currentChatId}`);
+        const snapshot = await messagesRef.once('value');
+        const messagesCount = snapshot.numChildren();
+        
+        if (messagesCount === 0) {
+            const messagesContainer = document.getElementById('messagesContainer');
+            if (messagesContainer) {
+                messagesContainer.innerHTML = '<div class="empty-state"><i class="fas fa-comments"></i><h3>Нет сообщений</h3><p>Напишите первое сообщение!</p></div>';
             }
-            closeContextMenu();
+        }
+        
+        // Обновляем последнее сообщение в чате
+        await updateChatLastMessage(currentChatId);
+        
+        // Обновляем статистику для канала
+        const currentChat = chats.find(c => c.id === currentChatId);
+        if (currentChat && currentChat.type === 'channel') {
+            const postCount = await countChannelPosts(currentChatId);
+            const totalPostsSpan = document.getElementById('totalPosts');
+            if (totalPostsSpan) totalPostsSpan.textContent = postCount;
+            updateMonetizationStats(currentChatId);
+        }
+        
+        showNotification('Сообщение удалено');
+        
+    } catch (error) {
+        console.error('Ошибка при удалении сообщения:', error);
+        showNotification('Ошибка при удалении сообщения: ' + error.message);
+    }
+}
+
+function setupDeleteMessageModal() {
+    const modal = document.getElementById('confirmDeleteMessageModal');
+    const cancelBtn = document.getElementById('cancelDeleteBtn');
+    const confirmBtn = document.getElementById('confirmDeleteBtn');
+    const closeBtn = document.getElementById('closeDeleteModalBtn');
+    
+    if (!modal || !cancelBtn || !confirmBtn) return;
+    
+    // Закрытие по кнопке Отмена
+    cancelBtn.onclick = () => {
+        modal.classList.remove('active');
+        modal.dataset.messageId = '';
+    };
+    
+    // Закрытие по крестику
+    if (closeBtn) {
+        closeBtn.onclick = () => {
+            modal.classList.remove('active');
+            modal.dataset.messageId = '';
         };
     }
+    
+    // Подтверждение удаления
+    confirmBtn.onclick = async () => {
+        const messageId = modal.dataset.messageId;
+        if (messageId) {
+            await deleteMessage(messageId);
+        }
+        modal.classList.remove('active');
+        modal.dataset.messageId = '';
+    };
+    
+    // Закрытие при клике на overlay
+    modal.onclick = (e) => {
+        if (e.target === modal) {
+            modal.classList.remove('active');
+            modal.dataset.messageId = '';
+        }
+    };
+    
+    // Закрытие по Escape
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal.classList.contains('active')) {
+            modal.classList.remove('active');
+            modal.dataset.messageId = '';
+        }
+    });
 }
 
 function closeContextMenu() {
@@ -6118,6 +6260,7 @@ async function initializeApp() {
     setupAvatarUpload();
     initGlobalContextMenu();
     setupContextMenuActions();
+    setupDeleteMessageModal();
     
     authUnsubscribe = auth.onAuthStateChanged(async (user) => {
         if (user) {
