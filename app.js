@@ -2445,27 +2445,59 @@ function updateMessageReactionsOnly(messageElement, updatedMessage) {
 // ОТПРАВКА СООБЩЕНИЙ
 // ================================================
 async function sendMessage() {
-    if (selectedPhoto) { await sendPhoto(); return; }
-    if (selectedFile) { await sendFile(); return; }
-    if (chat && chat.type === 'channel') {
-       updatePostCount(currentChatId);
+    // Получаем текущий чат
+    const currentChat = chats.find(c => c.id === currentChatId);
+    
+    // Проверка на фото
+    if (selectedPhoto) { 
+        await sendPhoto(); 
+        return; 
     }
     
+    // Проверка на файл
+    if (selectedFile) { 
+        await sendFile(); 
+        return; 
+    }
+    
+    // Получаем поле ввода
     const input = document.getElementById('messageInput');
-    if (!input) return;
-    
-    const text = input.value;
-    if (!text || !currentChatId) return;
-    
-    const chat = chats.find(c => c.id === currentChatId);
-    if (chat && chat.type === 'channel' && !canSendToChannel(currentChatId, currentUser?.uid)) {
-        showNotification('У вас нет прав на отправку сообщений в этот канал');
+    if (!input) {
+        console.error('Message input not found');
         return;
+    }
+    
+    const text = input.value.trim();
+    
+    // Проверка: есть ли текст и открыт ли чат
+    if (!text) {
+        console.log('No text to send');
+        return;
+    }
+    
+    if (!currentChatId) {
+        console.error('No chat selected');
+        showNotification('Выберите чат для отправки сообщения');
+        return;
+    }
+    
+    if (!currentUser) {
+        console.error('User not logged in');
+        return;
+    }
+    
+    // Проверка прав для канала
+    if (currentChat && currentChat.type === 'channel') {
+        if (!canSendToChannel(currentChatId, currentUser?.uid)) {
+            showNotification('У вас нет прав на отправку сообщений в этот канал');
+            return;
+        }
     }
     
     try {
         const wasNearBottom = isUserNearBottom();
         
+        // Создаем сообщение
         const newMessage = {
             text: text,
             senderId: currentUser.uid,
@@ -2474,31 +2506,33 @@ async function sendMessage() {
             type: "text"
         };
         
+        // Добавляем ответ, если есть
         if (window.replyToMessageGlobal && window.replyToMessageGlobal.id) {
             newMessage.replyTo = {
                 id: window.replyToMessageGlobal.id,
-                text: window.replyToMessageGlobal.text,
-                senderName: window.replyToMessageGlobal.senderName,
+                text: window.replyToMessageGlobal.text || 'Сообщение',
+                senderName: window.replyToMessageGlobal.senderName || 'Пользователь',
                 senderId: window.replyToMessageGlobal.senderId
             };
+            
+            // Очищаем reply
+            window.replyToMessageGlobal = null;
+            const previewContainer = document.getElementById('replyPreviewContainer');
+            if (previewContainer) {
+                previewContainer.style.display = 'none';
+                previewContainer.innerHTML = '';
+            }
         }
         
+        // Очищаем поле ввода
         input.value = '';
         input.style.height = 'auto';
         
-        const repliedId = window.replyToMessageGlobal?.id;
+        // Отправляем в Firebase
+        const messageRef = await database.ref(`messages/${currentChatId}`).push(newMessage);
+        console.log('Message sent:', messageRef.key);
         
-        window.replyToMessageGlobal = null;
-        
-        const previewContainer = document.getElementById('replyPreviewContainer');
-        if (previewContainer) {
-            previewContainer.style.display = 'none';
-            previewContainer.innerHTML = '';
-        }
-        
-        if (isMobile && input) input.blur();
-        
-        await database.ref(`messages/${currentChatId}`).push(newMessage);
+        // Обновляем последнее сообщение в чате
         await database.ref(`chats/${currentChatId}`).update({
             lastMessage: {
                 text: text.length > 50 ? text.substring(0, 50) + '...' : text,
@@ -2509,19 +2543,13 @@ async function sendMessage() {
             updatedAt: Date.now()
         });
         
-        if (repliedId) {
-            setTimeout(() => {
-                const repliedElement = document.querySelector(`.message[data-message-id="${repliedId}"]`);
-                if (repliedElement) {
-                    repliedElement.style.transition = 'background-color 0.3s';
-                    repliedElement.style.backgroundColor = 'rgba(139, 92, 246, 0.2)';
-                    setTimeout(() => {
-                        if (repliedElement) repliedElement.style.backgroundColor = '';
-                    }, 1000);
-                }
-            }, 100);
+        // Обновляем статистику для канала
+        if (currentChat && currentChat.type === 'channel') {
+            await updatePostCount(currentChatId);
+            updateMonetizationStats(currentChatId);
         }
         
+        // Прокрутка к последнему сообщению
         if (wasNearBottom) {
             setTimeout(() => scrollToLastMessage('smooth'), 100);
         } else {
@@ -2529,8 +2557,8 @@ async function sendMessage() {
         }
         
     } catch (error) {
-        console.error('Ошибка при отправке:', error);
-        showNotification('Ошибка при отправке сообщения');
+        console.error('Ошибка при отправке сообщения:', error);
+        showNotification('Ошибка при отправке сообщения: ' + error.message);
     }
 }
 
