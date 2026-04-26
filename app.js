@@ -44,6 +44,7 @@ let groupInviteLinks = {};
 let currentStickerPack = null;
 let activeContextMenu = null;
 let contextMenuTimeout = null;
+let activeMessageListeners = {};
 
 // ================================================
 // КОНФИГУРАЦИЯ СТИКЕРОВ
