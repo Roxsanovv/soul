@@ -1621,7 +1621,6 @@ function showHomeScreen() {
 // ================================================
 // ЗАГРУЗКА СООБЩЕНИЙ
 // ================================================
-let activeMessageListeners = {};
 
 function loadMessages(chatId) {
     if (!messagesContainer) return;
