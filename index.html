@@ -2,10 +2,8 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Доступ закрыт - Spectrum</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Доступ закрыт</title>
     <style>
         * {
             margin: 0;
@@ -13,470 +11,45 @@
             box-sizing: border-box;
         }
 
-        :root {
-            --primary: #151922;
-            --primary-dark: #0d0f14;
-            --primary-light: #1a1f2a;
-            --accent: #2a2f3d;
-            --accent-light: #353b4a;
-            --accent-hover: #404758;
-            --text-primary: #f1f5f9;
-            --text-secondary: #cbd5e1;
-            --text-tertiary: #94a3b8;
-            --text-muted: #64748b;
-            --error: #ef4444;
-            --error-dark: #dc2626;
-            --error-light: rgba(239, 68, 68, 0.15);
-            --warning: #f59e0b;
-            --shadow-lg: 0 25px 50px rgba(0, 0, 0, 0.4);
-            --radius-lg: 20px;
-            --radius-xl: 28px;
-            --radius-2xl: 36px;
-        }
-
         body {
-            font-family: 'Inter', sans-serif;
-            background: var(--primary);
+            font-family: system-ui, -apple-system, 'Inter', sans-serif;
+            background: #151922;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
-            color: var(--text-primary);
+            color: #f1f5f9;
         }
 
-        .access-denied {
-            max-width: 480px;
-            width: 100%;
-            animation: fadeInScale 0.4s ease;
-        }
-
-        @keyframes fadeInScale {
-            from {
-                opacity: 0;
-                transform: scale(0.95);
-            }
-            to {
-                opacity: 1;
-                transform: scale(1);
-            }
-        }
-
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            75% { transform: translateX(5px); }
-        }
-
-        .denied-card {
-            background: var(--primary-light);
-            border-radius: var(--radius-2xl);
-            padding: 48px 32px;
+        .container {
             text-align: center;
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            box-shadow: var(--shadow-lg);
-            position: relative;
-            overflow: hidden;
+            padding: 20px;
         }
 
-        .denied-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, var(--error), var(--warning), var(--error));
-            animation: gradientShift 3s ease infinite;
-        }
-
-        @keyframes gradientShift {
-            0%, 100% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-        }
-
-        .icon-wrapper {
-            width: 100px;
-            height: 100px;
-            background: var(--error-light);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 24px;
-            animation: shakeIcon 0.5s ease;
-        }
-
-        @keyframes shakeIcon {
-            0%, 100% { transform: scale(1); }
-            25% { transform: scale(1.1); }
-            75% { transform: scale(0.95); }
-        }
-
-        .icon-wrapper i {
-            font-size: 48px;
-            color: var(--error);
+        .icon {
+            font-size: 80px;
+            margin-bottom: 24px;
+            opacity: 0.8;
         }
 
         h1 {
-            font-size: 28px;
-            font-weight: 700;
-            margin-bottom: 12px;
-            background: linear-gradient(135deg, #ef4444, #f97316);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .subtitle {
-            color: var(--text-tertiary);
-            font-size: 14px;
-            margin-bottom: 24px;
-        }
-
-        .reason-box {
-            background: var(--primary-dark);
-            border-radius: var(--radius-lg);
-            padding: 20px;
-            margin-bottom: 28px;
-            border-left: 3px solid var(--error);
-            text-align: left;
-        }
-
-        .reason-title {
-            display: flex;
-            align-items: center;
-            gap: 10px;
+            font-size: 32px;
             font-weight: 600;
-            color: var(--error);
             margin-bottom: 12px;
-            font-size: 14px;
+            color: #f1f5f9;
         }
 
-        .reason-title i {
+        p {
             font-size: 16px;
-        }
-
-        .reason-text {
-            color: var(--text-secondary);
-            font-size: 14px;
-            line-height: 1.5;
-        }
-
-        .info-grid {
-            display: flex;
-            gap: 16px;
-            margin-bottom: 32px;
-            flex-wrap: wrap;
-        }
-
-        .info-item {
-            flex: 1;
-            background: var(--primary-dark);
-            border-radius: var(--radius-lg);
-            padding: 16px;
-            text-align: center;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        .info-item i {
-            font-size: 24px;
-            color: var(--text-muted);
-            margin-bottom: 8px;
-            display: block;
-        }
-
-        .info-label {
-            font-size: 11px;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 4px;
-        }
-
-        .info-value {
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--text-secondary);
-        }
-
-        .actions {
-            display: flex;
-            gap: 12px;
-            flex-direction: column;
-        }
-
-        .btn {
-            padding: 14px 24px;
-            border-radius: var(--radius-lg);
-            font-weight: 600;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.25s ease;
-            border: none;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            text-decoration: none;
-        }
-
-        .btn-primary {
-            background: var(--accent-light);
-            color: var(--text-primary);
-        }
-
-        .btn-primary:hover {
-            background: var(--accent-hover);
-            transform: translateY(-2px);
-        }
-
-        .btn-secondary {
-            background: rgba(255, 255, 255, 0.05);
-            color: var(--text-secondary);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.1);
-            transform: translateY(-2px);
-        }
-
-        .btn-support {
-            background: var(--warning);
-            color: #1a1f2a;
-        }
-
-        .btn-support:hover {
-            background: #d97706;
-            transform: translateY(-2px);
-        }
-
-        .footer-note {
-            margin-top: 24px;
-            font-size: 12px;
-            color: var(--text-muted);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-
-        .footer-note i {
-            font-size: 12px;
-        }
-
-        /* Адаптация для мобильных */
-        @media (max-width: 480px) {
-            .denied-card {
-                padding: 32px 24px;
-            }
-            
-            .icon-wrapper {
-                width: 80px;
-                height: 80px;
-            }
-            
-            .icon-wrapper i {
-                font-size: 36px;
-            }
-            
-            h1 {
-                font-size: 24px;
-            }
-            
-            .info-grid {
-                gap: 10px;
-            }
-            
-            .info-item {
-                padding: 12px;
-            }
+            color: #94a3b8;
         }
     </style>
 </head>
 <body>
-    <div class="access-denied">
-        <div class="denied-card">
-            <div class="icon-wrapper">
-                <i class="fas fa-lock"></i>
-            </div>
-            
-            <h1>Доступ закрыт</h1>
-            <p class="subtitle">У вас нет прав для доступа к этой странице</p>
-            
-            <div class="reason-box">
-                <div class="reason-title">
-                    <i class="fas fa-info-circle"></i>
-                    <span>Причина</span>
-                </div>
-                <div class="reason-text">
-                    Ваша учетная запись не имеет необходимых разрешений для просмотра этого раздела. 
-                    Если вы считаете, что это ошибка, обратитесь к администратору.
-                </div>
-            </div>
-            
-            <div class="info-grid">
-                <div class="info-item">
-                    <i class="fas fa-user-shield"></i>
-                    <div class="info-label">Ваша роль</div>
-                    <div class="info-value" id="userRole">Пользователь</div>
-                </div>
-                <div class="info-item">
-                    <i class="fas fa-clock"></i>
-                    <div class="info-label">Время блокировки</div>
-                    <div class="info-value" id="blockTime">—</div>
-                </div>
-                <div class="info-item">
-                    <i class="fas fa-calendar"></i>
-                    <div class="info-label">Срок действия</div>
-                    <div class="info-value" id="expiryDate">—</div>
-                </div>
-            </div>
-            
-            <div class="actions">
-                <a href="/" class="btn btn-primary">
-                    <i class="fas fa-home"></i> Вернуться на главную
-                </a>
-                <button class="btn btn-secondary" id="reportErrorBtn">
-                    <i class="fas fa-flag"></i> Сообщить об ошибке
-                </button>
-                <button class="btn btn-support" id="contactSupportBtn">
-                    <i class="fas fa-headset"></i> Связаться с поддержкой
-                </button>
-            </div>
-            
-            <div class="footer-note">
-                <i class="fas fa-fingerprint"></i>
-                <span>Код ошибки: ACCESS_DENIED_403</span>
-            </div>
-        </div>
+    <div class="container">
+        <div class="icon">🔒</div>
+        <h1>Доступ закрыт</h1>
+        <p>У вас нет доступа к этой странице</p>
     </div>
-
-    <script>
-        // Получение параметров из URL
-        const urlParams = new URLSearchParams(window.location.search);
-        
-        // Функция для обновления информации на странице
-        function updatePageInfo() {
-            // Роль пользователя (можно получить из localStorage или параметров)
-            const role = urlParams.get('role') || localStorage.getItem('userRole') || 'Пользователь';
-            document.getElementById('userRole').textContent = role;
-            
-            // Время блокировки
-            const blockTime = urlParams.get('blockTime');
-            if (blockTime) {
-                const date = new Date(parseInt(blockTime));
-                document.getElementById('blockTime').textContent = date.toLocaleString('ru-RU');
-            } else {
-                document.getElementById('blockTime').textContent = new Date().toLocaleString('ru-RU');
-            }
-            
-            // Срок действия (если указан)
-            const expiry = urlParams.get('expiry');
-            if (expiry) {
-                const expiryDate = new Date(parseInt(expiry));
-                document.getElementById('expiryDate').textContent = expiryDate.toLocaleString('ru-RU');
-            } else {
-                document.getElementById('expiryDate').textContent = 'Постоянно';
-            }
-            
-            // Причина (если передана)
-            const reason = urlParams.get('reason');
-            if (reason) {
-                const reasonText = document.querySelector('.reason-text');
-                reasonText.innerHTML = decodeURIComponent(reason);
-            }
-        }
-        
-        // Сообщить об ошибке
-        document.getElementById('reportErrorBtn')?.addEventListener('click', () => {
-            const errorReport = {
-                code: 'ACCESS_DENIED_403',
-                time: new Date().toISOString(),
-                url: window.location.href,
-                userAgent: navigator.userAgent
-            };
-            
-            console.log('Ошибка отправлена:', errorReport);
-            
-            // Показываем уведомление
-            showNotification('Жалоба отправлена администратору');
-        });
-        
-        // Связаться с поддержкой
-        document.getElementById('contactSupportBtn')?.addEventListener('click', () => {
-            // Создаем email или открываем чат
-            const subject = encodeURIComponent('Проблема с доступом - Spectrum');
-            const body = encodeURIComponent(
-                'Здравствуйте! У меня возникла проблема с доступом.\n\n' +
-                'Код ошибки: ACCESS_DENIED_403\n' +
-                'Время: ' + new Date().toLocaleString() + '\n' +
-                'Роль: ' + (document.getElementById('userRole')?.textContent || 'Неизвестно') + '\n\n' +
-                'Пожалуйста, помогите решить эту проблему.'
-            );
-            
-            window.location.href = `mailto:support@spectrum.com?subject=${subject}&body=${body}`;
-        });
-        
-        // Функция уведомления (в стиле мессенджера)
-        function showNotification(message) {
-            const notification = document.createElement('div');
-            notification.style.cssText = `
-                position: fixed;
-                bottom: 24px;
-                left: 50%;
-                transform: translateX(-50%) translateY(100px);
-                background: var(--primary-light);
-                backdrop-filter: blur(20px);
-                color: var(--text-primary);
-                padding: 12px 24px;
-                border-radius: 100px;
-                box-shadow: var(--shadow-lg);
-                z-index: 1000;
-                font-weight: 500;
-                font-size: 14px;
-                border: 1px solid rgba(255, 255, 255, 0.05);
-                white-space: nowrap;
-                transition: transform 0.3s ease;
-                font-family: 'Inter', sans-serif;
-            `;
-            notification.textContent = message;
-            document.body.appendChild(notification);
-            
-            setTimeout(() => {
-                notification.style.transform = 'translateX(-50%) translateY(0)';
-            }, 10);
-            
-            setTimeout(() => {
-                notification.style.transform = 'translateX(-50%) translateY(100px)';
-                setTimeout(() => notification.remove(), 300);
-            }, 3000);
-        }
-        
-        // Добавляем анимацию при загрузке
-        window.addEventListener('load', () => {
-            updatePageInfo();
-            
-            // Анимация для иконки
-            const icon = document.querySelector('.icon-wrapper');
-            if (icon) {
-                setTimeout(() => {
-                    icon.style.animation = 'none';
-                    icon.offsetHeight;
-                    icon.style.animation = 'shakeIcon 0.5s ease';
-                }, 500);
-            }
-        });
-        
-        // Обработка перехода на главную с сохранением сессии
-        document.querySelector('.btn-primary')?.addEventListener('click', (e) => {
-            e.preventDefault();
-            // Здесь можно добавить логику выхода из блокировки
-            if (confirm('Вернуться на главную страницу?')) {
-                window.location.href = '/';
-            }
-        });
-    </script>
 </body>
 </html>
